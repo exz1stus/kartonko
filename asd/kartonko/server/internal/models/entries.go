@@ -7,13 +7,13 @@ import (
 )
 
 type EntryType struct {
-	ID   uint   `json:"id" gorm:"primaryKey, not null, autoincrement"`
+	ID   uint   `json:"id" gorm:"primaryKey"`
 	Name string `json:"name" gorm:"not null, unique"`
 }
 
 type AuditEntry struct {
-	ID        uint      `gorm:"primarykey, not null, autoincrement"`
-	CreatedAt time.Time `gorm:"not null"`
+	ID        uint `gorm:"primarykey"`
+	CreatedAt time.Time
 
 	UserID        uint           `json:"user_id" gorm:"not null"`
 	EntryTypeID   uint           `json:"entry_type_id" gorm:"not null"`

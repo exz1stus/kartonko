@@ -6,8 +6,8 @@ export default function Home() {
     return (
         <>
             <NavBar />
-            <main className="">
-                <Gallery />
+            <main>
+                <Gallery/>
                 <PostImageManager />
             </main>
         </>

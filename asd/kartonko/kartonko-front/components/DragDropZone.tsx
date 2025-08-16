@@ -45,7 +45,7 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({ onFilesDropped }) => {
         <>
             {dragOver && (
                 <div
-                    className="text-center transition-colors fixed inset-0 border-2 border-dashed z-50"
+                    className="text-center transition-colors fixed inset-0 border-2 border-dashed animated-gradient-border z-50"
                 ></div>
             )}
         </>

@@ -17,8 +17,8 @@ const Gallery = () => {
     }
 
     return (
-        <div className="">
-            {/* <ImageCard /> */}
+        <div>
+            <ImageCard />
         </div>
     )
 }

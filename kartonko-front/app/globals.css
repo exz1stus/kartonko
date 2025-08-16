@@ -1,26 +1,31 @@
 @import "tailwindcss";
+@import './theme.css';
 
-/* :root {
-  --background: #ffffff;
-  --foreground: #171717;
-} */
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+    background: var(--clr-surface-a10);
+    color: var(--clr-primary-a0);
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #303030;
-    --foreground: #ededed;
-  }
-}
+@theme {
+    --color-primary-0: var(--clr-primary-a0);
+    --color-primary-10: var(--clr-primary-a10);
+    --color-primary-20: var(--clr-primary-a20);
+    --color-primary-30: var(--clr-primary-a30);
+    --color-primary-40: var(--clr-primary-a40);
+    --color-primary-50: var(--clr-primary-a50);
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    --color-surface-0: var(--clr-surface-a0);
+    --color-surface-10: var(--clr-surface-a10);
+    --color-surface-20: var(--clr-surface-a20);
+    --color-surface-30: var(--clr-surface-a30);
+    --color-surface-40: var(--clr-surface-a40);
+    --color-surface-50: var(--clr-surface-a50);
+
+    --color-surface-tonal-0: var(--clr-surface-tonal-a0);
+    --color-surface-tonal-10: var(--clr-surface-tonal-a10);
+    --color-surface-tonal-20: var(--clr-surface-tonal-a20);
+    --color-surface-tonal-30: var(--clr-surface-tonal-a30);
+    --color-surface-tonal-40: var(--clr-surface-tonal-a40);
+    --color-surface-tonal-50: var(--clr-surface-tonal-a50);
 }
