@@ -230,6 +230,16 @@ func (rh *RequestHandler) PostImageRequest(c *gin.Context) {
 	})
 }
 
+func (rh *RequestHandler) GetProfileRequest(c *gin.Context) {
+	user, err := rh.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, UserDataResponce{Username: user.Username, Privileage: user.Privileage.String()})
+}
+
 func (rh *RequestHandler) parseCursorLimit(c *gin.Context) (int, int, error) {
 	cursorStr := c.Query("cursor")
 	limitStr := c.Query("limit")

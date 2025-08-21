@@ -8,6 +8,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var loaded bool = false
+
 func Init() {
 	err := godotenv.Load("../.env")
 	if err != nil {
@@ -16,6 +18,10 @@ func Init() {
 }
 
 func GetEnvString(key string) string {
+	if !loaded {
+		Init()
+	}
+
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
@@ -24,6 +30,10 @@ func GetEnvString(key string) string {
 }
 
 func GetEnvInt(key string) int {
+	if !loaded {
+		Init()
+	}
+
 	if value, exists := os.LookupEnv(key); exists {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue

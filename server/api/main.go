@@ -37,7 +37,6 @@ type Application struct {
 }
 
 func main() {
-	env.Init()
 	models := models.MustInitStorageSqlite()
 	reqHandler := MustInitReqHandler(models)
 	App := &Application{Models: models, RequestHandler: reqHandler, JWTSecret: env.GetEnvString("JWT_SECRET")}

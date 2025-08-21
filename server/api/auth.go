@@ -20,7 +20,7 @@ type authRequest struct {
 func (rh *RequestHandler) GetUserFromContext(c *gin.Context) (*models.User, error) {
 	tokenString, err := c.Cookie("jwt")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get jwt token: %v", err)
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -46,7 +46,7 @@ func (rh *RequestHandler) GetUserFromContext(c *gin.Context) (*models.User, erro
 
 	user, err := rh.models.Users.GetUserById(userId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
 
 	return user, nil
@@ -66,29 +66,24 @@ func (rh *RequestHandler) GetUserFromContext(c *gin.Context) (*models.User, erro
 func (rh *RequestHandler) LoginRequest(c *gin.Context) {
 	var input authRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprint("invalid input: ", err.Error())})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprint("invalid input: ", err.Error())})
 		return
 	}
 
 	user, err := rh.models.Users.GetUserByUsername(input.Username)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid username"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid username"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid password"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid password"})
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId": user.ID,
-		"exp":    time.Now().Add(time.Hour * 72).Unix(),
-	})
-
-	tokenString, err := token.SignedString([]byte(env.GetEnvString("JWT_SECRET")))
+	tokenString, err := GenerateJwtToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate token"})
 		return
 	}
 
@@ -111,30 +106,25 @@ func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
 	var input authRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid input"})
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to hash password"})
 		return
 	}
 
-	user, err := rh.models.Users.CreateUser(input.Username, string(hashedPassword))
+	user, err := rh.models.Users.CreateUserRegistration(input.Username, string(hashedPassword))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprint("failed to create user: ", err.Error())})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprint("failed to create user: ", err.Error())})
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId": user.ID,
-		"exp":    time.Now().Add(time.Hour * 72).Unix(),
-	})
-
-	tokenString, err := token.SignedString([]byte(env.GetEnvString("JWT_SECRET")))
+	tokenString, err := GenerateJwtToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate token"})
 		return
 	}
 
@@ -153,4 +143,18 @@ func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
 func (rh *RequestHandler) LogoutRequest(c *gin.Context) {
 	c.SetCookie("jwt", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"logout": true})
+}
+
+func GenerateJwtToken(userID uint) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": userID,
+		"exp":    time.Now().Add(time.Hour * 72).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(env.GetEnvString("JWT_SECRET")))
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %v", err)
+	}
+
+	return tokenString, nil
 }

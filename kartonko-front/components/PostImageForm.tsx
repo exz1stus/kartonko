@@ -11,7 +11,7 @@ export interface ApiResponse {
     error?: string;
     message?: string;
 }
-const API_ORIGIN = "http://localhost:8080/api/v1";
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 
 const PostImageForm: React.FC<PostImageFormProps> = ({ image, onSubmit }) => {
     const [tags, setTags] = useState<Tag[]>([]);

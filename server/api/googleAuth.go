@@ -1,0 +1,71 @@
+package main
+
+import (
+	"encoding/json"
+	"net/http"
+	"server/internal/env"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+)
+
+var googleOauthConfig = &oauth2.Config{
+	RedirectURL:  "http://localhost:8080/auth/google/callback",
+	ClientID:     env.GetEnvString("GOOGLE_CLIENT_ID"),
+	ClientSecret: env.GetEnvString("GOOGLE_CLIENT_SECRET"),
+	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+	Endpoint:     google.Endpoint,
+}
+
+func (rh *RequestHandler) GoogleLoginRequest(c *gin.Context) {
+	url := googleOauthConfig.AuthCodeURL("random-state")
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+type UserInfo struct {
+	ID      string `json:"id"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
+}
+
+func (rh *RequestHandler) GoogleCallbackRequest(c *gin.Context) {
+	code := c.Query("code")
+
+	token, err := googleOauthConfig.Exchange(c.Request.Context(), code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to exchange codes"})
+		return
+	}
+
+	client := googleOauthConfig.Client(c.Request.Context(), token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch user info"})
+		return
+	}
+
+	defer resp.Body.Close()
+	var userInfo UserInfo
+	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to decode user info"})
+		return
+	}
+
+	user, err := rh.models.Users.GetOrRegisterGoogle(userInfo.Name, userInfo.Email, userInfo.ID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	tokenString, err := GenerateJwtToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate token"})
+		return
+	}
+
+	c.SetCookie("jwt", tokenString, 3600, "/", "", false, true)
+	c.JSON(http.StatusOK, gin.H{"register": true})
+}
