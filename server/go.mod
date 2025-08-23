@@ -9,6 +9,7 @@ require (
 	gorm.io/datatypes v1.2.6
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.0
+    golang.org/x/oauth2 v0.30.0
 )
 
 require (
@@ -32,7 +33,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect

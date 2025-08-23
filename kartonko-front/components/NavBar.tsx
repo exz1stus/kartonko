@@ -1,12 +1,12 @@
 import React from 'react'
-import UserProfile from './UserProfile'
+import LoginButton from './LoginButton'
 
 const NavBar = () => {
   return (
-    <nav className="p-4 fixed w-full flex items-center justify-between bg-surface-0">
+    <nav className="p-4 w-full flex items-center justify-between bg-surface-0">
         <span className="text-3xl font-bold">menu</span>
         <span className="text-3xl font-bold">kartonko</span>
-        <UserProfile/>
+        <LoginButton/>
     </nav>
   )
 }

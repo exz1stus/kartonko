@@ -1,40 +1,20 @@
+"use client";
 import React from 'react'
-
-import { UserIcon } from "lucide-react";
-
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
+import { UserData, UserModal } from './UserModal'
 
 
-interface AuthRequest {
-    username: string;
-    password: string;
-}
-
-const UserProfile = () => {
-    let loggedIn: boolean = false;
+const UserProfile: React.FC<UserData> = (user: UserData) => {
+    const [modalShown, setModalShown] = React.useState(false);
+    const pictureURL: string = user.picture_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
     
-    const logIn = () => {
-        fetch(`${API_ORIGIN}/login`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-    }
-
-    if (!loggedIn) {
-        return (
-            <div className="flex gap-2">
-                <span>Sign up</span>
-                /
-                <span>Log in</span>
-            </div>
-        );
-    }
-
     return (
-        <div className="bg-white rounded-full p-2">
-            <UserIcon className="h-8 w-8 text-gray-600" />
+        <div>
+            <div className="flex gap-2">
+                <div className="rounded-full" onClick={() => setModalShown(true)}>
+                    <img src={pictureURL} className="h-10 w-10 rounded-full" alt="User picture" />
+                </div>
+            </div>
+            <UserModal user={user} shown={modalShown} onClose={() => setModalShown(false)}/>
         </div>
     )
 }

@@ -27,13 +27,14 @@ type User struct {
 	Privileage     Privileage `json:"privileage" gorm:"not null"`
 	Provider       string     `json:"provider"`
 	ProviderID     string     `json:"provider_id" gorm:"unique"`
+	PictureURL     string     `json:"picture_url"`
 }
 
 type UserModel struct {
 	db *gorm.DB
 }
 
-func (model *UserModel) GetOrRegisterGoogle(username string, email string, googleID string) (*User, error) {
+func (model *UserModel) GetOrRegisterGoogle(username string, email string, googleID string, pictureURL string) (*User, error) {
 	user, err := model.GetUserByEmail(email)
 
 	if err == nil {
@@ -48,20 +49,21 @@ func (model *UserModel) GetOrRegisterGoogle(username string, email string, googl
 		return nil, fmt.Errorf("failed to retrieve user with email %s: %v", email, err)
 	}
 
-	user, err = model.CreateUserGoogle(username, email, googleID)
+	user, err = model.CreateUserGoogle(username, email, googleID, pictureURL)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (model *UserModel) CreateUserGoogle(username string, email string, googleID string) (*User, error) {
+func (model *UserModel) CreateUserGoogle(username string, email string, googleID string, pictureURL string) (*User, error) {
 	user := &User{
 		Username:   username,
 		Email:      email,
 		Privileage: Unprivileaged,
 		Provider:   "google",
 		ProviderID: googleID,
+		PictureURL: pictureURL,
 	}
 
 	user, err := model.CreateUser(user)
@@ -104,7 +106,7 @@ func (model *UserModel) CreateUser(user *User) (*User, error) {
 func (model *UserModel) UsernameExists(username string) (bool, error) {
 	var user User
 
-	err := model.db.Where("username = ?", username).First(&user).Error
+	err := model.db.Model(&User{}).Where("username = ?", username).First(&user).Error
 	if err == nil {
 		return true, nil
 	}
@@ -148,7 +150,7 @@ func (model *UserModel) GetUserById(id float64) (*User, error) {
 
 func (model *UserModel) GetUserByUsername(name string) (*User, error) {
 	var user User
-	result := model.db.Model(&User{}).Where("username = ?", name).First(&user)
+	result := model.db.Where("username = ?", name).First(&user)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("user with username %s not found", name)
@@ -163,14 +165,14 @@ func (model *UserModel) GetUserByUsername(name string) (*User, error) {
 
 func (model *UserModel) GetUserByEmail(email string) (*User, error) {
 	var user User
-	result := model.db.Model(&User{}).Where("email = ?", email).First(&user)
+	err := model.db.Where("email = ?", email).First(&user).Error
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("user with email %s not found", email)
 	}
 
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to retrieve user with email %s: %v", email, result.Error)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve user with email %s: %v", email, err)
 	}
 
 	return &user, nil

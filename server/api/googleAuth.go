@@ -19,7 +19,9 @@ var googleOauthConfig = &oauth2.Config{
 }
 
 func (rh *RequestHandler) GoogleLoginRequest(c *gin.Context) {
-	url := googleOauthConfig.AuthCodeURL("random-state")
+	redirect := c.Query("redirect")
+	state := redirect
+	url := googleOauthConfig.AuthCodeURL(state)
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
@@ -32,6 +34,8 @@ type UserInfo struct {
 
 func (rh *RequestHandler) GoogleCallbackRequest(c *gin.Context) {
 	code := c.Query("code")
+	state := c.Query("state")
+	redirectURL := state
 
 	token, err := googleOauthConfig.Exchange(c.Request.Context(), code)
 	if err != nil {
@@ -53,7 +57,7 @@ func (rh *RequestHandler) GoogleCallbackRequest(c *gin.Context) {
 		return
 	}
 
-	user, err := rh.models.Users.GetOrRegisterGoogle(userInfo.Name, userInfo.Email, userInfo.ID)
+	user, err := rh.models.Users.GetOrRegisterGoogle(userInfo.Name, userInfo.Email, userInfo.ID, userInfo.Picture)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
@@ -67,5 +71,11 @@ func (rh *RequestHandler) GoogleCallbackRequest(c *gin.Context) {
 	}
 
 	c.SetCookie("jwt", tokenString, 3600, "/", "", false, true)
+
+	if redirectURL != "" {
+		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"register": true})
 }

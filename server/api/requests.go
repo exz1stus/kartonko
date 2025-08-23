@@ -134,10 +134,10 @@ func (rh *RequestHandler) GetAuditLogEntriesRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"entries": entries})
 }
 
-// TODO: expand
 type UserDataResponce struct {
 	Username   string `json:"username"`
 	Privileage string `json:"privileage"`
+	PictureURL string `json:"picture_url"`
 }
 
 // GetUserRequest godoc
@@ -160,7 +160,16 @@ func (rh *RequestHandler) GetUserRequest(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, UserDataResponce{Username: user.Username, Privileage: user.Privileage.String()})
+	res := UserDataResponce{
+		Username:   user.Username,
+		Privileage: user.Privileage.String(),
+	}
+
+	if user.IsOauth() {
+		res.PictureURL = user.PictureURL
+	}
+
+	c.JSON(http.StatusOK, res)
 }
 
 // PostImageRequest godoc
@@ -237,7 +246,7 @@ func (rh *RequestHandler) GetProfileRequest(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, UserDataResponce{Username: user.Username, Privileage: user.Privileage.String()})
+	c.Redirect(http.StatusTemporaryRedirect, "user/"+user.Username)
 }
 
 func (rh *RequestHandler) parseCursorLimit(c *gin.Context) (int, int, error) {
