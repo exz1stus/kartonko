@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import PostImageForm, { ApiResponse } from "./PostImageForm";
-import FancySpan from "./FancySpan";
+import FancySpan from "@/components/FancySpan";
 import PostImageErrorSpan from "./PostImageErrorSpan";
 
 interface PostImageModalProps {
@@ -72,7 +72,7 @@ const PostImageModal: React.FC<PostImageModalProps> = ({ images = [], onUploaded
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm overflow-hidden">
-            <div className="flex flex-row bg-black/50 rounded-2xl h-[50vh]" onWheel={handleWheel}>
+            <div className="flex flex-row rounded-2xl bg-surface-0/95 h-[50vh]" onWheel={handleWheel}>
                 <img
                     src={URL.createObjectURL(images[imageIndex])}
                     alt={images[imageIndex].name}

@@ -13,7 +13,7 @@ import (
 type Image struct {
 	gorm.Model
 	Hash     string `json:"hash" gorm:"primaryKey;unique;not null"`
-	Filename string `json:"path" gorm:"not null"`
+	Filename string `json:"filename" gorm:"not null"`
 	Tags     []Tag  `json:"tags"  gorm:"many2many:image_tags"`
 	Format   string `json:"format" gorm:"not null"`
 }
@@ -23,9 +23,55 @@ type ImageModel struct {
 	Tags *TagModel
 }
 
-func ConstructImage(name string, tagsNames []string, format string) *Image {
+type ImageQuery struct {
+	NameContains string   `json:"nameContains"`
+	WithTags     []string `json:"withTags"`
+}
+
+func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]Image, error) {
+	var images []Image
+	result := model.db.Model(&Image{}).Order("id desc")
+
+	println(query.NameContains)
+
+	if query.NameContains != "" {
+		result = result.Where("filename LIKE ?", "%"+query.NameContains+"%").Find(&images)
+	}
+
+	if len(query.WithTags) > 0 {
+		result = result.
+			Joins("JOIN image_tags ON image_tags.image_id = images.id").
+			Joins("JOIN tags ON tags.id = image_tags.tag_id").
+			Where("tags.name IN ?", query.WithTags).
+			Group("images.id").
+			Having("COUNT(DISTINCT tags.id) = ?", len(query.WithTags)).
+			Find(&images)
+	}
+
+	result = result.Limit(limit).Offset(cursor).Find(&images)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return images, nil
+}
+
+func (model *ImageModel) ConstructImage(name string, tagsNames []string, format string) *Image {
 	tags := ConstructTagsByNames(tagsNames)
-	return &Image{Filename: name, Tags: tags, Format: format}
+	image := &Image{Filename: name, Tags: tags, Format: format}
+	model.AddAutoTags(image)
+	return image
+}
+
+func (model *ImageModel) AddAutoTags(image *Image) {
+	if image == nil {
+		return
+	}
+
+	if image.Format == "gif" {
+		image.Tags = append(image.Tags, Tag{Name: "gif"})
+	}
 }
 
 func (model *ImageModel) AddImage(image *Image) error {

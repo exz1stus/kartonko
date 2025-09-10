@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react'
 import LogoutButton from './LogoutButton';
 import { UserData } from '@/app/AuthContext';
+import UsernameButton from './UsernameButton';
+import { useClickOutside } from '@/app/clickOutside';
 
 interface UserModalProps {
     user: UserData;
@@ -11,24 +13,11 @@ interface UserModalProps {
 const UserModal: React.FC<UserModalProps> = ({ user, shown, onClose }: UserModalProps) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
-
-        if (shown) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [shown, onClose]);
+    useClickOutside(modalRef, onClose);
 
     if (!shown || !user) {
         return null;
     }
-
 
     return (
         <div ref={modalRef} className="fixed top-0 right-0 bg-surface-10 border-surface-30 border-1 rounded-l">
@@ -36,7 +25,7 @@ const UserModal: React.FC<UserModalProps> = ({ user, shown, onClose }: UserModal
                 <div className="rounded-full">
                     <img src={user.picture_url} className="h-10 w-10 rounded-full" alt="User picture" />
                 </div>
-                <div className="text-lg font-bold">{user.username}</div>
+                <UsernameButton username={user.username} />
                 <LogoutButton />
             </div>
         </div>

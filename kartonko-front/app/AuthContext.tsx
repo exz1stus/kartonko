@@ -1,11 +1,14 @@
 "use client";
 import { usePathname } from 'next/navigation';
+import router from 'next/router';
 import { useState, useEffect, useCallback, createContext, useContext } from 'react'
 
 interface UserData {
     username: string;
     privileage: string;
     picture_url: string;
+    joined_at: string;
+    last_seen: string;
 }
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
@@ -15,6 +18,27 @@ const AuthContext = createContext<{ user: UserData | null; login: Function; logo
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
     const auth = useProvideAuth();
+
+    useEffect(() => {
+        const pageLeave = async () => {
+            //unsaved changes
+        };
+
+        const handleWindowClose = (e: BeforeUnloadEvent) => {
+            pageLeave();
+        };
+        const handleBrowseAway = () => {
+            pageLeave();
+        };
+
+        window.addEventListener('beforeunload', handleWindowClose);
+        router.events.on('routeChangeStart', handleBrowseAway);
+        return () => {
+            window.removeEventListener('beforeunload', handleWindowClose);
+            router.events.off('routeChangeStart', handleBrowseAway);
+        };
+    }, []);
+
     return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 

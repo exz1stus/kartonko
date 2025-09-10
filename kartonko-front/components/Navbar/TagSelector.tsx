@@ -1,0 +1,129 @@
+"use client";
+import React, { use, useEffect, useState } from 'react'
+import { Tag } from '../PostImage/TagSelector';
+import { noUse } from '@/app/ AudioEffects';
+import useTypingHints from '@/app/useTypingHints';
+
+interface TagSelectorProps {
+    selected: boolean
+    tags: Tag[]
+    onTagsUpdate: (tags: Tag[]) => void
+}
+
+interface TagHintResponse {
+    tags: Tag[]
+}
+
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
+
+const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate }) => {
+    const [tagField, setTagField] = useState<string>("");
+
+    const onQueryMatchedHint = () => {
+        write();
+    }
+
+    const FETCH_HINTS_LIMIT = 10;
+
+    const fetchTagFieldHint = async (query: string) => {
+        try {
+            if (query.length === 0) return [];
+            const response = await fetch(`${API_ORIGIN}/autocomplete-tag?query=${query}&limit=${FETCH_HINTS_LIMIT}`);
+            if (response.ok) {
+                const responseJson: TagHintResponse = await response.json();
+                const parsedTags = responseJson.tags;
+                if (parsedTags.length === 0) {
+                    return [];
+                }
+                const hints = parsedTags
+                    .filter((tag) => !tags.some(t => t.name === tag.name))
+                    .map((tag) => tag.name);
+                return hints;
+            }
+            return [];
+        }
+        catch (error) {
+            console.log("Error fetching tag hint", error);
+            return [];
+        }
+    }
+
+    const write = () => {
+        if (hint.length <= 0 || tags.some(tag => tag.name === hint)) {
+            noUse();
+            return;
+        }
+
+        let tagsQuery = tags.concat({ name: hint });
+        setTagField("");
+        onTagsUpdate(tagsQuery);
+    }
+
+    const { hint, difference, selectNext, selectPrevious } = useTypingHints(tagField, fetchTagFieldHint, onQueryMatchedHint);
+
+    const onTagKeyDown = (e: KeyboardEvent) => {
+        const insert = () => {
+            setTagField(tagField => tagField.concat(e.key));
+        }
+
+        const remove = () => {
+            setTagField(tagField => tagField.slice(0, -1));
+        }
+
+        const clear = () => {
+            setTagField("");
+        }
+
+        const autoComplete = () => {
+            if (difference.length <= 0) {
+                noUse();
+                return;
+            }
+
+            setTagField(tagField => tagField.concat(difference));
+        }
+
+
+        switch (e.key) {
+            case "Tab":
+                autoComplete();
+                write();
+                break;
+            case "Backspace":
+                remove();
+                break;
+            case "ArrowLeft":
+                selectPrevious();
+                break;
+            case "ArrowRight":
+                selectNext();
+                break;
+            case "Escape":
+                clear();
+                break;
+            default:
+                if (e.key.length === 1)
+                    insert();
+                break;
+        }
+    }
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!selected) return;
+            onTagKeyDown(e)
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [selected, difference]);
+
+    return (
+        <div>
+            <span className={`text-5xl ${hint.length > 0 ? "text-amber-200" : "text-primary-10"}`}>{tagField}</span>
+            <span className="text-5xl text-primary-10 opacity-50">{difference}</span>
+        </div>
+    )
+}
+
+export default TagSelector

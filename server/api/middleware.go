@@ -52,6 +52,11 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 
 		c.Set("user", user)
 
+		err = app.Models.Users.UpdateLastSeen(user)
+		if err != nil {
+			print(err)
+		}
+
 		c.Next()
 	}
 }

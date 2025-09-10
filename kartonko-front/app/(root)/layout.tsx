@@ -1,6 +1,6 @@
 import "@/app/globals.css";
 import { AuthProvider } from "../AuthContext";
-import NavBar from "@/components/NavBar";
+import NavBar from "@/components/Navbar/NavBar";
 
 export default function RootLayout({
     children,
@@ -8,17 +8,17 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className="h-full">
-            <body className="h-full">
-                <AuthProvider>
+        <html lang="en" className="min-h-screen">
+            <AuthProvider>
+                <body className="min-h-screen">
+                    <NavBar />
                     <div className="h-full flex flex-col items-center">
-                        <NavBar />
                         <main className="flex-1 h-full">
                             {children}
                         </main>
                     </div>
-                </AuthProvider>
-            </body>
+                </body>
+            </AuthProvider>
         </html>
     );
 }

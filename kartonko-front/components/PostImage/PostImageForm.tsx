@@ -49,6 +49,7 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ image, onSubmit }) => {
             const res = await fetch(`${API_ORIGIN}/upload`, {
                 method: "POST",
                 body: formData,
+                credentials: 'include'
             });
 
             const response: ApiResponse = await res.json();

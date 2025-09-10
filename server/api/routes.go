@@ -15,7 +15,7 @@ func (app *Application) initRoutes() {
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{frontendOrigin},
-		AllowMethods:     []string{"GET", "POST"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -27,9 +27,15 @@ func (app *Application) initRoutes() {
 	r.StaticFile("/", "../frontend/index.html")
 	r.Static("/static", "../frontend")
 
-	r.GET("/image/:name", rh.GetImageByNameRequest)
-	r.GET("/search-tags/:query", rh.GetSearchTagsRequest)
 	r.GET("/user/:username", rh.GetUserRequest)
+
+	r.GET("/image/:name", rh.GetImageByNameRequest)
+	r.GET("/raw-image/:name", rh.GetRawImageByNameRequest)
+	r.GET("/images/", rh.GetImagesRequest)
+	r.GET("/search-images", rh.GetImageByQueryRequest)
+
+	r.GET("/search-tags/:query", rh.GetSearchTagsRequest)
+	r.GET("/autocomplete-tag", rh.GetTagAutoCompleteRequest)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

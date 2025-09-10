@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import PostImageModal from './PostImageModal'
-import DragDropZone from './DragDropZone'
+import DragDropZone from '@/components/PostImage/DragDropZone'
 
 const showWrongTypeMessage = (file: File) => { alert("wrong file type" + file.name) };
 

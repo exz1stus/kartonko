@@ -31,6 +31,7 @@ func MustInitStorageSqlite() *Models {
 		db:     db,
 		Users:  users,
 		Log:    log,
+		Tags:   tags,
 		Images: &ImageModel{Tags: tags, db: db},
 	}
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -28,10 +29,43 @@ type User struct {
 	Provider       string     `json:"provider"`
 	ProviderID     string     `json:"provider_id" gorm:"unique"`
 	PictureURL     string     `json:"picture_url"`
+	LastSeen       time.Time  `json:"last_seen"`
+}
+
+func (user *User) IsOauth() bool {
+	return user.Provider != "" && user.ProviderID != ""
+}
+
+func (user *User) IsAdmin() bool {
+	return user.Privileage == Moderator
 }
 
 type UserModel struct {
 	db *gorm.DB
+}
+
+func (model *UserModel) UpdateLastSeen(user *User) error {
+	user.LastSeen = time.Now()
+	err := model.db.Save(user).Error
+	if err != nil {
+		return fmt.Errorf("failed to update user %s last seen: %v", user.Username, err)
+	}
+	return nil
+}
+
+func (model *UserModel) OnPageLeaved(user *User) error {
+	if user == nil {
+		return fmt.Errorf("user is nil")
+	}
+
+	err := model.db.Save(user).Error
+	if err != nil {
+		return fmt.Errorf("failed to update user %s when leaved page: %v", user.Username, err)
+	}
+
+	print(user.Username, " leaved page")
+
+	return nil
 }
 
 func (model *UserModel) GetOrRegisterGoogle(username string, email string, googleID string, pictureURL string) (*User, error) {
@@ -98,6 +132,11 @@ func (model *UserModel) CreateUser(user *User) (*User, error) {
 	result := model.db.Create(user)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to create user: %v", result.Error)
+	}
+
+	err = model.UpdateLastSeen(user)
+	if err != nil {
+		println(err.Error())
 	}
 
 	return user, nil
@@ -176,8 +215,4 @@ func (model *UserModel) GetUserByEmail(email string) (*User, error) {
 	}
 
 	return &user, nil
-}
-
-func (user *User) IsOauth() bool {
-	return user.Provider != "" && user.ProviderID != ""
 }

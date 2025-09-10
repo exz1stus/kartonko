@@ -8,6 +8,7 @@ import (
 	"server/internal/env"
 	"server/internal/models"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -57,6 +58,21 @@ func (rh *RequestHandler) GetSearchTagsRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": tags})
 }
 
+func (rh *RequestHandler) GetTagAutoCompleteRequest(c *gin.Context) {
+	query := c.Query("query")
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "failed to parse limit"})
+		return
+	}
+	tags, err := rh.models.Tags.AutoCompleteTag(query, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"tags": tags})
+}
+
 // GetImagesRequest godoc
 // @Summary Gets images by range
 // @Description Gets images from a global list by range
@@ -68,7 +84,7 @@ func (rh *RequestHandler) GetSearchTagsRequest(c *gin.Context) {
 // @Failure 400 {object} ErrorResponse
 // @Router /api/v1/images [get]
 func (rh *RequestHandler) GetImagesRequest(c *gin.Context) {
-	cursor, limit, err := rh.parseCursorLimit(c)
+	cursor, limit, err := parseCursorLimit(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -80,15 +96,12 @@ func (rh *RequestHandler) GetImagesRequest(c *gin.Context) {
 		return
 	}
 
-	for _, img := range images {
-		c.JSON(http.StatusOK, gin.H{"imageData": img})
-		c.File(env.GetEnvString("UPLOADS_PATH") + img.Filename + "." + img.Format)
-	}
+	c.JSON(http.StatusOK, gin.H{"imageData": images})
 }
 
 // GetImageByNameRequest godoc
-// @Summary Searches image by name
-// @Description Searches images by unique name
+// @Summary Returns image and imageData by name
+// @Description Returns image, imageData by it's unique name
 // @Tags Image
 // @Produce  application/json, application/octet-stream
 // @Param   name query string true "name"
@@ -108,6 +121,52 @@ func (rh *RequestHandler) GetImageByNameRequest(c *gin.Context) {
 	c.File(env.GetEnvString("UPLOADS_PATH") + img.Filename + "." + img.Format)
 }
 
+// GetRawImageByNameRequest godoc
+// @Summary Searches image by name
+// @Description Searches images by unique name
+// @Tags Image
+// @Produce  application/octet-stream
+// @Param   name query string true "name"
+// @Failure 200 {object} map[string]interface{}
+// @Failure 404 {object} ErrorResponse
+// @Router /api/v1/image/{name} [get]
+func (rh *RequestHandler) GetRawImageByNameRequest(c *gin.Context) {
+	req := c.Param("name")
+
+	img, err := rh.models.Images.GetImageByName(req)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.File(env.GetEnvString("UPLOADS_PATH") + img.Filename + "." + img.Format)
+}
+
+func (rh *RequestHandler) GetImageByQueryRequest(c *gin.Context) {
+	cursor, limit, err := parseCursorLimit(c)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	queryString := c.Query("query")
+	var query models.ImageQuery
+	err = json.Unmarshal([]byte(queryString), &query)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	images, err := rh.models.Images.SearchImages(query, cursor, limit)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"imageData": images})
+}
+
 // GetAuditLogEntriesRequest godoc
 // @Summary Gets audit log entries by given range
 // @Description Returns a list of "limit" audit log entries from "cursor"
@@ -119,7 +178,7 @@ func (rh *RequestHandler) GetImageByNameRequest(c *gin.Context) {
 // @Failure 400 {object} ErrorResponse
 // @Router /api/v1/audit-logs [get]
 func (rh *RequestHandler) GetAuditLogEntriesRequest(c *gin.Context) {
-	cursor, limit, err := rh.parseCursorLimit(c)
+	cursor, limit, err := parseCursorLimit(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -138,6 +197,9 @@ type UserDataResponce struct {
 	Username   string `json:"username"`
 	Privileage string `json:"privileage"`
 	PictureURL string `json:"picture_url"`
+	JoinedAt   string `json:"joined_at"`
+	LastSeen   string `json:"last_seen"`
+	Online     bool   `json:"online"`
 }
 
 // GetUserRequest godoc
@@ -163,6 +225,8 @@ func (rh *RequestHandler) GetUserRequest(c *gin.Context) {
 	res := UserDataResponce{
 		Username:   user.Username,
 		Privileage: user.Privileage.String(),
+		JoinedAt:   user.CreatedAt.Format(time.DateOnly),
+		LastSeen:   user.LastSeen.Format(time.DateTime),
 	}
 
 	if user.IsOauth() {
@@ -170,6 +234,16 @@ func (rh *RequestHandler) GetUserRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+func (rh *RequestHandler) GetProfileRequest(c *gin.Context) {
+	user, err := rh.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.Redirect(http.StatusTemporaryRedirect, "user/"+user.Username)
 }
 
 // PostImageRequest godoc
@@ -214,7 +288,7 @@ func (rh *RequestHandler) PostImageRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 	}
 
-	img := models.ConstructImage(request.Name, request.Tags, imgFormat)
+	img := rh.models.Images.ConstructImage(request.Name, request.Tags, imgFormat)
 
 	if err := rh.models.Images.SaveImage(img, file, c); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
@@ -239,17 +313,7 @@ func (rh *RequestHandler) PostImageRequest(c *gin.Context) {
 	})
 }
 
-func (rh *RequestHandler) GetProfileRequest(c *gin.Context) {
-	user, err := rh.GetUserFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.Redirect(http.StatusTemporaryRedirect, "user/"+user.Username)
-}
-
-func (rh *RequestHandler) parseCursorLimit(c *gin.Context) (int, int, error) {
+func parseCursorLimit(c *gin.Context) (int, int, error) {
 	cursorStr := c.Query("cursor")
 	limitStr := c.Query("limit")
 

@@ -91,6 +91,8 @@ func (rh *RequestHandler) LoginRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"login": true})
 }
 
+const JWT_COOKIE_MAX_AGE = time.Hour * 24 * 30 //30 days
+
 // RegisterRequest godoc
 // @Summary Register a user
 // @Description Registers a new user, generating a JWT token.
@@ -128,7 +130,7 @@ func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("jwt", tokenString, 3600, "/", "", false, true)
+	c.SetCookie("jwt", tokenString, int(JWT_COOKIE_MAX_AGE), "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"register": true})
 }
 
@@ -148,7 +150,7 @@ func (rh *RequestHandler) LogoutRequest(c *gin.Context) {
 func GenerateJwtToken(userID uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": userID,
-		"exp":    time.Now().Add(time.Hour * 72).Unix(),
+		"exp":    time.Now().Add(JWT_COOKIE_MAX_AGE).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(env.GetEnvString("JWT_SECRET")))

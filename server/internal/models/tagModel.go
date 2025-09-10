@@ -14,6 +14,15 @@ type TagModel struct {
 	db *gorm.DB
 }
 
+func (model *TagModel) AutoCompleteTag(query string, limit int) ([]Tag, error) {
+	var tags []Tag
+	result := model.db.Model(&Tag{}).Where("name LIKE ?", query+"%").Limit(limit).Find(&tags)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return tags, nil
+}
+
 func ConstructTagsByNames(names []string) []Tag {
 	var tags []Tag
 	for _, name := range names {
