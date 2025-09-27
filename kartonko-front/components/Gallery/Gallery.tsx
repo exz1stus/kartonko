@@ -1,8 +1,10 @@
 "use client";
 import React, { useEffect, useState } from 'react'
 import { ImageData, ImageCard } from './ImageCard'
-import { SearchQuery, SearchOverlay } from './SearchOverlay';
+import { SearchQuery, ImageSearch } from './ImageSearch';
 import { useDebounce, useDebouncedValue } from '@/app/useDebounce';
+import PostImageManager from '../PostImage/PostImageManager';
+import Scrollbar from '../template/Scrollbar';
 
 interface ImagesResponse {
     imageData: ImageData[]
@@ -60,36 +62,31 @@ const Gallery = () => {
         }
     };
 
-    const handleScroll =
+    const handleGalleryScroll =
         useDebounce(() => {
-            if (!reachedEnd && window.innerHeight + window.scrollY >= document.body.offsetHeight * 0.9) {
+            if (!reachedEnd && window.innerHeight + window.scrollY >= document.body.offsetHeight * 0.8) {
                 searchImages(searchQuery, cursor + requestSize);
             }
         }, 100);
-
-    useEffect(() => {
-        window.addEventListener("scroll", handleScroll);
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, [searchQuery, cursor, loading]);
 
     const ImageCards = images?.length ? images.map((image, index) => (
         <ImageCard key={index} filename={image.filename} tags={image.tags} />
     )) : null;
 
     return (
-        <div className=''>
+        <Scrollbar onScroll={handleGalleryScroll}>
+            <PostImageManager />
             <div
+                className=" p-4"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
-                <SearchOverlay isHovered={isHovered} onQueryChange={handleSearch} />
-                <div className="flex flex-wrap justify-evenly gap-5 p-4">
+                <ImageSearch isHovered={isHovered} onQueryChange={handleSearch} />
+                <div className="flex flex-wrap justify-evenly gap-5">
                     {ImageCards}
                 </div>
             </div>
-        </div>
+        </Scrollbar>
     )
 }
 

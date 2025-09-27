@@ -1,16 +1,15 @@
 "use client";
 import React from 'react'
 import { Menu } from 'lucide-react'
-import MenuBar from './SideMenu';
+import { useSidebar } from '@/app/SidebarProvider';
 
 const MenuButton = () => {
-    const [isOpen, setOpen] = React.useState(false);
+    const { toggle } = useSidebar();
     return (
         <>
-            <div onClick={() => setOpen(true)}>
+            <div onClick={() => { toggle(); }}>
                 <Menu />
             </div>
-            <MenuBar isOpen={isOpen} onClose={() => setOpen(false)} />
         </>
     )
 }

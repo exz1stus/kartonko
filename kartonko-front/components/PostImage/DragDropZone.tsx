@@ -26,7 +26,6 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({ onFilesDropped }) => {
 
         const handleDragLeave = (e: Event): void => {
             e.preventDefault();
-            // setDragOver(false);
         };
 
         window.addEventListener("dragover", handleDragOver);
@@ -45,8 +44,9 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({ onFilesDropped }) => {
         <>
             {dragOver && (
                 <div
-                    className="text-center transition-colors fixed inset-0 border-2 border-dashed z-50"
-                ></div>
+                    className="fixed h-full w-full border-2 border-dashed z-50"
+                >
+                </div>
             )}
         </>
     );

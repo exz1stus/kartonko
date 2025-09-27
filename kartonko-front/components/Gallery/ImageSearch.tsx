@@ -20,7 +20,7 @@ enum InsertingMode {
     TAG
 }
 
-const SearchOverlay: React.FC<SearchOverlayProps> = ({ isHovered, onQueryChange }) => {
+const ImageSearch: React.FC<SearchOverlayProps> = ({ isHovered, onQueryChange }) => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [name, setName] = useState<string>("");
     const [insertingMode, setInsertingMode] = useState<InsertingMode>(InsertingMode.NAME);
@@ -68,12 +68,12 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ isHovered, onQueryChange 
     let tagElements = tags.map((tag, index) => <span key={index}>{tag.name}</span>);
 
     return (
-        <div className="z-99 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center">
             <NameSelector selected={insertingMode === InsertingMode.NAME} name={name} onUpdateName={onNameUpdated} />
             <TagSelector selected={insertingMode === InsertingMode.TAG} tags={tags} onTagsUpdate={onTagsUpdate} />
             <div className="flex flex-col">{tagElements}</div>
         </div>
     )
 }
-export { type SearchQuery, SearchOverlay };
+export { type SearchQuery, ImageSearch };
 

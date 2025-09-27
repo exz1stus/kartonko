@@ -1,10 +1,10 @@
 "use client";
-import React from 'react'
+import React, { useState } from 'react'
 import { UserData, UserModal } from './UserModal'
 
 
 const UserProfile: React.FC<UserData> = (user: UserData) => {
-    const [modalShown, setModalShown] = React.useState(false);
+    const [modalShown, setModalShown] = useState(false);
     const pictureURL: string = user.picture_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
     
     return (

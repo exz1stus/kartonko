@@ -22,7 +22,7 @@ const UserPage = async ({ params }: { params: Promise<{ username: string }> }) =
     const pictureURL: string = user.picture_url?.replace("s96-c", "s256-c") || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     return (
-        <div className="flex flex-row h-full w-[95vw] bg-surface-tonal-0">
+        <div className="flex flex-row h-full bg-surface-tonal-0">
             <div className="flex-1 flex flex-col h-full bg-surface-0">
                 <img
                     src={pictureURL}

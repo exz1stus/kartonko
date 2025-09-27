@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDebouncedValue } from './useDebounce'
 
 export const useTypingHints = (query: string, fetchHints: (query: string) => Promise<string[]>, onQueryMatchedHint: () => void) => {
@@ -63,9 +63,8 @@ export const useTypingHints = (query: string, fetchHints: (query: string) => Pro
     }, [query]);
 
     useEffect(() => {
-        if (hints.length == 1 && difference === "") {
+        if (hints.length == 1 && query == hints[0])
             onQueryMatchedHint();
-        }
     }, [hint, query, onQueryMatchedHint]);
 
     return { hint, difference, selectNext, selectPrevious };
