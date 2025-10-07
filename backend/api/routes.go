@@ -24,14 +24,11 @@ func (app *Application) initRoutes() {
 
 	rh := app.RequestHandler
 
-	r.StaticFile("/", "../frontend/index.html")
-	r.Static("/static", "../frontend")
-
 	r.GET("/user/:username", rh.GetUserRequest)
 
 	r.GET("/image/:name", rh.GetImageByNameRequest)
 	r.GET("/raw-image/:name", rh.GetRawImageByNameRequest)
-	r.GET("/images/", rh.GetImagesRequest)
+	r.GET("/images", rh.GetImagesRequest)
 	r.GET("/search-images", rh.GetImageByQueryRequest)
 
 	r.GET("/search-tags/:query", rh.GetSearchTagsRequest)
