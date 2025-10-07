@@ -1,7 +1,6 @@
-server/tmp
-server/uploads
-server/internal/database
-frontend
+tmp
+uploads
+internal/database
 
 node_modules
 target
