@@ -14,7 +14,7 @@ interface UserData {
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 const FRONTEND_URI = process.env.NEXT_PUBLIC_FRONTEND_URI;
 
-const AuthContext = createContext<{ user: UserData | null; login: Function; logout: Function } | undefined>(undefined);
+const AuthContext = createContext<{ user: UserData | null; login: Function; logout: Function; loading: boolean } | undefined>(undefined);
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
     const auth = useProvideAuth();
