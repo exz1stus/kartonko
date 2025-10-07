@@ -11,10 +11,17 @@ import (
 var loaded bool = false
 
 func Init() {
+	if value, exists := os.LookupEnv("NO_DOTENV"); exists && value == "1" {
+		loaded = true
+		return
+	}
+
 	err := godotenv.Load(".env")
 	if err != nil {
 		panic("Error loading .env file")
 	}
+
+	loaded = true
 }
 
 func GetEnvString(key string) string {
