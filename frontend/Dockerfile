@@ -21,6 +21,4 @@ COPY --from=builder /app/next.config.js ./next.config.js
 
 RUN npm install --production
 
-EXPOSE 3000
-
 CMD ["npm", "start"]
