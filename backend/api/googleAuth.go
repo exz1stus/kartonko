@@ -72,7 +72,7 @@ func (rh *RequestHandler) GoogleCallbackRequest(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("jwt", tokenString, 3600, "/", "", false, true)
+	c.SetCookie("jwt", tokenString, 3600, "/", "", true, false)
 
 	if redirectURL != "" {
 		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
