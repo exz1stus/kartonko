@@ -118,7 +118,7 @@ func (model *ImageModel) SaveImage(img *Image, file *multipart.FileHeader, c *gi
 	img.Hash = hash
 
 	file.Filename = img.Filename + "." + img.Format
-	dst := env.GetEnvString("UPLOADS_PATH") + file.Filename
+	dst := env.GetEnvString("UPLOADS_PATH") + "/" + file.Filename
 	if err := c.SaveUploadedFile(file, dst); err != nil {
 		return err
 	}

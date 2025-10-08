@@ -8,4 +8,6 @@ RUN go mod tidy
 
 RUN go build -o main ./api
 
+ENV GIN_MODE=release
+
 CMD ["./main"]

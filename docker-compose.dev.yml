@@ -8,7 +8,7 @@ services:
       - ./backend/.env
     volumes:
       - ./backend:/app
-    command: air
+    command: air -c .air.toml
     ports:
       - "8080:8080"
     networks:
@@ -17,7 +17,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: frontend
     env_file:
       - ./frontend/.env.development

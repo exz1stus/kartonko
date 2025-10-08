@@ -118,7 +118,7 @@ func (rh *RequestHandler) GetImageByNameRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"imageData": img.Filename, "tags": img.Tags})
-	c.File(env.GetEnvString("UPLOADS_PATH") + img.Filename + "." + img.Format)
+	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
 }
 
 // GetRawImageByNameRequest godoc

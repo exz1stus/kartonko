@@ -13,7 +13,7 @@ import (
 )
 
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  fmt.Sprintf("http://%s:%s/auth/google/callback", env.GetEnvString("HOST"), env.GetEnvString("PORT")),
+	RedirectURL:  fmt.Sprintf("%s/auth/google/callback", env.GetEnvString("API_ORIGIN")),
 	ClientID:     env.GetEnvString("GOOGLE_CLIENT_ID"),
 	ClientSecret: env.GetEnvString("GOOGLE_CLIENT_SECRET"),
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
