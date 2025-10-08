@@ -91,7 +91,7 @@ func (rh *RequestHandler) LoginRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"login": true})
 }
 
-const JWT_COOKIE_MAX_AGE = time.Hour * 24 * 30 //30 days
+var JWT_COOKIE_MAX_AGE = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")) * time.Hour
 
 // RegisterRequest godoc
 // @Summary Register a user
@@ -130,7 +130,17 @@ func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("jwt", tokenString, int(JWT_COOKIE_MAX_AGE.Seconds()), "/", "", false, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "jwt",
+		Value:    tokenString,
+		Path:     "/",
+		Domain:   env.GetEnvString("API_ORIGIN"),
+		MaxAge:   int(JWT_COOKIE_MAX_AGE.Seconds()),
+		Secure:   true,
+		HttpOnly: false,
+		SameSite: http.SameSiteNoneMode,
+	})
+
 	c.JSON(http.StatusOK, gin.H{"register": true})
 }
 
