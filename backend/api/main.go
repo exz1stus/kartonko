@@ -23,10 +23,6 @@ import (
 // swagger:model
 type Response gin.H
 
-const (
-	frontendOrigin string = "http://localhost:3000"
-)
-
 var App *Application
 
 type Application struct {
@@ -44,5 +40,5 @@ func main() {
 
 	App := &Application{Models: models, RequestHandler: reqHandler, JWTSecret: env.GetEnvString("JWT_SECRET")}
 	App.initRoutes()
-	App.Router.Run(fmt.Sprintf(":%d", env.GetEnvInt("PORT")))
+	App.Router.Run(fmt.Sprintf(":%s", env.GetEnvString("PORT")))
 }

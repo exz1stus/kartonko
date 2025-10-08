@@ -1,6 +1,7 @@
 package main
 
 import (
+	"server/internal/env"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -14,7 +15,7 @@ func (app *Application) initRoutes() {
 	r := app.Router
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{frontendOrigin},
+		AllowOrigins:     []string{env.GetEnvString("FRONTEND_ORIGIN")},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

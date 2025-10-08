@@ -5,13 +5,15 @@ import (
 	"net/http"
 	"server/internal/env"
 
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
 var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  "http://localhost:8080/auth/google/callback",
+	RedirectURL:  fmt.Sprintf("http://%s:%s/auth/google/callback", env.GetEnvString("HOST"), env.GetEnvString("PORT")),
 	ClientID:     env.GetEnvString("GOOGLE_CLIENT_ID"),
 	ClientSecret: env.GetEnvString("GOOGLE_CLIENT_SECRET"),
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},

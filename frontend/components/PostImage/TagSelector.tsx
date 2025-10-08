@@ -29,7 +29,7 @@ export function TagSelector({
                 }
                 try {
                     const res = await fetch(
-                        `http://localhost:8080/search-tags/${encodeURIComponent(
+                        `http://${API_ORIGIN}/search-tags/${encodeURIComponent(
                             search
                         )}`
                     );
