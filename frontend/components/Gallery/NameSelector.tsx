@@ -1,4 +1,4 @@
-import { noUse } from '@/app/ AudioEffects'
+import { noUse } from '@/app/AudioEffects'
 import React, { useEffect } from 'react'
 
 interface NameSelectorProps {
@@ -49,7 +49,7 @@ const NameSelector: React.FC<NameSelectorProps> = ({ selected, name, onUpdateNam
     }, [onNameKeyDown, selected]);
 
     return (
-        <div className="bg-surface-30 px-4 rounded-2xl">
+        <div>
             <span className="text-3xl">{name.toLowerCase()}</span>
         </div>
     )

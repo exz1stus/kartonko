@@ -23,21 +23,25 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({ children, onFilesDropped })
         }
     };
 
-    const handleDragLeave = (e: DragEvent<HTMLDivElement>): void => {
-        e.preventDefault();
+    const handleDragEnd = () => {
+        setDragOver(false);
+    };
+
+    const handleMouseLeave = () => {
+        setDragOver(false);
     };
 
     return (
         <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDragEnd={handleDragEnd}
+            onMouseLeave={handleMouseLeave}
             className={`h-full w-full z-100 border-2 ${dragOver ? "border-dashed opacity-80" : "border-transparent"}`}
         >
             {children}
         </div >
     );
-
 };
 
 export default DragDropZone;

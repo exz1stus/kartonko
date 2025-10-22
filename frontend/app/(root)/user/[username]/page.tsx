@@ -2,13 +2,13 @@ import React from 'react'
 import { UserData } from '@/app/contexts/AuthContext';
 import { notFound } from 'next/navigation';
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
+const API_LOCAL = process.env.NEXT_PUBLIC_API_LOCAL;
 
 const UserPage = async ({ params }: { params: Promise<{ username: string }> }) => {
     const { username } = await params;
     let user: UserData;
     try {
-        const res = await fetch(`${API_ORIGIN}/user/${username}`);
+        const res = await fetch(`${API_LOCAL}/user/${username}`);
         if (!res.ok) return notFound();
 
         user = await res.json();
@@ -22,8 +22,8 @@ const UserPage = async ({ params }: { params: Promise<{ username: string }> }) =
     const pictureURL: string = user.picture_url?.replace("s96-c", "s256-c") || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     return (
-        <div className="flex flex-row h-full bg-surface-tonal-0">
-            <div className="flex-1 flex flex-col h-full bg-surface-0">
+        <div className="flex flex-row h-full">
+            <div className="flex flex-col flex-1 bg-surface-0/80 h-full glass">
                 <img
                     src={pictureURL}
                     className="w-full"

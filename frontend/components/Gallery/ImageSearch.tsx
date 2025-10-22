@@ -1,35 +1,37 @@
 "use client";
 import React, { useEffect, useState } from 'react'
-import { Tag } from '../PostImage/TagSelector';
-import TagSelector from '../Navbar/TagSelector';
-import { noUse } from '@/app/ AudioEffects';
+import { noUse } from '@/app/AudioEffects';
 import NameSelector from './NameSelector';
+import { Tag } from '../PostImage/TagSelector';
+import TagSelector from './TagSelector';
+import TagElement from './TagElement';
 
 interface SearchQuery {
     nameContains: string
-    withTags: Tag[]
+    withTags: string[]
 }
 
 interface SearchOverlayProps {
-    isHovered: boolean
+    isGalleryHovered: boolean
+    isSearchHovered: boolean
     onQueryChange: (query: SearchQuery) => void
 }
 
 enum InsertingMode {
+    NONE,
     NAME,
     TAG
 }
 
-const ImageSearch: React.FC<SearchOverlayProps> = ({ isHovered, onQueryChange }) => {
+const ImageSearch: React.FC<SearchOverlayProps> = ({ isGalleryHovered, isSearchHovered, onQueryChange }) => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [name, setName] = useState<string>("");
     const [insertingMode, setInsertingMode] = useState<InsertingMode>(InsertingMode.NAME);
 
-
     useEffect(() => {
         onQueryChange({
             nameContains: name,
-            withTags: tags
+            withTags: tags.map((t) => t.name)
         });
     }, [name, tags]);
 
@@ -43,12 +45,8 @@ const ImageSearch: React.FC<SearchOverlayProps> = ({ isHovered, onQueryChange })
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const allowed = /^[a-z0-9\s]+$/i;
-            if (!allowed.test(e.key)) {
-                noUse();
-                return;
-            }
-
+            if (!isSearchHovered) return;
+            e.preventDefault();
             switch (e.key) {
                 case "ArrowDown":
                     setInsertingMode(InsertingMode.TAG);
@@ -61,16 +59,46 @@ const ImageSearch: React.FC<SearchOverlayProps> = ({ isHovered, onQueryChange })
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [insertingMode]);
+    }, [isSearchHovered]);
 
-    let tagElements = tags.map((tag, index) => <span key={index} className="bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm cursor-pointer">{tag.name}</span>);
+    const removeTag = (tag: Tag) => {
+        setTags(tags.filter((t) => t !== tag));
+    }
+
+    const tagElements = tags.map((tag, index) => <TagElement key={index} tag={tag} removeTag={removeTag} />);
+
+    const selected = isGalleryHovered || isSearchHovered;
 
     return (
-        <div className="p-4 flex flex-col items-center justify-center">
-            <NameSelector selected={isHovered && insertingMode === InsertingMode.NAME} name={name} onUpdateName={onNameUpdated} />
-            <TagSelector selected={isHovered && insertingMode === InsertingMode.TAG} tags={tags} onTagsUpdate={onTagsUpdate} />
-            <div className="flex flex-row gap-2">{tagElements}</div>
-        </div>
+        <div className="flex flex-col justify-center gap-2">
+            <div className="flex items-center gap-2">
+                <span
+                    className={
+                        `px-2 border-1 rounded-2xl hover:cursor-pointer 
+                        ${insertingMode === InsertingMode.NAME ? "bg-surface-0/50 border-primary-0" : "border-transparent"}`
+                    }
+                    onClick={() => setInsertingMode(InsertingMode.NAME)}
+                >
+                    name
+                </span>
+                <NameSelector selected={selected && insertingMode === InsertingMode.NAME} name={name} onUpdateName={onNameUpdated} />
+            </div>
+            <div>
+                <div className="flex">
+                    <span
+                        className={
+                            `px-2 text-2xl border-1 rounded-2xl hover:cursor-pointer 
+                            ${insertingMode === InsertingMode.TAG ? "bg-surface-0/50 border-primary-0" : "border-transparent"}`
+                        }
+                        onClick={() => setInsertingMode(InsertingMode.TAG)}
+                    >
+                        #
+                    </span>
+                    {tagElements}
+                    <TagSelector selected={selected && insertingMode === InsertingMode.TAG} tags={tags} onTagsUpdate={onTagsUpdate} />
+                </div>
+            </div>
+        </div >
     )
 }
 export { type SearchQuery, ImageSearch };

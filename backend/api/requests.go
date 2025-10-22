@@ -40,7 +40,7 @@ func MustInitReqHandler(models *models.Models) *RequestHandler {
 // @Param   query query string true "search-query"
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/search-tags/{query} [get]
+// @Router /search-tags/{query} [get]
 func (rh *RequestHandler) GetSearchTagsRequest(c *gin.Context) {
 	query := c.Param("query")
 
@@ -82,7 +82,7 @@ func (rh *RequestHandler) GetTagAutoCompleteRequest(c *gin.Context) {
 // @Param   limit query string true "limit"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
-// @Router /api/v1/images [get]
+// @Router /images [get]
 func (rh *RequestHandler) GetImagesRequest(c *gin.Context) {
 	cursor, limit, err := parseCursorLimit(c)
 	if err != nil {
@@ -107,7 +107,7 @@ func (rh *RequestHandler) GetImagesRequest(c *gin.Context) {
 // @Param   name query string true "name"
 // @Failure 200 {object} map[string]interface{}
 // @Failure 404 {object} ErrorResponse
-// @Router /api/v1/image/{name} [get]
+// @Router image/{name} [get]
 func (rh *RequestHandler) GetImageByNameRequest(c *gin.Context) {
 	req := c.Param("name")
 
@@ -129,7 +129,7 @@ func (rh *RequestHandler) GetImageByNameRequest(c *gin.Context) {
 // @Param   name query string true "name"
 // @Failure 200 {object} map[string]interface{}
 // @Failure 404 {object} ErrorResponse
-// @Router /api/v1/raw-image/{name} [get]
+// @Router raw-image/{name} [get]
 func (rh *RequestHandler) GetRawImageByNameRequest(c *gin.Context) {
 	req := c.Param("name")
 	println("name" + req)
@@ -151,11 +151,13 @@ func (rh *RequestHandler) GetImageByQueryRequest(c *gin.Context) {
 	}
 
 	queryString := c.Query("query")
-	var query models.ImageQuery
-	err = json.Unmarshal([]byte(queryString), &query)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
+	var query models.ImageQuery = models.EmptyQuery()
+	if queryString != "" {
+		err = json.Unmarshal([]byte(queryString), &query)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
 	}
 
 	images, err := rh.models.Images.SearchImages(query, cursor, limit)
@@ -176,7 +178,7 @@ func (rh *RequestHandler) GetImageByQueryRequest(c *gin.Context) {
 // @Param   limit query string true "limit"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
-// @Router /api/v1/audit-logs [get]
+// @Router /log [get]
 func (rh *RequestHandler) GetAuditLogEntriesRequest(c *gin.Context) {
 	cursor, limit, err := parseCursorLimit(c)
 	if err != nil {
@@ -209,7 +211,7 @@ type UserDataResponce struct {
 // @Param   username path string true "username"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
-// @Router /api/v1/user/{username} [get]
+// @Router /user/{username} [get]
 func (rh *RequestHandler) GetUserRequest(c *gin.Context) {
 	username := c.Param("username")
 	if username == "" {
@@ -256,7 +258,7 @@ func (rh *RequestHandler) GetProfileRequest(c *gin.Context) {
 // @Failure 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/upload [post]
+// @Router /upload [post]
 func (rh *RequestHandler) PostImageRequest(c *gin.Context) {
 	type ImageRequest struct {
 		Name string   `json:"name"`

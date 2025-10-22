@@ -1,7 +1,7 @@
 "use client";
-import React, { use, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Tag } from '../PostImage/TagSelector';
-import { noUse } from '@/app/ AudioEffects';
+import { noUse } from '@/app/AudioEffects';
 import useTypingHints from '@/app/hooks/useTypingHints';
 
 interface TagSelectorProps {
@@ -48,14 +48,15 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
         }
     }
 
-    const write = () => {
+    const write = async () => {
         if (hint.length <= 0 || tags.some(tag => tag.name === hint)) {
             noUse();
             return;
         }
 
-        let tagsQuery = tags.concat({ name: hint });
         setTagField("");
+        await new Promise(resolve => setTimeout(resolve, 0));
+        let tagsQuery = tags.concat({ name: hint });
         onTagsUpdate(tagsQuery);
     }
 
@@ -123,9 +124,9 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
     }, [selected, difference]);
 
     return (
-        <div>
-            <span className={`text-5xl ${hint.length > 0 ? "text-amber-200" : "text-primary-10"}`}>{tagField}</span>
-            <span className="text-5xl text-primary-10 opacity-50">{difference}</span>
+        <div className="flex flex-row items-center px-3">
+            <span className={`text-lg ${hint.length > 0 ? "text-amber-200" : "text-primary-10"}`}>{tagField}</span>
+            <span className="opacity-50 text-primary-10 text-lg">{difference}</span>
         </div>
     )
 }

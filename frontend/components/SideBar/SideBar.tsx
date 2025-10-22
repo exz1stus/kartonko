@@ -1,11 +1,12 @@
 "use client";
-import React, { useRef } from 'react'
 import Dropdown from '../template/Dropdown';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { useHover } from '@/app/contexts/HoverContex';
 
 const SideBar: React.FC = () => {
     const auth = useAuth();
+    const { ref } = useHover();
 
     const authed = auth.user !== null ? (
         <Link href="/me" >Profile</Link>
@@ -13,12 +14,12 @@ const SideBar: React.FC = () => {
 
     const moderator = auth.user?.privileage === "Moderator" ? (
         <Dropdown text="Moderator" open={true}>
-            <div className="hover:cursor-pointer">Audit Log</div>
+            <Link href="/log" >Log</Link>
         </Dropdown>
     ) : null;
 
     return (
-        <aside className="h-full flex flex-col gap-5 px-4">
+        <aside ref={ref} className="flex flex-col items-center gap-5 bg-surface-0/80 backdrop-filter backdrop-blur-md px-4 w-full h-full">
             <Dropdown text="" open={true}>
                 <Link href="/" >Home</Link>
                 {authed}

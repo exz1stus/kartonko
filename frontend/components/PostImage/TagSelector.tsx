@@ -90,7 +90,7 @@ export function TagSelector({
 
             <div className="flex flex-wrap gap-2 max-w-[50vh]">
                 {tags.length > 0 ? (
-                    tags.slice(0, 100000).map((tag) => (
+                    tags.slice(0, 10).map((tag) => (
                         <button
                             key={tag.name}
                             onClick={() => addTag(tag)}

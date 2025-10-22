@@ -1,5 +1,5 @@
-import { useCallback } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 const useAuthFetch = () => {
     const auth = useAuth();
@@ -9,8 +9,8 @@ const useAuthFetch = () => {
             try {
                 const res = await fetch(input, {
                     ...init,
-                    credentials: 'include',
-                })
+                    credentials: "include",
+                });
 
                 if (res.status === 401 || res.status === 403) {
                     auth.login();
@@ -18,15 +18,14 @@ const useAuthFetch = () => {
                 }
 
                 return res;
-            }
-            catch (err) {
+            } catch (err) {
                 throw err;
             }
         },
-        [],
-    )
+        []
+    );
 
-    return authFetch
-}
+    return authFetch;
+};
 
-export default useAuthFetch
+export default useAuthFetch;

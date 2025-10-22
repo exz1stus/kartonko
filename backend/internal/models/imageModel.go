@@ -28,11 +28,16 @@ type ImageQuery struct {
 	WithTags     []string `json:"withTags"`
 }
 
+func EmptyQuery() ImageQuery {
+	return ImageQuery{
+		NameContains: "",
+		WithTags:     []string{},
+	}
+}
+
 func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]Image, error) {
 	var images []Image
 	result := model.db.Model(&Image{}).Order("id desc")
-
-	println(query.NameContains)
 
 	if query.NameContains != "" {
 		result = result.Where("filename LIKE ?", "%"+query.NameContains+"%").Find(&images)
@@ -41,10 +46,10 @@ func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) (
 	if len(query.WithTags) > 0 {
 		result = result.
 			Joins("JOIN image_tags ON image_tags.image_id = images.id").
-			Joins("JOIN tags ON tags.id = image_tags.tag_id").
+			Joins("JOIN tags ON tags.name = image_tags.tag_name").
 			Where("tags.name IN ?", query.WithTags).
 			Group("images.id").
-			Having("COUNT(DISTINCT tags.id) = ?", len(query.WithTags)).
+			Having("COUNT(DISTINCT tags.name) = ?", len(query.WithTags)).
 			Find(&images)
 	}
 

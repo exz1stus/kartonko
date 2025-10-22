@@ -29,13 +29,11 @@ func (app *Application) initRoutes() {
 
 	r.GET("/image/:name", rh.GetImageByNameRequest)
 	r.GET("/raw-image/:name", rh.GetRawImageByNameRequest)
-	r.GET("/images", rh.GetImagesRequest)
-	r.GET("/search-images", rh.GetImageByQueryRequest)
+	r.GET("/images", rh.GetImageByQueryRequest)
+	r.GET("/auditlog", rh.GetAuditLogEntriesRequest)
 
 	r.GET("/search-tags/:query", rh.GetSearchTagsRequest)
 	r.GET("/autocomplete-tag", rh.GetTagAutoCompleteRequest)
-
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.POST("auth/login", rh.LoginRequest)
 	r.POST("auth/register", rh.RegisterRequest)
@@ -50,4 +48,6 @@ func (app *Application) initRoutes() {
 		authGroup.GET("/me", rh.GetProfileRequest)
 		authGroup.POST("/upload", rh.PostImageRequest)
 	}
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { ImageData, ImageCard } from './ImageCard'
 import { SearchQuery, ImageSearch } from './ImageSearch';
 import { useDebounce, useDebouncedValue } from '@/app/hooks/useDebounce';
@@ -7,10 +7,11 @@ import Scrollbar from '../template/Scrollbar';
 import DragDropZone from '@/components/PostImage/DragDropZone';
 import useUploadModal from '../PostImage/useUploadModal';
 import UploadModal from '../PostImage/UploadModal';
+import { useHover } from '@/app/contexts/HoverContex';
+import useFullscreen from '@/app/hooks/useFullscreen';
 
 interface ImagesResponse {
     imageData: ImageData[]
-    end: boolean
 }
 
 const EMPTY_QUERY: SearchQuery = {
@@ -18,84 +19,104 @@ const EMPTY_QUERY: SearchQuery = {
     withTags: []
 }
 
+const REQUEST_SIZE = 30;
+
 //TODO : search to searchComponent + useSearch
-const Gallery = () => {
+const Gallery: React.FC = () => {
     const [images, setImages] = useState<ImageData[]>([]);
     const [cursor, setCursor] = useState<number>(0);
-    const [loading, setLoading] = useState<boolean>(false);
     const [reachedEnd, setReachedEnd] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(EMPTY_QUERY);
+    const loading = useRef<boolean>(false);
+    const firstRender = useRef(true);
 
-    const [isHovered, setIsHovered] = useState<boolean>(false);
+    const galleryHover = useHover<HTMLDivElement>();
+    const searchHover = useHover<HTMLDivElement>();
 
-    const requestSize = 30;
     const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
-
     const debouncedQuery = useDebouncedValue(searchQuery, 200);
-
-    useEffect(() => {
-        searchImages(debouncedQuery, 0);
-    }, [debouncedQuery]);
 
     const handleSearch = (query: SearchQuery) => {
         setCursor(0);
         setImages([]);
+        setReachedEnd(false);
         setSearchQuery(query);
     };
 
     const { recievedImages, handleClose, handleDroppedFiles, handleUploaded } = useUploadModal();
 
-    const searchImages = async (searchQuery: SearchQuery, cursor: number) => {
-        if (loading) return;
-        setLoading(true);
+    const isQueryEmpty = (query: SearchQuery) =>
+        query.nameContains === "" && query.withTags.length === 0;
+
+    useEffect(() => {
+        fetchImages(EMPTY_QUERY, 0);
+    }, []);
+
+    useEffect(() => {
+        if (cursor === 0 && isQueryEmpty(debouncedQuery) && firstRender.current) return;
+        firstRender.current = false;
+        fetchImages(debouncedQuery, cursor);
+    }, [cursor, debouncedQuery]);
+
+    const fetchImages = async (searchQuery: SearchQuery, cursor: number) => {
+        if (loading.current || reachedEnd) return;
+        loading.current = true;
+
         try {
-            const response = await fetch(`${API_ORIGIN}/search-images?query=${JSON.stringify(searchQuery)}&cursor=${cursor}&limit=${requestSize}`);
-            if (response.ok) {
-                const parsedImages: ImagesResponse = await response.json();
-                if (parsedImages.end) {
-                    setReachedEnd(true);
-                    return;
-                }
-                setImages((prev) => [...prev, ...parsedImages.imageData]);
-                setCursor(cursor);
-            }
-        } catch (error) {
+            const queryString = isQueryEmpty(debouncedQuery) ? "" : `query=${JSON.stringify(searchQuery)}&`;
+            const response = await fetch(`${API_ORIGIN}/images?${queryString}&cursor=${cursor}&limit=${REQUEST_SIZE}`);
+            if (!response.ok) throw new Error("Failed to fetch images");
+
+            const parsedImages: ImagesResponse = await response.json();
+            if (parsedImages.imageData.length < REQUEST_SIZE) setReachedEnd(true);
+
+            setImages((prev) => [...prev, ...parsedImages.imageData]);
+        }
+        catch (error) {
             console.error("Error fetching images:", error);
         } finally {
-            setLoading(false);
-            console.log(images.length);
+            loading.current = false;
         }
     };
 
-    const handleGalleryScroll =
-        useDebounce(() => {
-            if (!reachedEnd && window.innerHeight + window.scrollY >= document.body.offsetHeight * 0.8) {
-                searchImages(searchQuery, cursor + requestSize);
-            }
-        }, 100);
+    const handleGalleryScroll = useCallback(useDebounce(() => {
+        if (loading.current || reachedEnd) return;
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const threshold = document.body.offsetHeight * 0.8;
+        if (scrollPosition >= threshold) {
+            setCursor(prev => prev + REQUEST_SIZE);
+        }
+    }, 100), [reachedEnd]);
 
-    const ImageCards = images?.length ? images.map((image, index) => (
+    const imageCards = images.map((image, index) => (
         <ImageCard key={index} filename={image.filename} tags={image.tags} />
-    )) : null;
+    ));
+
+    const isFullscreen = useFullscreen();
+
+    const gallery = !isFullscreen ? (
+        <div className="p-4">
+            <div className="flex flex-wrap justify-evenly gap-5">
+                {imageCards}
+            </div>
+        </div>
+    ) : (
+        <div className="grid grid-cols-12 w-full">
+            {imageCards}
+        </div>
+    )
 
     return (
-        <div
-            className="h-full"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            <div className="flex-shrink-0 border-b p-4 bg-surface-10">
-                <ImageSearch isHovered={isHovered} onQueryChange={handleSearch} />
+        <div className="flex flex-col h-full">
+            <div ref={searchHover.ref} className="flex-shrink-0 p-4 border-b">
+                <ImageSearch isGalleryHovered={galleryHover.isHovered()} isSearchHovered={searchHover.isHovered()} onQueryChange={handleSearch} />
             </div>
-            <div className="flex-1 overflow-hidden">
+            <UploadModal images={recievedImages} onClose={handleClose} onUploaded={handleUploaded} />
+            <div ref={galleryHover.ref} className="flex-1 overflow-hidden">
                 <DragDropZone onFilesDropped={handleDroppedFiles}>
                     <Scrollbar onScroll={handleGalleryScroll}>
-                        <div className="p-4">
-                            <div className="flex flex-wrap justify-evenly gap-5">
-                                {ImageCards}
-                            </div>
-                        </div>
-                        <div className="border-t flex justify-center p-4">
+                        {gallery}
+                        <div className={`${imageCards.length > 0 ? "border-t" : ""} flex justify-center p-4`}>
                             {loading.current && <div>Loading...</div>}
                             {reachedEnd && <div>End of images</div>}
                         </div>

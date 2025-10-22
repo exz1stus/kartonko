@@ -4,9 +4,11 @@ import LoginButton from './LoginButton'
 
 const NavBar = () => {
     return (
-        <nav className="border-b-1 border-surface-20 z-10 sticky top-0 p-2 w-full flex items-center justify-between bg-surface-0">
+        <nav
+            className="top-0 z-10 sticky flex justify-between items-center bg-surface-0/80 backdrop-filter backdrop-blur-md p-2 border-surface-20 border-b w-full"
+        >
             <MenuButton />
-            <span className="text-2xl font-bold">kartonko</span>
+            <span className="font-bold text-2xl">kartonko</span>
             <LoginButton />
         </nav>
     )

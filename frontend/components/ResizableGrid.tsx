@@ -27,16 +27,15 @@ const ResizableGrid = ({ children }: { children: ReactNode }) => {
                 maxSize={40}
                 onCollapse={() => setOpen(false)}
                 onExpand={() => setOpen(true)}
-                className="bg-surface-0"
             >
                 <Scrollbar>
-                    <div className="h-full flex justify-center">
+                    <div className="flex justify-center h-full">
                         <SideBar />
                     </div>
                 </Scrollbar>
             </ResizablePanel>
-            <ResizableHandle className="border-r-1 border-surface-20" />
-            <ResizablePanel className="h-full">
+            <ResizableHandle className="border-surface-20 border-r-1" />
+            <ResizablePanel defaultSize={95} className="h-full overflow-hidden">
                 {children}
             </ResizablePanel>
         </ResizablePanelGroup>
