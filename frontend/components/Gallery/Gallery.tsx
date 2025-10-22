@@ -84,18 +84,25 @@ const Gallery = () => {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <ImageSearch isHovered={isHovered} onQueryChange={handleSearch} />
-            <DragDropZone onFilesDropped={handleDroppedFiles}>
-                <Scrollbar onScroll={handleGalleryScroll}>
-                    <UploadModal images={recievedImages} onClose={handleClose} onUploaded={handleUploaded} />
-                    <div className=" p-4">
-                        <div className="flex flex-wrap justify-evenly gap-5">
-                            {ImageCards}
+            <div className="flex-shrink-0 border-b p-4 bg-surface-10">
+                <ImageSearch isHovered={isHovered} onQueryChange={handleSearch} />
+            </div>
+            <div className="flex-1 overflow-hidden">
+                <DragDropZone onFilesDropped={handleDroppedFiles}>
+                    <Scrollbar onScroll={handleGalleryScroll}>
+                        <div className="p-4">
+                            <div className="flex flex-wrap justify-evenly gap-5">
+                                {ImageCards}
+                            </div>
                         </div>
-                    </div>
-                </Scrollbar>
-            </DragDropZone>
-        </div>
+                        <div className="border-t flex justify-center p-4">
+                            {loading.current && <div>Loading...</div>}
+                            {reachedEnd && <div>End of images</div>}
+                        </div>
+                    </Scrollbar>
+                </DragDropZone>
+            </div>
+        </div >
     )
 }
 
