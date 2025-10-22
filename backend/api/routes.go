@@ -28,7 +28,7 @@ func (app *Application) initRoutes() {
 	r.GET("/user/:username", rh.GetUserRequest)
 
 	r.GET("/image/:name", rh.GetImageByNameRequest)
-	r.GET("/raw-image/:name", rh.GetRawImageByNameRequest)
+	r.GET("/raw-imagea/:name", rh.GetRawImageByNameRequest)
 	r.GET("/images", rh.GetImageByQueryRequest)
 	r.GET("/auditlog", rh.GetAuditLogEntriesRequest)
 

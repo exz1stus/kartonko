@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import PostImageForm from "./PostImageForm";
 import FancySpan from "@/components/FancySpan";
+import Image from "next/image";
 
 interface PostImageModalProps {
     images?: File[];
@@ -48,14 +49,16 @@ const UploadModal: React.FC<PostImageModalProps> = ({ images = [], onUploaded, o
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm overflow-hidden">
-            <div className="flex flex-row rounded-2xl bg-surface-0/95 h-[50vh]" onWheel={handleWheel}>
-                <img
+        <div className="z-50 fixed inset-0 flex justify-center items-center backdrop-blur-sm overflow-hidden">
+            <div className="flex flex-row bg-surface-0/95 rounded-2xl h-[50vh]" onWheel={handleWheel}>
+                <Image
                     src={URL.createObjectURL(images[imageIndex])}
                     alt={images[imageIndex].name}
-                    className="max-w-full object-contain rounded-l-2xl"
+                    className="rounded-l-2xl max-w-full object-contain"
+                    width={256}
+                    height={256}
                 />
-                <div className="p-8 flex flex-col gap-10">
+                <div className="flex flex-col gap-10 p-8">
                     <div className="flex justify-between">
                         <FancySpan word={images[imageIndex].name} />
                         <div

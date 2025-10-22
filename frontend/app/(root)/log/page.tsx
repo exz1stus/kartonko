@@ -8,12 +8,12 @@ interface LogEntry {
     data: string;
 }
 
-const API_LOCAL = process.env.NEXT_PUBLIC_API_LOCAL;
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
 const Log = async () => {
     const user = await getUserServer();
 
-    const res = await fetch(`${API_LOCAL}/auditlog?cursor=0&limit=10`, { method: "GET" });
+    const res = await fetch(`${API_ORIGIN}/auditlog?cursor=0&limit=10`, { method: "GET" });
     const log: { entries: LogEntry[] } = await res.json();
     const entries = log.entries.map((entry: LogEntry, index: number) => (
         <div key={index}>

@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useRef } from 'react'
 import LogoutButton from './LogoutButton';
 import { UserData } from '@/app/contexts/AuthContext';
 import UsernameButton from './UsernameButton';
 import { useClickOutside } from '@/app/hooks/useClickOutside';
+import Image from 'next/image';
 
 interface UserModalProps {
     user: UserData;
@@ -20,10 +21,16 @@ const UserModal: React.FC<UserModalProps> = ({ user, shown, onClose }: UserModal
     }
 
     return (
-        <div ref={modalRef} className="fixed top-0 right-0 bg-surface-10 border-surface-30 border-1 rounded-l">
-            <div className="flex flex-col gap-2 p-2 pr-10 pl-10 justify-center items-center">
+        <div ref={modalRef} className="top-0 right-0 fixed bg-surface-10 border-1 border-surface-30 rounded-l">
+            <div className="flex flex-col justify-center items-center gap-2 p-2 pr-10 pl-10">
                 <div className="rounded-full">
-                    <img src={user.picture_url} className="h-10 w-10 rounded-full" alt="User picture" />
+                    <Image
+                        src={user.picture_url}
+                        className="rounded-full w-10 h-10"
+                        alt="User picture"
+                        width={256}
+                        height={256}
+                    />
                 </div>
                 <UsernameButton username={user.username} />
                 <LogoutButton />

@@ -8,9 +8,9 @@ const LoginButton: React.FC = () => {
 
     if (!user) {
         return (
-            <button onClick={async () => await login()}>
+            <button onClick={async () => await login()} className="w-auto h-10">
                 <span>Log in</span>
-            </button>
+            </button >
         );
     }
 

@@ -1,7 +1,7 @@
-import Gallery from "@/components/Gallery/Gallery";
+import GalleryServer from "@/components/Gallery/GalleryServer";
 
 export default function Home() {
     return (
-        <Gallery />
+        <GalleryServer initialFetchSize={30} />
     );
 }

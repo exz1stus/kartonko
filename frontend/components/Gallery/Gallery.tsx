@@ -10,19 +10,22 @@ import UploadModal from '../PostImage/UploadModal';
 import { useHover } from '@/app/contexts/HoverContex';
 import useFullscreen from '@/app/hooks/useFullscreen';
 
-interface ImagesResponse {
-    imageData: ImageData[]
-}
-
+const REQUEST_SIZE = 30;
 const EMPTY_QUERY: SearchQuery = {
     nameContains: "",
     withTags: []
 }
 
-const REQUEST_SIZE = 30;
+interface ImagesResponse {
+    imageData: ImageData[]
+}
+
+interface Props {
+    initialImages: ImageData[]
+}
 
 //TODO : search to searchComponent + useSearch
-const Gallery: React.FC = () => {
+const Gallery: React.FC<Props> = ({ initialImages }) => {
     const [images, setImages] = useState<ImageData[]>([]);
     const [cursor, setCursor] = useState<number>(0);
     const [reachedEnd, setReachedEnd] = useState<boolean>(false);
@@ -48,16 +51,6 @@ const Gallery: React.FC = () => {
     const isQueryEmpty = (query: SearchQuery) =>
         query.nameContains === "" && query.withTags.length === 0;
 
-    useEffect(() => {
-        fetchImages(EMPTY_QUERY, 0);
-    }, []);
-
-    useEffect(() => {
-        if (cursor === 0 && isQueryEmpty(debouncedQuery) && firstRender.current) return;
-        firstRender.current = false;
-        fetchImages(debouncedQuery, cursor);
-    }, [cursor, debouncedQuery]);
-
     const fetchImages = async (searchQuery: SearchQuery, cursor: number) => {
         if (loading.current || reachedEnd) return;
         loading.current = true;
@@ -78,6 +71,17 @@ const Gallery: React.FC = () => {
             loading.current = false;
         }
     };
+
+    useEffect(() => {
+        setImages(initialImages);
+        setCursor(prev => prev + initialImages.length);
+    }, []);
+
+    useEffect(() => {
+        if (cursor === 0 && isQueryEmpty(debouncedQuery) && firstRender.current) return;
+        firstRender.current = false;
+        fetchImages(debouncedQuery, cursor);
+    }, [cursor, debouncedQuery]);
 
     const handleGalleryScroll = useCallback(useDebounce(() => {
         if (loading.current || reachedEnd) return;

@@ -8,7 +8,7 @@ export interface UserData {
     last_seen: string;
 }
 
-const API_LOCAL = process.env.NEXT_PUBLIC_API_LOCAL;
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
 export async function getUserServer(): Promise<UserData | null> {
     try {
@@ -18,7 +18,7 @@ export async function getUserServer(): Promise<UserData | null> {
             .map((c) => `${c.name}=${c.value}`)
             .join("; ");
 
-        const res = await fetch(`${API_LOCAL}/me`, {
+        const res = await fetch(`${API_ORIGIN}/me`, {
             headers: {
                 cookie: cookieHeader,
             },
