@@ -2,6 +2,7 @@ import React from 'react'
 import { UserData } from '@/app/contexts/AuthContext';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import GalleryServer from '@/components/Gallery/GalleryServer';
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
@@ -49,7 +50,7 @@ const UserPage = async ({ params }: { params: Promise<{ username: string }> }) =
                 </div>
             </div>
             <div className="flex-5">
-                <h1>user page</h1>
+                <GalleryServer initialFetchSize={50} />
             </div>
         </div>
     )

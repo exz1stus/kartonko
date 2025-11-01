@@ -20,7 +20,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: frontend
     env_file:
-      - ./frontend/.env.development
+      - ./frontend/.env
     volumes:
       - ./frontend:/app
     command: npm run dev

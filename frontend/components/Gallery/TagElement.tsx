@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Tag } from "../PostImage/TagSelector";
 
 interface Props {
-    tag: Tag;
-    removeTag: (tag: Tag) => void;
+    tag: string;
+    removeTag: (tag: string) => void;
 }
 
 const TagElement: React.FC<Props> = ({ tag, removeTag }) => {
@@ -40,7 +39,7 @@ const TagElement: React.FC<Props> = ({ tag, removeTag }) => {
             onMouseLeave={() => setHovered(false)}
             onClick={handleOnClick}
         >
-            {tag.name}
+            {tag}
         </div>
     );
 };

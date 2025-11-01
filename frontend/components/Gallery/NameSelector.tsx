@@ -1,13 +1,7 @@
 import { noUse } from '@/app/AudioEffects'
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 
-interface NameSelectorProps {
-    selected: boolean
-    name: string
-    onUpdateName: (name: string) => void
-}
-
-const NameSelector: React.FC<NameSelectorProps> = ({ selected, name, onUpdateName }) => {
+const useNameSelector = (selected: boolean, name: string, onNameUpdated: (name: string) => void) => {
     const onNameKeyDown = (e: KeyboardEvent) => {
         const allowed = /^[a-z0-9\s]+$/i;
         if (!allowed.test(e.key)) {
@@ -35,7 +29,7 @@ const NameSelector: React.FC<NameSelectorProps> = ({ selected, name, onUpdateNam
                 break;
         }
 
-        onUpdateName(nameQuery);
+        onNameUpdated(nameQuery);
     }
 
     useEffect(() => {
@@ -48,11 +42,7 @@ const NameSelector: React.FC<NameSelectorProps> = ({ selected, name, onUpdateNam
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [onNameKeyDown, selected]);
 
-    return (
-        <div>
-            <span className="text-3xl">{name.toLowerCase()}</span>
-        </div>
-    )
+    return onNameUpdated;
 }
 
-export default NameSelector
+export default useNameSelector;

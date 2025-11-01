@@ -17,36 +17,7 @@ info:
   title: kartonko API
   version: "1.0"
 paths:
-  /api/v1/audit-logs:
-    get:
-      description: Returns a list of "limit" audit log entries from "cursor"
-      parameters:
-      - description: cursor
-        in: query
-        name: cursor
-        required: true
-        type: string
-      - description: limit
-        in: query
-        name: limit
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.ErrorResponse'
-      summary: Gets audit log entries by given range
-      tags:
-      - AuditLog
-  /api/v1/auth/login:
+  /auth/login:
     post:
       consumes:
       - application/json
@@ -77,7 +48,7 @@ paths:
       summary: Login a user
       tags:
       - Auth
-  /api/v1/auth/logout:
+  /auth/logout:
     post:
       consumes:
       - application/json
@@ -93,7 +64,7 @@ paths:
       summary: Logout a user
       tags:
       - Auth
-  /api/v1/auth/register:
+  /auth/register:
     post:
       consumes:
       - application/json
@@ -124,9 +95,26 @@ paths:
       summary: Register a user
       tags:
       - Auth
-  /api/v1/image/{name}:
+  /health:
     get:
-      description: Searches images by unique name
+      description: Returns "ok" if server is up and running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Health check
+      tags:
+      - HealthCheck
+  /image/{name}:
+    get:
       parameters:
       - description: name
         in: query
@@ -135,7 +123,6 @@ paths:
         type: string
       produces:
       - application/json
-      - ' application/octet-stream'
       responses:
         "200":
           description: OK
@@ -146,12 +133,48 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/main.ErrorResponse'
-      summary: Searches image by name
+      summary: Returns imageData by it's unique name
       tags:
       - Image
-  /api/v1/images:
+  /images:
     get:
-      description: Gets images from a global list by range
+      description: Returns a list of images at "cursor + limit" matching the "query"
+      parameters:
+      - description: query
+        in: query
+        name: query
+        type: string
+      - description: cursor
+        in: query
+        name: cursor
+        type: integer
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Searches images by given query
+      tags:
+      - Image
+  /log:
+    get:
+      description: Returns a list of log entries at "cursor + limit" matching the
+        "query"
       parameters:
       - description: cursor
         in: query
@@ -165,7 +188,6 @@ paths:
         type: string
       produces:
       - application/json
-      - ' application/octet-stream'
       responses:
         "200":
           description: OK
@@ -176,18 +198,46 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/main.ErrorResponse'
-      summary: Gets images by range
+      summary: Gets audit log entries by given range
+      tags:
+      - AuditLog
+  /raw-image/{name}:
+    get:
+      parameters:
+      - description: name
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
+      summary: Returns image file by its unique name
       tags:
       - Image
-  /api/v1/search-tags/{query}:
+  /tags:
     get:
-      description: Searches all matching tags
+      description: Returns a list of tags at "cursor + limit" matching the "query"
       parameters:
-      - description: search-query
+      - description: query
         in: query
         name: query
         required: true
         type: string
+      - description: limit
+        in: query
+        name: limit
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -196,14 +246,18 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/main.ErrorResponse'
-      summary: Searches tags
+      summary: Searches tags by given query
       tags:
       - Tags
-  /api/v1/upload:
+  /upload:
     post:
       consumes:
       - application/json
@@ -230,7 +284,7 @@ paths:
       summary: Uploads image
       tags:
       - Image
-  /api/v1/user/{username}:
+  /user/{username}:
     get:
       parameters:
       - description: username
@@ -250,7 +304,7 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/main.ErrorResponse'
-      summary: Gets user data by username
+      summary: Returns user's data by username
       tags:
       - User
 securityDefinitions:

@@ -8,7 +8,7 @@ import (
 	"server/internal/env"
 	"server/internal/models"
 
-	_ "server/internal/docs"
+	_ "server/docs"
 
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 )

@@ -17,9 +17,9 @@ const ImageCardServer: React.FC<Props> = ({ filename, tags }) => {
             <Image
                 src={`${API_ORIGIN}/raw-image/${filename}`}
                 alt={filename}
-                className="rounded-t-xl w-auto h-[25vh] object-cover"
-                width={250}
-                height={250}
+                className="rounded-t-xl w-full h-[25vh]"
+                width={640}
+                height={640}
             />
             <span className="px-2 max-w-[20ch] text-2xl truncate">{filename}</span>
         </div>

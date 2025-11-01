@@ -62,7 +62,7 @@ func (rh *RequestHandler) GetUserFromContext(c *gin.Context) (*models.User, erro
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/auth/login [post]
+// @Router /auth/login [post]
 func (rh *RequestHandler) LoginRequest(c *gin.Context) {
 	var input authRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -103,7 +103,7 @@ var JWT_COOKIE_MAX_AGE = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/auth/register [post]
+// @Router /auth/register [post]
 func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
 	var input authRequest
 
@@ -151,7 +151,7 @@ func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/auth/logout [post]
+// @Router /auth/logout [post]
 func (rh *RequestHandler) LogoutRequest(c *gin.Context) {
 	c.SetCookie("jwt", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"logout": true})

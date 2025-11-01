@@ -22,7 +22,7 @@ const SideBarPanel = () => {
             ref={sidebarPanRef}
             collapsible
             minSize={5}
-            defaultSize={5}
+            defaultSize={7}
             maxSize={40}
             onCollapse={() => setOpen(false)}
             onExpand={() => setOpen(true)}

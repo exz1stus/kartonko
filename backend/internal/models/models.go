@@ -31,6 +31,11 @@ func MustInitStorageSqlite() *Models {
 	}
 
 	tags := &TagModel{db: db}
+	err = tags.RegisterAutoTags()
+	if err != nil {
+		panic(fmt.Sprintf("failed to register auto tags: %v", err.Error()))
+	}
+
 	users := &UserModel{db: db}
 	log := &AuditLog{db: db}
 	models := &Models{

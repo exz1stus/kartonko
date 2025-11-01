@@ -1,7 +1,9 @@
 package models
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"gorm.io/gorm"
 )
@@ -14,7 +16,24 @@ type TagModel struct {
 	db *gorm.DB
 }
 
-func (model *TagModel) AutoCompleteTag(query string, limit int) ([]Tag, error) {
+func (model *TagModel) RegisterAutoTags() error {
+	autoTagsFile, err := os.Open("autotags.txt")
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(autoTagsFile)
+	for scanner.Scan() {
+		tagName := scanner.Text()
+		if tagName != "" {
+			model.AddTag(tagName)
+		}
+	}
+
+	defer autoTagsFile.Close()
+	return nil
+}
+
+func (model *TagModel) SearchTags(query string, limit int) ([]Tag, error) {
 	var tags []Tag
 	result := model.db.Model(&Tag{}).Where("name LIKE ?", query+"%").Limit(limit).Find(&tags)
 	if result.Error != nil {
@@ -43,15 +62,6 @@ func (model *TagModel) AddTag(tag string) error {
 		return fmt.Errorf("failed to insert tag: %v", result.Error)
 	}
 	return nil
-}
-
-func (model *TagModel) SearchTags(query string) ([]Tag, error) {
-	var tags []Tag
-	result := model.db.Model(&Tag{}).Where("name LIKE ?", "%"+query+"%").Find(&tags)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return tags, nil
 }
 
 func (model *TagModel) CheckTags(tags []Tag) error {

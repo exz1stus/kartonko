@@ -32,40 +32,35 @@ func MustInitReqHandler(models *models.Models) *RequestHandler {
 	return &rh
 }
 
-// GetSearchTagsRequest godoc
-// @Summary Searches tags
-// @Description Searches all matching tags
-// @Tags Tags
+// @Summary Health check
+// @Description Returns "ok" if server is up and running
+// @Tags HealthCheck
 // @Produce  json
-// @Param   query query string true "search-query"
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} ErrorResponse
-// @Router /search-tags/{query} [get]
-func (rh *RequestHandler) GetSearchTagsRequest(c *gin.Context) {
-	query := c.Param("query")
-
-	tags, err := rh.models.Tags.SearchTags(query)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	if len(tags) == 0 {
-		c.JSON(http.StatusOK, gin.H{"response": "no tags found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"tags": tags})
+// @Router /health [get]
+func (rh *RequestHandler) GetHealthCheckRequest(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func (rh *RequestHandler) GetTagAutoCompleteRequest(c *gin.Context) {
+// @Summary Searches tags by given query
+// @Description Returns a list of tags at "cursor + limit" matching the "query"
+// @Tags Tags
+// @Produce  json
+// @Param   query query string true "query"
+// @Param   limit query int true "limit"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /tags [get]
+func (rh *RequestHandler) GetTagsRequest(c *gin.Context) {
 	query := c.Query("query")
 	limit, err := strconv.Atoi(c.Query("limit"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "failed to parse limit"})
 		return
 	}
-	tags, err := rh.models.Tags.AutoCompleteTag(query, limit)
+	tags, err := rh.models.Tags.SearchTags(query, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -73,43 +68,16 @@ func (rh *RequestHandler) GetTagAutoCompleteRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": tags})
 }
 
-// GetImagesRequest godoc
-// @Summary Gets images by range
-// @Description Gets images from a global list by range
-// @Tags Image
-// @Produce  application/json, application/octet-stream
-// @Param   cursor query string true "cursor"
-// @Param   limit query string true "limit"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} ErrorResponse
-// @Router /images [get]
-func (rh *RequestHandler) GetImagesRequest(c *gin.Context) {
-	cursor, limit, err := parseCursorLimit(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	images, err := rh.models.Images.GetImages(cursor, limit)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"imageData": images})
-}
-
 // GetImageByNameRequest godoc
-// @Summary Returns image and imageData by name
-// @Description Returns image, imageData by it's unique name
+// @Summary Returns imageData by it's unique name
 // @Tags Image
-// @Produce  application/json, application/octet-stream
+// @Produce  application/json
 // @Param   name query string true "name"
 // @Failure 200 {object} map[string]interface{}
 // @Failure 404 {object} ErrorResponse
-// @Router image/{name} [get]
+// @Router /image/{name} [get]
 func (rh *RequestHandler) GetImageByNameRequest(c *gin.Context) {
-	req := c.Param("name")
+	req := c.Query("name")
 
 	img, err := rh.models.Images.GetImageByName(req)
 	if err != nil {
@@ -118,31 +86,22 @@ func (rh *RequestHandler) GetImageByNameRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"imageData": img.Filename, "tags": img.Tags})
-	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
 }
 
-// GetRawImageByNameRequest godoc
-// @Summary Searches image by name
-// @Description Searches images by unique name
+// GetImagesByQueryRequest godoc
+// @Summary Searches images by given query
+// @Description Returns a list of images at "cursor + limit" matching the "query"
 // @Tags Image
-// @Produce  application/octet-stream
-// @Param   name query string true "name"
-// @Failure 200 {object} map[string]interface{}
-// @Failure 404 {object} ErrorResponse
-// @Router raw-image/{name} [get]
-func (rh *RequestHandler) GetRawImageByNameRequest(c *gin.Context) {
-	req := c.Param("name")
-	println("name" + req)
-	img, err := rh.models.Images.GetImageByName(req)
-	if err != nil {
-		println("error" + err.Error())
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
-}
-
-func (rh *RequestHandler) GetImageByQueryRequest(c *gin.Context) {
+// @Produce  application/json
+// @Param   name query string false "name" "name contains"
+// @Param   tags query string false "tags" "with tags"
+// @Param   cursor query int false "cursor" "cursor for pagination"
+// @Param   limit query int false "limit" "limit for pagination"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /images [get]
+func (rh *RequestHandler) GetImagesByQueryRequest(c *gin.Context) {
 	cursor, limit, err := parseCursorLimit(c)
 
 	if err != nil {
@@ -150,28 +109,52 @@ func (rh *RequestHandler) GetImageByQueryRequest(c *gin.Context) {
 		return
 	}
 
-	queryString := c.Query("query")
+	nameContains := c.Query("name")
+	tagsString := c.Query("tags")
+	var tags []string
 	var query models.ImageQuery = models.EmptyQuery()
-	if queryString != "" {
-		err = json.Unmarshal([]byte(queryString), &query)
+	if nameContains != "" {
+		query.NameContains = nameContains
+	}
+	if tagsString != "" {
+		err = json.Unmarshal([]byte(tagsString), &tags)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 			return
 		}
+		query.WithTags = tags
 	}
 
 	images, err := rh.models.Images.SearchImages(query, cursor, limit)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"imageData": images})
 }
 
+// GetRawImageByNameRequest godoc
+// @Summary Returns image file by its unique name
+// @Tags Image
+// @Produce  application/octet-stream
+// @Param   name query string true "name"
+// @Failure 200 {object} map[string]interface{}
+// @Failure 404 {object} ErrorResponse
+// @Router /raw-image/{name} [get]
+func (rh *RequestHandler) GetRawImageByNameRequest(c *gin.Context) {
+	req := c.Param("name")
+	img, err := rh.models.Images.GetImageByName(req)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
+}
+
 // GetAuditLogEntriesRequest godoc
 // @Summary Gets audit log entries by given range
-// @Description Returns a list of "limit" audit log entries from "cursor"
+// @Description Returns a list of log entries at "cursor + limit" matching the "query"
 // @Tags AuditLog
 // @Produce  json
 // @Param   cursor query string true "cursor"
@@ -205,7 +188,7 @@ type UserDataResponce struct {
 }
 
 // GetUserRequest godoc
-// @Summary Gets user data by username
+// @Summary Returns user's data by username
 // @Tags User
 // @Produce  json
 // @Param   username path string true "username"
@@ -238,7 +221,7 @@ func (rh *RequestHandler) GetUserRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-func (rh *RequestHandler) GetProfileRequest(c *gin.Context) {
+func (rh *RequestHandler) GetMeRequest(c *gin.Context) {
 	user, err := rh.GetUserFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})

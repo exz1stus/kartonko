@@ -8,7 +8,6 @@ const useFullscreen = () => {
         if (typeof document === "undefined") return;
 
         const checkFullscreen = () => {
-            console.log("asdf");
             setIsFullscreen(!!document.fullscreenElement);
         };
 

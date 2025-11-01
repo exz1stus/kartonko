@@ -1,7 +1,8 @@
 "use client";
-import React, { use, useEffect, useState } from "react";
-import { TagSelector, Tag } from "./TagSelector";
+import React, { useEffect, useState } from "react";
+import { Tag, TagSelector } from "@/components/Gallery/TagSelector";
 import { Metadata, useUploadImage } from "./useUploadImage";
+import TagElement from "../Gallery/TagElement";
 
 interface PostImageFormProps {
     file: File;
@@ -43,28 +44,35 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
         }
     };
 
+    const onTagsUpdate = (tags: Tag[]) => {
+        setTags(tags);
+    }
+
+    // const tagElements = tags.map((tag, index) => <TagElement key={index} tag={tag} removeTag={removeTag} />);
+
     return (
         <form className="space-y-6 w-full" onSubmit={submitImage}>
             <div className="flex items-center gap-4">
-                <label className="w-32 shrink-0 text-sm font-medium text-gray-700">
+                <label className="w-32 font-medium text-gray-700 text-sm shrink-0">
                     Name
                 </label>
                 <div className="flex flex-1 items-center gap-2">
                     <input
                         type="text"
                         placeholder={name}
-                        className="flex-1 border border-gray-300 rounded px-3 py-2"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded"
                         onChange={(e) => { setName(e.target.value) }}
                     />
                     <span className="text-gray-400 text-sm">.{extension}</span>
                 </div>
             </div>
             <div className="flex items-center gap-4">
-                <label className="w-32 shrink-0 text-sm font-medium text-gray-700">
+                <label className="w-32 font-medium text-gray-700 text-sm shrink-0">
                     Add tags
                 </label>
-                <div className="flex-1 flex flex-col gap-2">
-                    <TagSelector selectedTags={tags} setSelectedTags={setTags} />
+                <div className="flex flex-col flex-1 gap-2">
+                    {/* {tagElements} */}
+                    <TagSelector selected={true} tags={tags} onTagsUpdate={onTagsUpdate} />
                 </div>
             </div>
             <div className="flex justify-center">

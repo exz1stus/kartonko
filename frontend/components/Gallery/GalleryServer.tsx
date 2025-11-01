@@ -1,13 +1,16 @@
 import { ImageData } from '@/components/Gallery/ImageCard';
 import Gallery from './Gallery';
+import { SearchQuery } from './ImageSearch';
 
 interface ImagesResponse {
     imageData: ImageData[];
 }
 
-const fetchImages = async (intialFetchSize: number) => {
+const fetchImages = async (intialFetchSize: number, initialQuery: SearchQuery) => {
     const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
-    const response = await fetch(`${API_ORIGIN}/images?cursor=0&limit=${intialFetchSize}`, {
+    const nameQueryString = initialQuery.nameContains.length === 0 ? "" : `name=${initialQuery.nameContains}&`;
+    const tagsQueryString = initialQuery.withTags.length === 0 ? "" : `tags=${JSON.stringify(initialQuery.withTags)}&`;
+    const response = await fetch(`${API_ORIGIN}/images?${nameQueryString}${tagsQueryString}cursor=${0}&limit=${intialFetchSize}`, {
         cache: 'no-store',
     });
 
@@ -21,8 +24,15 @@ interface Props {
 }
 
 const GalleryServer = async ({ initialFetchSize }: Props) => {
-    const images = await fetchImages(initialFetchSize);
-    return <Gallery initialImages={images} />;
+    const INITIAL_QUERY: SearchQuery = {
+        nameContains: "",
+        withTags: [],
+    };
+    let images: ImageData[] = [];
+    if (initialFetchSize > 0)
+        images = await fetchImages(initialFetchSize, INITIAL_QUERY);
+
+    return <Gallery initialImages={images} initReachedEnd={images.length < initialFetchSize} initialQuery={INITIAL_QUERY} />;
 }
 
 export default GalleryServer;

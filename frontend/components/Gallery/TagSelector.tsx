@@ -1,13 +1,16 @@
 "use client";
 import React, { useEffect, useState } from 'react'
-import { Tag } from '../PostImage/TagSelector';
 import { noUse } from '@/app/AudioEffects';
 import useTypingHints from '@/app/hooks/useTypingHints';
 
+interface Tag {
+    name: string;
+}
+
 interface TagSelectorProps {
     selected: boolean
-    tags: Tag[]
-    onTagsUpdate: (tags: Tag[]) => void
+    tags: string[]
+    onTagsUpdate: (tags: string[]) => void
 }
 
 interface TagHintResponse {
@@ -28,7 +31,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
     const fetchTagFieldHint = async (query: string) => {
         try {
             if (query.length === 0) return [];
-            const response = await fetch(`${API_ORIGIN}/autocomplete-tag?query=${query}&limit=${FETCH_HINTS_LIMIT}`);
+            const response = await fetch(`${API_ORIGIN}/tags?query=${query}&limit=${FETCH_HINTS_LIMIT}`);
             if (response.ok) {
                 const responseJson: TagHintResponse = await response.json();
                 const parsedTags = responseJson.tags;
@@ -36,7 +39,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
                     return [];
                 }
                 const hints = parsedTags
-                    .filter((tag) => !tags.some(t => t.name === tag.name))
+                    .filter((tag) => !tags.some(t => t === tag.name))
                     .map((tag) => tag.name);
                 return hints;
             }
@@ -49,14 +52,14 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
     }
 
     const write = async () => {
-        if (hint.length <= 0 || tags.some(tag => tag.name === hint)) {
+        if (hint.length <= 0 || tags.some(tag => tag === hint)) {
             noUse();
             return;
         }
 
         setTagField("");
         await new Promise(resolve => setTimeout(resolve, 0));
-        let tagsQuery = tags.concat({ name: hint });
+        let tagsQuery = tags.concat(hint);
         onTagsUpdate(tagsQuery);
     }
 
@@ -130,5 +133,5 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
         </div>
     )
 }
-
-export default TagSelector
+export default TagSelector;
+export { type Tag, TagSelector }
