@@ -7,21 +7,25 @@ interface Tag {
 interface Props {
     filename: string
     tags: Tag[]
+    onLoad?: () => void
 }
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
-const ImageCardServer: React.FC<Props> = ({ filename, tags }) => {
+const ImageCardServer: React.FC<Props> = ({ filename, tags, onLoad }) => {
     return (
         <div className="flex flex-col items-center bg-surface-20 rounded-xl hover:cursor-pointer">
             <Image
                 src={`${API_ORIGIN}/raw-image/${filename}`}
                 alt={filename}
-                className="rounded-t-xl w-full h-[25vh]"
+                className="rounded-t-xl"
                 width={640}
                 height={640}
+                onLoad={onLoad}
             />
-            <span className="px-2 max-w-[20ch] text-2xl truncate">{filename}</span>
+            <span
+                className="px-2 max-w-[20ch] truncate"
+            >{filename}</span>
         </div>
     );
 };

@@ -15,6 +15,7 @@ const fetchImages = async (intialFetchSize: number, initialQuery: SearchQuery) =
     });
 
     if (!response.ok) throw new Error("Failed to fetch images");
+    console.log(`server intial fetching cursor ${0} limit ${intialFetchSize}`);
     const data: ImagesResponse = await response.json();
     return data.imageData;
 };
@@ -29,10 +30,19 @@ const GalleryServer = async ({ initialFetchSize }: Props) => {
         withTags: [],
     };
     let images: ImageData[] = [];
-    if (initialFetchSize > 0)
-        images = await fetchImages(initialFetchSize, INITIAL_QUERY);
+    let initReachedEnd = false;
+    if (initialFetchSize > 0) {
+        try {
+            images = await fetchImages(initialFetchSize, INITIAL_QUERY);
+            initReachedEnd = images.length < initialFetchSize;
+        }
+        catch (error) {
+            console.error("Error fetching images:", error);
+            images = [];
+        }
+    }
 
-    return <Gallery initialImages={images} initReachedEnd={images.length < initialFetchSize} initialQuery={INITIAL_QUERY} />;
+    return <Gallery initialImages={images} initReachedEnd={initReachedEnd} initialQuery={INITIAL_QUERY} />;
 }
 
 export default GalleryServer;

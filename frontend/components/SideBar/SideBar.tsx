@@ -19,7 +19,7 @@ const SideBar: React.FC = () => {
     ) : null;
 
     return (
-        <aside ref={ref} className="flex flex-col items-center gap-5 bg-surface-0/80 backdrop-filter backdrop-blur-md px-4 w-full h-full">
+        <aside ref={ref} className="flex flex-col items-center gap-5 px-4 w-full h-full">
             <Dropdown text="" open={true}>
                 <Link href="/" >Home</Link>
                 {authed}

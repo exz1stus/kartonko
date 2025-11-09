@@ -3,7 +3,7 @@ import React, { useRef } from 'react'
 const PerspectiveCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const boundingRef = useRef<DOMRect | null>(null);
     return (
-        <div className="[perspective:500px]">
+        <div className="hover:z-10 relative [perspective:500px]">
             <div
                 onMouseLeave={() => (boundingRef.current = null)}
                 onMouseEnter={(ev) => {
