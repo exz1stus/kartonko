@@ -8,7 +8,7 @@ import DragDropZone from '@/components/PostImage/DragDropZone';
 import useUploadModal from '../PostImage/useUploadModal';
 import UploadModal from '../PostImage/UploadModal';
 import { useHover } from '@/app/contexts/HoverContex';
-import Masonry from '../template/Masonry';
+import Masonry from "../template/Masonry";
 
 interface ImagesResponse {
     imageData: ImageData[]
@@ -118,13 +118,16 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
             key={image.filename}
             filename={image.filename}
             tags={image.tags}
+            width={image.width}
+            height={image.height}
             className="break-inside-avoid"
         />
     ));
 
+    const ratios = images.map(image => image.height / image.width);
     const gallery = (
         <div className="flex justify-center">
-            <Masonry className="p-4" >
+            <Masonry className="p-4" ratios={ratios}>
                 {imageCards}
             </Masonry>
         </div>

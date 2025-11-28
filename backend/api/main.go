@@ -36,8 +36,6 @@ func main() {
 	models := models.MustInitStorageSqlite()
 	reqHandler := MustInitReqHandler(models)
 
-	models.Log.AddEntryType("image_created")
-
 	App := &Application{Models: models, RequestHandler: reqHandler, JWTSecret: env.GetEnvString("JWT_SECRET")}
 	App.initRoutes()
 	App.Router.Run(fmt.Sprintf(":%s", env.GetEnvString("PORT")))

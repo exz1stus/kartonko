@@ -1,10 +1,10 @@
-import React, { ReactNode, useEffect, useRef, useState } from "react";
+import React, { ReactNode, use, useEffect, useMemo, useRef, useState } from "react";
 import ec from "clsx";
-import MasonryItem from "./MasonryItem";
-import { motion, MotionConfig } from "motion/react";
+import { useDebouncedCallback } from "use-debounce";
 
 interface Props {
     children: ReactNode
+    ratios: number[]
     className?: string
     maxCols?: number
     colWidth?: number
@@ -12,37 +12,36 @@ interface Props {
 
 interface Column {
     children: ReactNode[]
+    height: number
 }
 
-const Masonry: React.FC<Props> = ({ children, className, maxCols = 0, colWidth = 200 }: Props) => {
+const Masonry: React.FC<Props> = ({ children, className, ratios, maxCols = 0, colWidth = 200 }: Props) => {
     const [columns, setColumns] = useState<Column[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
-    const heights = useRef<number[]>([]);
-    const hasMeasured = useRef(false);
 
-    const childrenArray = Array.isArray(children) ? children.flat() : [children];
+    const childrenArray = useMemo(
+        () => (Array.isArray(children) ? children.flat() : [children]),
+        [children]
+    );
 
-
-    // const handleMeasure = (height: number) => {
-    //     if (heights.current.length >= childrenArray.length) {
-    //         return;
-    //     }
-
-    //     heights.current.push(height);
-    //     if (heights.current.length === childrenArray.length) {
-    //         createColumns(childrenArray, columns.length);
-    //         hasMeasured.current = true;
-    //     }
-    // }
+    const getColumnWidth = (count: number) => {
+        if (maxCols > 0) return colWidth;
+        return (containerRef.current?.clientWidth || 0) / count;
+    };
 
     const createColumns = (elements: ReactNode[], count: number) => {
-        const cols = Array.from({ length: count }, () => ({ children: [] as ReactNode[] }));
+        const cols = Array.from({ length: count }, () => ({ children: [] as ReactNode[], height: 0 }));
         elements.forEach((el, i) => {
-            const colIndex = i % count;
-            cols[colIndex].children.push(el);
+            const h = ratios[i] * getColumnWidth(count);
+            const targetCol = cols.reduce(
+                (min, c) => (c.height < min.height ? c : min),
+                cols[0]
+            );
+            targetCol.children.push(el);
+            targetCol.height += h;
         });
         return cols;
-    };
+    }
 
     useEffect(() => {
         const observer = new ResizeObserver(entries => {
@@ -54,33 +53,22 @@ const Masonry: React.FC<Props> = ({ children, className, maxCols = 0, colWidth =
         });
 
         if (containerRef.current) observer.observe(containerRef.current);
-        return () => observer.disconnect();
-    }, [children]);
+        return () => observer.disconnect()
 
-    const container = true ? (
-        columns.map((column, i) => (
-            <div key={i} className="flex flex-col gap-4">
-                {column.children.map((child) =>
-                    child
-                )}
-            </div>
-        ))
-    ) : (null
-        // columns.map((column, i) => (
-        //     <div key={i} className="flex flex-col gap-4">
-        //         {childrenArray.map((child, j) => (
-        //             <MasonryItem key={j} onMeasure={(h) => handleMeasure(h)}>
-        //                 {child}
-        //             </MasonryItem>
-        //         ))}
-        //     </div>
-        // ))
-    )
+    }, [childrenArray, colWidth, maxCols, ratios]);
 
     return (
-        <div ref={containerRef} className={ec("flex flex-row gap-2", className)} style={{ maxWidth: `${maxCols > 0 && maxCols * colWidth}px` }}>
-            {container}
-        </div>
+        <div ref={containerRef} className={ec("flex flex-row gap-2", className)} style={{ maxWidth: maxCols > 0 ? `${maxCols * colWidth}px` : "100%" }}>
+            {columns.map((column, i) => (
+                <div key={i} className="flex flex-col gap-4"
+                    style={{ maxWidth: (containerRef.current?.clientWidth || colWidth) / columns.length }}>
+                    {column.children.map((child) =>
+                        child
+                    )}
+                </div>
+            ))
+            }
+        </div >
     );
 };
 

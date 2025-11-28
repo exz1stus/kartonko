@@ -1,14 +1,14 @@
 import PerspectiveCard from './PerspectiveCard';
 import { noUse } from '@/app/AudioEffects';
 import { ImageData, ImageCardServer } from './ImageCardServer';
-import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import React, { useRef } from "react";
 
 interface Props extends ImageData {
     className?: string;
     style?: React.CSSProperties;
 }
 
-const ImageCard: React.FC<Props> = ({ filename, tags, className, style }) => {
+const ImageCard: React.FC<Props> = ({ filename, tags, className, width, height, style }) => {
     const selfRef = useRef<HTMLDivElement>(null);
 
     const onMouseEnter = () => {
@@ -38,7 +38,7 @@ const ImageCard: React.FC<Props> = ({ filename, tags, className, style }) => {
             onMouseLeave={onMouseLeave}
         >
             <PerspectiveCard>
-                <ImageCardServer filename={filename} tags={tags} onLoad={onLoad} />
+                <ImageCardServer filename={filename} tags={tags} onLoad={onLoad} width={width} height={height} />
             </PerspectiveCard >
         </div>
     )

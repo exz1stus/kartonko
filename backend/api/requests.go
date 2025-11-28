@@ -273,7 +273,13 @@ func (rh *RequestHandler) PostImageRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 	}
 
-	img := rh.models.Images.ConstructImage(request.Name, request.Tags, imgFormat)
+	imgWidth, imgHeight, err := image.GetDimensions(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error getting image dimensions: %s", err.Error())})
+		return
+	}
+
+	img := rh.models.Images.ConstructImage(request.Name, request.Tags, imgFormat, imgWidth, imgHeight)
 
 	if err := rh.models.Images.SaveImage(img, file, c); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})

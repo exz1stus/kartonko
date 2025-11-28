@@ -3,12 +3,16 @@ package image
 import (
 	"crypto/sha256"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"mime/multipart"
 	"strings"
 )
 
-var SupportedFormats = []string{"jpeg", "png"}
+var SupportedFormats = []string{"jpeg", "png", "gif"}
 
 func MIMETypeToFormat(mimeType string) (string, error) {
 	parts := strings.SplitN(mimeType, "/", 2)
@@ -17,6 +21,21 @@ func MIMETypeToFormat(mimeType string) (string, error) {
 	}
 
 	return parts[1], nil
+}
+
+func GetDimensions(file *multipart.FileHeader) (uint, uint, error) {
+	f, err := file.Open()
+	if err != nil {
+		return 0, 0, err
+	}
+	defer f.Close()
+
+	cfg, _, err := image.DecodeConfig(f)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return uint(cfg.Width), uint(cfg.Height), nil
 }
 
 func IsFormatSupported(format string) bool {
