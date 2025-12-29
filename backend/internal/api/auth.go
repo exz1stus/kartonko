@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ type authRequest struct {
 	Password string `json:"password"`
 }
 
-func (rh *RequestHandler) GetUserFromContext(c *gin.Context) (*models.User, error) {
+func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 	tokenString, err := c.Cookie("jwt")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get jwt token: %v", err)
@@ -63,7 +63,7 @@ func (rh *RequestHandler) GetUserFromContext(c *gin.Context) (*models.User, erro
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
-func (rh *RequestHandler) LoginRequest(c *gin.Context) {
+func (rh *api) LoginRequest(c *gin.Context) {
 	var input authRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprint("invalid input: ", err.Error())})
@@ -104,7 +104,7 @@ var JWT_COOKIE_MAX_AGE = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/register [post]
-func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
+func (rh *api) RegisterRequest(c *gin.Context) {
 	var input authRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -152,7 +152,7 @@ func (rh *RequestHandler) RegisterRequest(c *gin.Context) {
 // @Produce  json
 // @Success 200 {object} map[string]interface{}
 // @Router /auth/logout [post]
-func (rh *RequestHandler) LogoutRequest(c *gin.Context) {
+func (rh *api) LogoutRequest(c *gin.Context) {
 	c.SetCookie("jwt", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"logout": true})
 }

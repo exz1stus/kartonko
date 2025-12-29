@@ -2,14 +2,12 @@ import React from "react";
 
 interface Props {
     children: React.ReactNode;
-    onScroll?: React.UIEventHandler<HTMLDivElement>;
     className?: string;
-};
+}
 
-const Scrollbar: React.FC<Props> = ({ children, onScroll, className }) => {
+const Scrollbar: React.FC<Props> = ({ children, className }) => {
     return (
         <div
-            onScroll={onScroll}
             className={`
                 h-full overflow-y-auto
                 scrollbar-thin
@@ -22,7 +20,7 @@ const Scrollbar: React.FC<Props> = ({ children, onScroll, className }) => {
         >
             {children}
         </div>
-    )
-}
+    );
+};
 
-export default Scrollbar
+export default Scrollbar;

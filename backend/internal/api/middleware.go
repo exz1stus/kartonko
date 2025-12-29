@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func (app *Application) AuthMiddleware() gin.HandlerFunc {
+func (app *api) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("jwt")
 		if err != nil {
@@ -20,7 +20,7 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
-			return []byte(app.JWTSecret), nil
+			return []byte(app.jwtSecret), nil
 		})
 
 		if err != nil || !token.Valid {
@@ -43,7 +43,7 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		user, err := app.Models.Users.GetUserById(userId)
+		user, err := app.models.Users.GetUserById(userId)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			c.Abort()
@@ -52,7 +52,7 @@ func (app *Application) AuthMiddleware() gin.HandlerFunc {
 
 		c.Set("user", user)
 
-		err = app.Models.Users.UpdateLastSeen(user)
+		err = app.models.Users.UpdateLastSeen(user)
 		if err != nil {
 			print(err)
 		}

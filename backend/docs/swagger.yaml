@@ -1,10 +1,10 @@
 definitions:
-  main.ErrorResponse:
+  api.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  main.authRequest:
+  api.authRequest:
     properties:
       password:
         type: string
@@ -28,7 +28,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/main.authRequest'
+          $ref: '#/definitions/api.authRequest'
       produces:
       - application/json
       responses:
@@ -40,11 +40,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Login a user
       tags:
       - Auth
@@ -75,7 +75,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/main.authRequest'
+          $ref: '#/definitions/api.authRequest'
       produces:
       - application/json
       responses:
@@ -87,11 +87,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Register a user
       tags:
       - Auth
@@ -109,7 +109,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Health check
       tags:
       - HealthCheck
@@ -132,7 +132,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Returns imageData by it's unique name
       tags:
       - Image
@@ -140,9 +140,13 @@ paths:
     get:
       description: Returns a list of images at "cursor + limit" matching the "query"
       parameters:
-      - description: query
+      - description: name
         in: query
-        name: query
+        name: name
+        type: string
+      - description: tags
+        in: query
+        name: tags
         type: string
       - description: cursor
         in: query
@@ -163,11 +167,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Searches images by given query
       tags:
       - Image
@@ -197,7 +201,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Gets audit log entries by given range
       tags:
       - AuditLog
@@ -220,7 +224,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Returns image file by its unique name
       tags:
       - Image
@@ -249,11 +253,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Searches tags by given query
       tags:
       - Tags
@@ -274,11 +278,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerToken: []
       summary: Uploads image
@@ -303,7 +307,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.ErrorResponse'
+            $ref: '#/definitions/api.ErrorResponse'
       summary: Returns user's data by username
       tags:
       - User

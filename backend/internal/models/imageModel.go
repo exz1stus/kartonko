@@ -3,8 +3,8 @@ package models
 import (
 	"fmt"
 	"mime/multipart"
-	"server/image"
 	"server/internal/env"
+	"server/pkg/image"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

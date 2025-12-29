@@ -1,23 +1,24 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ImageData, ImageCard } from './ImageCard'
-import { SearchQuery, ImageSearch, isQueryEmpty, isQueriesEqual } from './ImageSearch';
-import { useDebounce, useDebouncedCallback } from 'use-debounce';
-import Scrollbar from '../template/Scrollbar';
-import DragDropZone from '@/components/PostImage/DragDropZone';
-import useUploadModal from '../PostImage/useUploadModal';
-import UploadModal from '../PostImage/UploadModal';
-import { useHover } from '@/app/contexts/HoverContex';
+import React, { useEffect, useRef, useState } from "react";
+import { ImageData, ImageCard } from "./ImageCard";
+import { SearchQuery, ImageSearch, isQueryEmpty, isQueriesEqual } from "./ImageSearch";
+import { useDebounce, useDebouncedCallback } from "use-debounce";
+import Scrollbar from "../template/Scrollbar";
+import DragDropZone from "@/components/PostImage/DragDropZone";
+import useUploadModal from "../PostImage/useUploadModal";
+import UploadModal from "../PostImage/UploadModal";
+import { useHover } from "@/app/contexts/HoverContex";
 import Masonry from "../template/Masonry";
+import { useInView } from "react-intersection-observer";
 
 interface ImagesResponse {
-    imageData: ImageData[]
+    imageData: ImageData[];
 }
 
 interface Props {
-    initialImages: ImageData[]
-    initReachedEnd: boolean
-    initialQuery: SearchQuery
+    initialImages: ImageData[];
+    initReachedEnd: boolean;
+    initialQuery: SearchQuery;
 }
 
 const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery }) => {
@@ -51,9 +52,15 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         if (loading.current || reachedEnd) return;
         loading.current = true;
         try {
-            const nameQueryString = searchQuery?.nameContains.length === 0 ? "" : `name=${searchQuery.nameContains}&`;
-            const tagsQueryString = searchQuery?.withTags.length === 0 ? "" : `tags=${JSON.stringify(searchQuery.withTags)}&`;
-            const response = await fetch(`${API_ORIGIN}/images?${nameQueryString}${tagsQueryString}cursor=${cursor}&limit=${requestSize}`);
+            const nameQueryString =
+                searchQuery?.nameContains.length === 0 ? "" : `name=${searchQuery.nameContains}&`;
+            const tagsQueryString =
+                searchQuery?.withTags.length === 0
+                    ? ""
+                    : `tags=${JSON.stringify(searchQuery.withTags)}&`;
+            const response = await fetch(
+                `${API_ORIGIN}/images?${nameQueryString}${tagsQueryString}cursor=${cursor}&limit=${requestSize}`
+            );
             if (!response.ok) throw new Error("Failed to fetch images");
 
             const parsedImages: ImagesResponse = await response.json();
@@ -61,8 +68,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
 
             setImages((prev) => [...prev, ...parsedImages.imageData]);
             console.log(`fetching cursor ${cursor} limit ${requestSize}`);
-        }
-        catch (error) {
+        } catch (error) {
             console.error("Error fetching images:", error);
         } finally {
             loading.current = false;
@@ -77,7 +83,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
 
     const initialFetch = () => {
         fetchImages(initialQuery, cursor, INIT_REQUEST_SIZE);
-    }
+    };
 
     const canFetch = () => {
         if (!isQueryEmpty(debouncedQuery) && !isQueriesEqual(debouncedQuery, initialQuery))
@@ -86,7 +92,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         if (!hasQueryChangedFromInit.current) return false;
 
         return true;
-    }
+    };
 
     useEffect(() => {
         if (needInitalFetch.current) {
@@ -103,16 +109,6 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         fetchImages(debouncedQuery, 0, REQUEST_SIZE);
     }, [debouncedQuery]);
 
-    const handleGalleryScroll = useCallback(useDebouncedCallback(() => {
-        if (loading.current || reachedEnd) return;
-        const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.body.offsetHeight * 0.8;
-        if (scrollPosition >= threshold) {
-            if (!hasScrolled.current) hasScrolled.current = true;
-            setCursor(prev => prev + REQUEST_SIZE);
-        }
-    }, 100), [reachedEnd]);
-
     const imageCards = images.map((image) => (
         <ImageCard
             key={image.filename}
@@ -124,7 +120,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         />
     ));
 
-    const ratios = images.map(image => image.height / image.width);
+    const ratios = images.map((image) => image.height / image.width);
     const gallery = (
         <div className="flex justify-center">
             <Masonry className="p-4" ratios={ratios}>
@@ -134,6 +130,17 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
     );
 
     const isUploadModalShown = recievedImages.length > 0;
+
+    const { ref: sentinelRef, inView } = useInView({
+        threshold: 0,
+        rootMargin: "400px",
+    });
+
+    useEffect(() => {
+        if (inView && !loading.current && !reachedEnd) {
+            setCursor((prev) => prev + REQUEST_SIZE);
+        }
+    }, [inView, reachedEnd]);
 
     return (
         <div className="flex flex-col h-full">
@@ -146,19 +153,27 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
             />
             <div ref={galleryHover.ref} className="flex-1 overflow-hidden">
                 <DragDropZone onFilesDropped={handleDroppedFiles}>
-                    <UploadModal images={recievedImages} onClose={handleClose} onUploaded={handleUploaded} />
-                    <Scrollbar onScroll={handleGalleryScroll} className="overflow-x-hidden">
+                    <UploadModal
+                        images={recievedImages}
+                        onClose={handleClose}
+                        onUploaded={handleUploaded}
+                    />
+                    <Scrollbar className="overflow-x-hidden">
                         {gallery}
-                        <div className={`${!loading.current && imageCards.length > 0 ? "border-t" : ""} flex justify-center p-4`}>
+                        <div ref={sentinelRef} style={{ height: 1 }} />
+                        <div
+                            className={`${
+                                !loading.current && imageCards.length > 0 ? "border-t" : ""
+                            } flex justify-center p-4`}
+                        >
                             {loading.current && <div>Loading...</div>}
                             {reachedEnd && <div>End of images</div>}
                         </div>
                     </Scrollbar>
                 </DragDropZone>
             </div>
-        </div >
-    )
-}
+        </div>
+    );
+};
 
-export default Gallery
-
+export default Gallery;

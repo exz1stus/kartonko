@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef } from "react";
 
 const PerspectiveCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const boundingRef = useRef<DOMRect | null>(null);
@@ -28,7 +28,7 @@ const PerspectiveCard: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 {children}
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default PerspectiveCard
+export default PerspectiveCard;

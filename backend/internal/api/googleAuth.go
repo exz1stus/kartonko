@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ var googleOauthConfig = &oauth2.Config{
 	Endpoint:     google.Endpoint,
 }
 
-func (rh *RequestHandler) GoogleLoginRequest(c *gin.Context) {
+func (rh *api) GoogleLoginRequest(c *gin.Context) {
 	redirect := c.Query("redirect")
 	state := redirect
 	url := googleOauthConfig.AuthCodeURL(state)
@@ -34,7 +34,7 @@ type UserInfo struct {
 	Picture string `json:"picture"`
 }
 
-func (rh *RequestHandler) GoogleCallbackRequest(c *gin.Context) {
+func (rh *api) GoogleCallbackRequest(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	redirectURL := state

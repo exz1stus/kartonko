@@ -1,15 +1,15 @@
-import Image from 'next/image';
+import Image from "next/image";
 
 interface Tag {
-    Name: string
+    Name: string;
 }
 
 interface Props {
-    filename: string
-    tags: Tag[]
-    width: number
-    height: number
-    onLoad?: () => void
+    filename: string;
+    tags: Tag[];
+    width: number;
+    height: number;
+    onLoad?: () => void;
 }
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
@@ -25,12 +25,9 @@ const ImageCardServer: React.FC<Props> = ({ filename, tags, onLoad, width, heigh
                 height={height}
                 onLoad={onLoad}
             />
-            <span
-                className="px-2 max-w-[20ch] truncate"
-            >{filename}</span>
+            <span className="px-2 max-w-[20ch] truncate">{filename}</span>
         </div>
     );
 };
 
 export { type Props as ImageData, ImageCardServer };
-
