@@ -6,7 +6,7 @@ COPY . .
 
 RUN go mod tidy
 
-RUN go build -o main ./api
+RUN go build -o main ./cmd
 
 ENV GIN_MODE=release
 

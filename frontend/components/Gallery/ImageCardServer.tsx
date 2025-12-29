@@ -6,7 +6,7 @@ interface Tag {
 
 interface Props {
     filename: string;
-    tags: Tag[];
+    tags: string[];
     width: number;
     height: number;
     onLoad?: () => void;

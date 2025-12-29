@@ -131,6 +131,12 @@ func (api *api) PostImageRequest(c *gin.Context) {
 		return
 	}
 
+	user, err := api.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	imgFormat, err := image.MIMETypeToFormat(file.Header.Get("Content-Type"))
 
 	if err != nil {
@@ -147,12 +153,6 @@ func (api *api) PostImageRequest(c *gin.Context) {
 
 	if err := api.models.Images.SaveImage(img, file, c); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
-		return
-	}
-
-	user, err := api.GetUserFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
 		return
 	}
 
