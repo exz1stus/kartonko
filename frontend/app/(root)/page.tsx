@@ -1,5 +1,5 @@
 import GalleryServer from "@/components/Gallery/GalleryServer";
 
 export default function Home() {
-    return <GalleryServer initialFetchSize={70} />; //TODO FIX
+    return <GalleryServer initialFetchSize={70} />;
 }

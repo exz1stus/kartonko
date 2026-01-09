@@ -28,12 +28,10 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
     const INIT_REQUEST_SIZE = 50;
 
     const [images, setImages] = useState<ImageMetadata[]>(initialImages);
-    const [cursor, setCursor] = useState<number>(initialImages.length);
     const [reachedEnd, setReachedEnd] = useState<boolean>(initReachedEnd);
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery);
-    const loading = useRef<boolean>(false);
+    const [loading, setLoading] = useState(false);
     const hasQueryChangedFromInit = useRef<boolean>(false);
-    const needInitalFetch = useRef<boolean>(initialImages.length === 0);
 
     const FetchCount = useRef<number>(0);
 
@@ -48,40 +46,32 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
     const { recievedImages, handleClose, handleDroppedFiles, handleUploaded } = useUploadModal();
 
     const fetchImages = async (searchQuery: SearchQuery, cursor: number, requestSize: number) => {
-        if (loading.current || reachedEnd) return;
-        loading.current = true;
+        if (loading || reachedEnd) return;
+        setLoading(true);
+
         try {
-            const nameQueryString =
+            const name =
                 searchQuery?.nameContains.length === 0 ? "" : `name=${searchQuery.nameContains}&`;
-            const tagsQueryString =
+            const tags =
                 searchQuery?.withTags.length === 0
                     ? ""
                     : `tags=${JSON.stringify(searchQuery.withTags)}&`;
             const response = await fetch(
-                `${API_ORIGIN}/images?${nameQueryString}${tagsQueryString}cursor=${cursor}&limit=${requestSize}`
+                `${API_ORIGIN}/images?${name}${tags}cursor=${cursor}&limit=${requestSize}`
             );
             if (!response.ok) throw new Error("Failed to fetch images");
 
-            const parsedImages: ImagesResponse = await response.json();
-            if (parsedImages.imageData.length < requestSize) setReachedEnd(true);
+            const { imageData }: ImagesResponse = await response.json();
+            setImages((prev) => [...prev, ...imageData]);
+            if (imageData.length < requestSize) setReachedEnd(true);
 
-            setImages((prev) => [...prev, ...parsedImages.imageData]);
             console.log(`fetching cursor ${cursor} limit ${requestSize}`);
         } catch (error) {
             console.error("Error fetching images:", error);
         } finally {
-            loading.current = false;
+            setLoading(false);
         }
         FetchCount.current++;
-    };
-
-    useEffect(() => {
-        if (cursor === 0 || reachedEnd) return;
-        fetchImages(debouncedQuery, cursor, REQUEST_SIZE);
-    }, [cursor]);
-
-    const initialFetch = () => {
-        fetchImages(initialQuery, cursor, INIT_REQUEST_SIZE);
     };
 
     const canFetch = () => {
@@ -92,17 +82,14 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
     };
 
     useEffect(() => {
-        if (needInitalFetch.current) {
-            initialFetch();
-            needInitalFetch.current = false;
-        }
+        if (initialImages.length > 0) return;
+        fetchImages(initialQuery, images.length, INIT_REQUEST_SIZE);
     }, []);
 
     useEffect(() => {
         if (!canFetch()) return;
 
         setImages([]);
-        setCursor(0);
         setReachedEnd(false);
         fetchImages(debouncedQuery, 0, REQUEST_SIZE);
     }, [debouncedQuery]);
@@ -133,11 +120,26 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         rootMargin: "400px",
     });
 
+    const contentRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
-        if (inView && !loading.current && !reachedEnd) {
-            setCursor((prev) => prev + REQUEST_SIZE);
+        if (loading || reachedEnd) return;
+
+        const container = galleryHover.ref.current;
+        const content = contentRef.current;
+
+        if (!container || !content) return;
+
+        if (content.scrollHeight <= container.clientHeight) {
+            fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
         }
-    }, [inView, reachedEnd]);
+    }, [images, loading, reachedEnd]);
+
+    useEffect(() => {
+        if (!inView || loading || reachedEnd) return;
+
+        fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
+    }, [inView]);
 
     return (
         <div className="flex flex-col h-full">
@@ -156,14 +158,14 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
                         onUploaded={handleUploaded}
                     />
                     <Scrollbar className="overflow-x-hidden">
-                        {gallery}
+                        <div ref={contentRef}>{gallery}</div>
                         <div ref={sentinelRef} style={{ height: 1 }} />
                         <div
                             className={`${
-                                !loading.current && items.length > 0 ? "border-t" : ""
+                                !loading && items.length > 0 ? "border-t" : ""
                             } flex justify-center p-4`}
                         >
-                            {loading.current && <div>Loading...</div>}
+                            {loading && <div>Loading...</div>}
                             {reachedEnd && <div>End of images</div>}
                         </div>
                     </Scrollbar>
