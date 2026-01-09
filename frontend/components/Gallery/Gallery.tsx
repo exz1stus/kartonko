@@ -43,7 +43,6 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
 
     const handleSearch = (query: SearchQuery) => {
         setSearchQuery(query);
-        setReachedEnd(false);
     };
 
     const { recievedImages, handleClose, handleDroppedFiles, handleUploaded } = useUploadModal();
@@ -104,6 +103,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
 
         setImages([]);
         setCursor(0);
+        setReachedEnd(false);
         fetchImages(debouncedQuery, 0, REQUEST_SIZE);
     }, [debouncedQuery]);
 

@@ -73,9 +73,9 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	for _, img := range images {
 		photo := tgbotapi.NewInlineQueryResultPhotoWithThumb(
-			fmt.Sprint(img.ID),
-			API_ORIGIN+"/raw-image/"+img.Filename,       // photo_url
-			API_ORIGIN+"/raw-image/thumb/"+img.Filename, // thumb_url
+			img.Hash,
+			API_ORIGIN+"/raw-image/"+img.Filename,                      // photo_url
+			API_ORIGIN+"/raw-image/thumb/"+img.Filename+"."+img.Format, // thumb_url
 		)
 		photo.Title = img.Filename
 		photo.Caption = img.Filename
