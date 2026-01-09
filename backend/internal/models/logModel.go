@@ -89,6 +89,6 @@ func (model *AuditLog) GetEntries(cursor int, limit int) ([]EntryResponse, error
 	return responses, nil
 }
 
-func (model *AuditLog) OnImageCreated(image *Image, user *User) error {
+func (model *AuditLog) AddImageCreated(image *Image, user *User) error {
 	return model.addEntry("image_created", user.Model.ID, image.ID, nil)
 }

@@ -2,11 +2,7 @@ package models
 
 import (
 	"fmt"
-	"mime/multipart"
-	"server/internal/env"
-	"server/pkg/image"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -121,26 +117,6 @@ func (model *ImageModel) GetImageByName(name string) (*Image, error) {
 	}
 
 	return &img, nil
-}
-
-func (model *ImageModel) SaveImage(img *Image, file *multipart.FileHeader, c *gin.Context) error {
-	hash, err := image.HashFile(file)
-	if err != nil {
-		return err
-	}
-	img.Hash = hash
-
-	file.Filename = img.Filename + "." + img.Format
-	dst := env.GetEnvString("UPLOADS_PATH") + "/" + file.Filename
-	if err := c.SaveUploadedFile(file, dst); err != nil {
-		return err
-	}
-
-	if err := model.AddImage(img); err != nil {
-		return fmt.Errorf("failed to add image to storage: %w", err)
-	}
-
-	return nil
 }
 
 func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {

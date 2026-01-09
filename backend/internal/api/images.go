@@ -141,7 +141,7 @@ func (api *api) PostImageRequest(c *gin.Context) {
 
 	imgFormat, err := image.MIMETypeToFormat(file.Header.Get("Content-Type"))
 
-	if err != nil {
+	if err != nil || !image.IsFormatSupported(imgFormat) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unsoported image format: " + err.Error()})
 		return
 	}
@@ -154,13 +154,33 @@ func (api *api) PostImageRequest(c *gin.Context) {
 
 	img := api.models.Images.ConstructImage(request.Name, request.Tags, imgFormat, imgWidth, imgHeight)
 
-	if err := api.models.Log.OnImageCreated(img, user); err != nil {
+	if err := api.models.Log.AddImageCreated(img, user); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to log image creation: " + err.Error()})
 		return
 	}
 
-	if err := api.models.Images.SaveImage(img, file, c); err != nil {
+	hash, err := image.HashFile(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error hashing the image: %s", err.Error())})
+		return
+	}
+	img.Hash = hash
+
+	if err := api.models.Images.AddImage(img); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
+		return
+	}
+
+	file.Filename = img.Filename + "." + img.Format
+	uploadDst := env.GetEnvString("UPLOADS_PATH") + "/" + file.Filename
+	if err := c.SaveUploadedFile(file, uploadDst); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
+		return
+	}
+
+	thumbDst := env.GetEnvString("THUMBS_PATH") + "/" + file.Filename
+	if err := image.GenerateThumbnail(uploadDst, thumbDst); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error generating thumbnail: %s", err.Error())})
 		return
 	}
 
