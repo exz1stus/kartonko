@@ -1,20 +1,23 @@
 "use client";
-import { usePathname } from 'next/navigation';
-import router from 'next/router';
-import { useState, useEffect, useCallback, createContext, useContext } from 'react'
+import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
+import { usePathname } from "next/navigation";
+import router from "next/router";
+import { useState, useEffect, useCallback, createContext, useContext } from "react";
 
 interface UserData {
     username: string;
     privileage: string;
     picture_url: string;
-    joined_at: string;
-    last_seen: string;
+    joined_at: Timestamp;
+    last_seen: Timestamp;
 }
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 const FRONTEND_URI = process.env.NEXT_PUBLIC_FRONTEND_URI;
 
-const AuthContext = createContext<{ user: UserData | null; login: Function; logout: Function; loading: boolean } | undefined>(undefined);
+const AuthContext = createContext<
+    { user: UserData | null; login: Function; logout: Function; loading: boolean } | undefined
+>(undefined);
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
     const auth = useProvideAuth();
@@ -31,16 +34,16 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
             pageLeave();
         };
 
-        window.addEventListener('beforeunload', handleWindowClose);
-        router.events.on('routeChangeStart', handleBrowseAway);
+        window.addEventListener("beforeunload", handleWindowClose);
+        router.events.on("routeChangeStart", handleBrowseAway);
         return () => {
-            window.removeEventListener('beforeunload', handleWindowClose);
-            router.events.off('routeChangeStart', handleBrowseAway);
+            window.removeEventListener("beforeunload", handleWindowClose);
+            router.events.off("routeChangeStart", handleBrowseAway);
         };
     }, []);
 
     return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
-}
+};
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -49,7 +52,7 @@ export const useAuth = () => {
 };
 
 const useProvideAuth = () => {
-    const [user, setUser] = useState<UserData | null>(null)
+    const [user, setUser] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
 
     const pathname = usePathname();
@@ -71,8 +74,7 @@ const useProvideAuth = () => {
         } catch (err) {
             console.error("Failed to fetch user:", err);
             setUser(null);
-        }
-        finally {
+        } finally {
             setLoading(false);
         }
     }, []);
@@ -86,7 +88,7 @@ const useProvideAuth = () => {
         window.location.href = `${API_ORIGIN}/auth/google?redirect=${encodeURIComponent(
             `${FRONTEND_URI}${currentPath}`
         )}`;
-    }
+    };
 
     const logout = async () => {
         try {
@@ -96,9 +98,9 @@ const useProvideAuth = () => {
         }
         setUser(null);
         console.log("logged out", user);
-    }
+    };
 
-    return { user, loading, login, logout }
-}
+    return { user, loading, login, logout };
+};
 
-export { type UserData }
+export { type UserData };

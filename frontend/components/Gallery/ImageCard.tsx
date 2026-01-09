@@ -1,17 +1,19 @@
 import PerspectiveCard from "./PerspectiveCard";
-import { noUse } from "@/app/AudioEffects";
-import { ImageData, ImageCardServer } from "./ImageCardServer";
+import ImageCardServer from "./ImageCardServer";
 import React, { useRef } from "react";
+import { useRouter } from "next/navigation";
+import ImageMetadata from "@/app/lib/image";
 
-interface Props extends ImageData {
+interface Props extends ImageMetadata {
     className?: string;
     style?: React.CSSProperties;
 }
 
 const ImageCard: React.FC<Props> = ({ filename, tags, className, width, height, style }) => {
     const selfRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
     const onClick = () => {
-        noUse();
+        router.push(`/image/${filename}`);
     };
 
     const onLoad = () => {
@@ -34,4 +36,4 @@ const ImageCard: React.FC<Props> = ({ filename, tags, className, width, height, 
     );
 };
 
-export { type ImageData, ImageCard };
+export default ImageCard;

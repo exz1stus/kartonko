@@ -1,14 +1,16 @@
-"use client"
-import { useState } from 'react'
+"use client";
+import { useState } from "react";
 
-const showWrongTypeMessage = (file: File) => { alert("wrong file type" + file.name) };
+const showWrongTypeMessage = (file: File) => {
+    alert("wrong file type" + file.name);
+};
 
 const useUploadModal = () => {
     const [recievedImages, setRecievedImages] = useState<File[]>([]);
 
     const handleClose = () => {
         setRecievedImages([]);
-    }
+    };
 
     const handleDroppedFiles = (files: FileList) => {
         let images = [];
@@ -22,14 +24,14 @@ const useUploadModal = () => {
             images.push(files[i]);
         }
 
-        setRecievedImages(prev => prev.concat(images));
-    }
+        setRecievedImages((prev) => prev.concat(images));
+    };
 
     const handleUploaded = () => {
-        setRecievedImages(prev => prev.filter((_, i) => i !== 0));
-    }
+        setRecievedImages((prev) => prev.filter((_, i) => i !== 0));
+    };
 
-    return { recievedImages, handleClose, handleDroppedFiles, handleUploaded }
-}
+    return { recievedImages, handleClose, handleDroppedFiles, handleUploaded };
+};
 
 export default useUploadModal;

@@ -1,35 +1,37 @@
 "use client";
-import React, { useEffect, useState } from 'react'
-import useNameSelector from './NameSelector';
-import { Tag, TagSelector } from './TagSelector';
-import TagElement from './TagElement';
-import { useHover } from '@/app/contexts/HoverContex';
+import React, { useEffect, useState } from "react";
+import useNameSelector from "./NameSelector";
+import TagSelector from "./TagSelector";
+import TagElement from "./TagElement";
+import { useHover } from "@/app/contexts/HoverContex";
 
 interface SearchQuery {
-    nameContains: string
-    withTags: string[]
+    nameContains: string;
+    withTags: string[];
 }
 
 export function isQueryEmpty(query: SearchQuery) {
-    return query.nameContains.length === 0 && query.withTags.length === 0;
+    return query.nameContains === "" && query.withTags.length === 0;
 }
 
 export function isQueriesEqual(query1: SearchQuery, query2: SearchQuery) {
-    return query1.nameContains === query2.nameContains
-        && JSON.stringify(query1.withTags) === JSON.stringify(query2.withTags);
+    return (
+        query1.nameContains === query2.nameContains &&
+        JSON.stringify(query1.withTags) === JSON.stringify(query2.withTags)
+    );
 }
 
 interface Props {
-    initialQuery?: SearchQuery
-    selected: boolean
-    onQueryChange: (query: SearchQuery) => void
-    className?: string
+    initialQuery?: SearchQuery;
+    selected: boolean;
+    onQueryChange: (query: SearchQuery) => void;
+    className?: string;
 }
 
 enum InsertingMode {
     NONE,
     NAME,
-    TAG
+    TAG,
 }
 
 const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, className }) => {
@@ -41,22 +43,20 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
 
     const hovered = isHovered();
 
-
     useEffect(() => {
         onQueryChange({
             nameContains: name,
-            withTags: tags
+            withTags: tags,
         });
     }, [name, tags]);
 
     const onNameUpdated = (name: string) => {
         setName(name);
-    }
-
+    };
 
     const onTagsUpdate = (tags: string[]) => {
         setTags(tags);
-    }
+    };
 
     useEffect(() => {
         if (initialQuery) {
@@ -85,23 +85,27 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
 
     const removeTag = (tag: string) => {
         setTags(tags.filter((t) => t !== tag));
-    }
+    };
 
-    const tagElements = tags.map((tag, index) => <TagElement key={index} tag={tag} removeTag={removeTag} />);
+    const tagElements = tags.map((tag, index) => (
+        <TagElement key={index} tag={tag} removeTag={removeTag} />
+    ));
 
     const active = selected || hovered;
 
     useNameSelector(active && insertingMode === InsertingMode.NAME, name, onNameUpdated);
 
     return (
-        <div ref={ref} className={className} >
+        <div ref={ref} className={className}>
             <div className="gap-2 grid grid-rows-2">
                 <div className="flex items-center gap-2">
                     <span
-                        className={
-                            `px-2 border-1 rounded-2xl hover:cursor-pointer 
-                        ${insertingMode === InsertingMode.NAME ? "bg-surface-0/50 border-primary-0" : "border-transparent"}`
-                        }
+                        className={`px-2 border-1 rounded-2xl hover:cursor-pointer 
+                        ${
+                            insertingMode === InsertingMode.NAME
+                                ? "bg-surface-0/50 border-primary-0"
+                                : "border-transparent"
+                        }`}
                         onClick={() => setInsertingMode(InsertingMode.NAME)}
                     >
                         name
@@ -112,21 +116,26 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
                 <div>
                     <div className="flex">
                         <span
-                            className={
-                                `px-2 text-2xl border-1 rounded-2xl hover:cursor-pointer 
-                            ${insertingMode === InsertingMode.TAG ? "bg-surface-0/50 border-primary-0" : "border-transparent"}`
-                            }
+                            className={`px-2 text-2xl border-1 rounded-2xl hover:cursor-pointer 
+                            ${
+                                insertingMode === InsertingMode.TAG
+                                    ? "bg-surface-0/50 border-primary-0"
+                                    : "border-transparent"
+                            }`}
                             onClick={() => setInsertingMode(InsertingMode.TAG)}
                         >
                             #
                         </span>
                         {tagElements}
-                        <TagSelector selected={active && insertingMode === InsertingMode.TAG} tags={tags} onTagsUpdate={onTagsUpdate} />
+                        <TagSelector
+                            selected={active && insertingMode === InsertingMode.TAG}
+                            tags={tags}
+                            onTagsUpdate={onTagsUpdate}
+                        />
                     </div>
                 </div>
-            </div >
-        </div >
-    )
-}
+            </div>
+        </div>
+    );
+};
 export { type SearchQuery, ImageSearch };
-

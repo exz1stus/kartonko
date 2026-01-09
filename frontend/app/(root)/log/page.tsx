@@ -1,34 +1,23 @@
-
-interface LogEntry {
-    ID: number;
-    user_id: number;
-    entryTypeName: string;
-    affected_obj_id: number;
-    data: string;
-}
+import LogEntryData from "@/app/lib/log";
+import LogEntry from "@/components/Log/LogEntry";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
 const Log = async () => {
+    let entriesData: LogEntryData[] = [];
+
     try {
         const res = await fetch(`${API_ORIGIN}/log?cursor=0&limit=10`);
-        const log: { entries: LogEntry[] } = await res.json();
-        const entries = log.entries.map((entry: LogEntry, index: number) => (
-            <div key={index}>
-                <p>{entry?.ID || "Unknown"}</p>
-                <p>{entry?.data || "No data"}</p>
-            </div>
-        ));
-        return (
-            <div>
-                {entries}
-            </div>
-        )
-    }
-    catch (err) {
+        entriesData = await res.json();
+    } catch (err) {
         console.error("Failed to fetch log:", err);
-        return null;
     }
-}
 
-export default Log
+    const entries = entriesData.map((entry, index) => {
+        return <LogEntry key={index} data={entry} />;
+    });
+
+    return <div className="flex flex-col gap-2 m-2">{entries}</div>;
+};
+
+export default Log;

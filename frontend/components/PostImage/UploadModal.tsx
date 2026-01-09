@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import PostImageForm from "./PostImageForm";
-import FancySpan from "@/components/FancySpan";
+import FancySpan from "@/components/template/FancySpan";
 
 interface Props {
     images?: File[];
@@ -33,7 +33,7 @@ const UploadModal: React.FC<Props> = ({ images = [], onUploaded, onClose }) => {
         if (newIndex >= 0 && newIndex < images.length) {
             setImageIndex(newIndex);
         }
-    }
+    };
 
     const handleUploaded = async () => {
         onUploaded();
@@ -43,13 +43,16 @@ const UploadModal: React.FC<Props> = ({ images = [], onUploaded, onClose }) => {
         }
 
         if (images.length - 1 === imageIndex) {
-            setImageIndex(prev => prev - 1);
+            setImageIndex((prev) => prev - 1);
         }
-    }
+    };
 
     return (
         <div className="z-50 fixed inset-0 flex justify-center items-center backdrop-blur-sm overflow-hidden">
-            <div className="flex flex-row bg-surface-0/95 rounded-2xl h-[50vh]" onWheel={handleWheel}>
+            <div
+                className="flex flex-row bg-surface-0/95 rounded-2xl h-[50vh]"
+                onWheel={handleWheel}
+            >
                 <img
                     src={URL.createObjectURL(images[imageIndex])}
                     alt={images[imageIndex].name}
@@ -58,16 +61,11 @@ const UploadModal: React.FC<Props> = ({ images = [], onUploaded, onClose }) => {
                 <div className="flex flex-col gap-10 p-8">
                     <div className="flex justify-between">
                         <FancySpan word={images[imageIndex].name} />
-                        <div
-                            className="flex justify-center items-center w-10 h-10 text-gray-700"
-                        >
+                        <div className="flex justify-center items-center w-10 h-10 text-gray-700">
                             {imageIndex + 1}/{images.length}
                         </div>
                     </div>
-                    <PostImageForm
-                        file={images[imageIndex]}
-                        onSubmit={handleUploaded}
-                    />
+                    <PostImageForm file={images[imageIndex]} onSubmit={handleUploaded} />
                 </div>
             </div>
         </div>
@@ -75,4 +73,3 @@ const UploadModal: React.FC<Props> = ({ images = [], onUploaded, onClose }) => {
 };
 
 export default UploadModal;
-

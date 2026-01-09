@@ -102,7 +102,7 @@ func (model *ImageModel) AddImage(image *Image) error {
 
 	result := model.db.Create(image)
 	if result.Error != nil {
-		return fmt.Errorf("failed to insert image: %v", result.Error)
+		return fmt.Errorf("failed to insert image: %w", result.Error)
 	}
 
 	return nil
@@ -113,7 +113,7 @@ func (model *ImageModel) GetImageByName(name string) (*Image, error) {
 	result := model.db.Where("filename = ?", name).First(&img)
 
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed retrieving image from the db: %v", result.Error)
+		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
 	}
 
 	if img.Hash == "" {
@@ -147,7 +147,7 @@ func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {
 	var images []Image
 	result := model.db.Model(&Image{}).Order("id desc").Limit(limit).Offset(cursor).Find(&images)
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed to retrieve images: %v", result.Error)
+		return nil, fmt.Errorf("failed to retrieve images: %w", result.Error)
 	}
 
 	return images, nil

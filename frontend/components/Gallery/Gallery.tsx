@@ -1,22 +1,23 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { ImageData, ImageCard } from "./ImageCard";
+import ImageCard from "./ImageCard";
 import { SearchQuery, ImageSearch, isQueryEmpty, isQueriesEqual } from "./ImageSearch";
-import { useDebounce, useDebouncedCallback } from "use-debounce";
-import Scrollbar from "../template/Scrollbar";
+import { useDebounce } from "use-debounce";
+import Scrollbar from "@/components/template/Scrollbar";
 import DragDropZone from "@/components/PostImage/DragDropZone";
-import useUploadModal from "../PostImage/useUploadModal";
-import UploadModal from "../PostImage/UploadModal";
+import useUploadModal from "@/hooks/useUploadModal";
+import UploadModal from "@/components/PostImage/UploadModal";
 import { useHover } from "@/app/contexts/HoverContex";
-import Masonry from "../template/Masonry";
+import Masonry, { MasonryItem } from "@/components/template/Masonry";
 import { useInView } from "react-intersection-observer";
+import ImageMetadata from "@/app/lib/image";
 
 interface ImagesResponse {
-    imageData: ImageData[];
+    imageData: ImageMetadata[];
 }
 
 interface Props {
-    initialImages: ImageData[];
+    initialImages: ImageMetadata[];
     initReachedEnd: boolean;
     initialQuery: SearchQuery;
 }
@@ -26,13 +27,12 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
     const REQUEST_SIZE = 30;
     const INIT_REQUEST_SIZE = 50;
 
-    const [images, setImages] = useState<ImageData[]>(initialImages);
+    const [images, setImages] = useState<ImageMetadata[]>(initialImages);
     const [cursor, setCursor] = useState<number>(initialImages.length);
     const [reachedEnd, setReachedEnd] = useState<boolean>(initReachedEnd);
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery);
     const loading = useRef<boolean>(false);
     const hasQueryChangedFromInit = useRef<boolean>(false);
-    const hasScrolled = useRef<boolean>(false);
     const needInitalFetch = useRef<boolean>(initialImages.length === 0);
 
     const FetchCount = useRef<number>(0);
@@ -89,9 +89,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         if (!isQueryEmpty(debouncedQuery) && !isQueriesEqual(debouncedQuery, initialQuery))
             hasQueryChangedFromInit.current = true;
 
-        if (!hasQueryChangedFromInit.current) return false;
-
-        return true;
+        return hasQueryChangedFromInit.current;
     };
 
     useEffect(() => {
@@ -109,23 +107,22 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         fetchImages(debouncedQuery, 0, REQUEST_SIZE);
     }, [debouncedQuery]);
 
-    const imageCards = images.map((image) => (
-        <ImageCard
-            key={image.filename}
-            filename={image.filename}
-            tags={image.tags}
-            width={image.width}
-            height={image.height}
-            className="break-inside-avoid"
-        />
-    ));
+    const items: MasonryItem[] = images.map((image) => ({
+        key: image.filename,
+        ratio: image.height / image.width,
+        item: (
+            <ImageCard
+                filename={image.filename}
+                tags={image.tags}
+                width={image.width}
+                height={image.height}
+            />
+        ),
+    }));
 
-    const ratios = images.map((image) => image.height / image.width);
     const gallery = (
         <div className="flex justify-center">
-            <Masonry className="p-4" ratios={ratios}>
-                {imageCards}
-            </Masonry>
+            <Masonry className="p-4" items={items} colWidth={240} maxCols={0} />
         </div>
     );
 
@@ -144,7 +141,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
 
     return (
         <div className="flex flex-col h-full">
-            {/* {<div>Client Fetches count: {FetchCount.current} Images count: {images.length}</div>} */}
+            {/* <div>Client Fetches count: {FetchCount.current} Images count: {images.length}</div> */}
             <ImageSearch
                 initialQuery={initialQuery}
                 selected={galleryHover.isHovered() && !isUploadModalShown}
@@ -163,7 +160,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
                         <div ref={sentinelRef} style={{ height: 1 }} />
                         <div
                             className={`${
-                                !loading.current && imageCards.length > 0 ? "border-t" : ""
+                                !loading.current && items.length > 0 ? "border-t" : ""
                             } flex justify-center p-4`}
                         >
                             {loading.current && <div>Loading...</div>}

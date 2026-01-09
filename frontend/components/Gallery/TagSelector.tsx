@@ -3,10 +3,6 @@ import React, { useEffect, useState } from "react";
 import { noUse } from "@/app/AudioEffects";
 import useTypingHints from "@/app/hooks/useTypingHints";
 
-interface Tag {
-    name: string;
-}
-
 interface TagSelectorProps {
     selected: boolean;
     tags: string[];
@@ -14,7 +10,7 @@ interface TagSelectorProps {
 }
 
 interface TagHintResponse {
-    tags: Tag[];
+    tags: string[];
 }
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
@@ -40,9 +36,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
                 if (parsedTags.length === 0) {
                     return [];
                 }
-                const hints = parsedTags
-                    .filter((tag) => !tags.some((t) => t === tag.name))
-                    .map((tag) => tag.name);
+                const hints = parsedTags.filter((tag) => !tags.some((t) => t === tag));
                 return hints;
             }
             return [];
@@ -138,4 +132,3 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
     );
 };
 export default TagSelector;
-export { type Tag, TagSelector };

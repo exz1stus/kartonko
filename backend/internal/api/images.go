@@ -20,15 +20,35 @@ import (
 // @Failure 404 {object} ErrorResponse
 // @Router /image/{name} [get]
 func (api *api) GetImageByNameRequest(c *gin.Context) {
-	req := c.Query("name")
+	req := c.Param("name")
+	img, err := api.models.Images.GetImageByName(req)
 
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, img)
+}
+
+// GetRawImageByNameRequest godoc
+// @Summary Returns image file by its unique name
+// @Tags Image
+// @Produce  application/octet-stream
+// @Param   name query string true "name"
+// @Failure 200 {object} map[string]interface{}
+// @Failure 404 {object} ErrorResponse
+// @Router /raw-image/{name} [get]
+func (api *api) GetRawImageByNameRequest(c *gin.Context) {
+	req := c.Param("name")
 	img, err := api.models.Images.GetImageByName(req)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"imageData": img.Filename, "tags": img.Tags})
+	c.Header("Content-Type", "image/"+img.Format)
+	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
 }
 
 // GetImagesByQueryRequest godoc
@@ -77,24 +97,6 @@ func (api *api) GetImagesByQueryRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"imageData": images})
 }
 
-// GetRawImageByNameRequest godoc
-// @Summary Returns image file by its unique name
-// @Tags Image
-// @Produce  application/octet-stream
-// @Param   name query string true "name"
-// @Failure 200 {object} map[string]interface{}
-// @Failure 404 {object} ErrorResponse
-// @Router /raw-image/{name} [get]
-func (api *api) GetRawImageByNameRequest(c *gin.Context) {
-	req := c.Param("name")
-	img, err := api.models.Images.GetImageByName(req)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
-}
-
 // PostImageRequest godoc
 // @Summary Uploads image
 // @Description Uploads image, name and hash must be unique
@@ -133,14 +135,15 @@ func (api *api) PostImageRequest(c *gin.Context) {
 
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "failed to get user: " + err.Error()})
 		return
 	}
 
 	imgFormat, err := image.MIMETypeToFormat(file.Header.Get("Content-Type"))
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unsoported image format: " + err.Error()})
+		return
 	}
 
 	imgWidth, imgHeight, err := image.GetDimensions(file)
@@ -151,15 +154,14 @@ func (api *api) PostImageRequest(c *gin.Context) {
 
 	img := api.models.Images.ConstructImage(request.Name, request.Tags, imgFormat, imgWidth, imgHeight)
 
-	if err := api.models.Images.SaveImage(img, file, c); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
+	if err := api.models.Log.OnImageCreated(img, user); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to log image creation: " + err.Error()})
 		return
 	}
 
-	err = api.models.Log.OnImageCreated(img, user)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+	if err := api.models.Images.SaveImage(img, file, c); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

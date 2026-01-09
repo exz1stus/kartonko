@@ -1,20 +1,20 @@
-import React from 'react'
-import FancySpan from '../FancySpan';
+import React from "react";
+import FancySpan from "../template/FancySpan";
 
 interface UsernameButtonProps {
-    username: string
+    username: string;
 }
 
 const UsernameButton: React.FC<UsernameButtonProps> = ({ username }: UsernameButtonProps) => {
     const clickUsername = () => {
         window.location.href = `/user/${username}`;
-    }
+    };
 
     return (
-        <div className="text-lg font-bold hover:cursor-pointer" onClick={clickUsername}>
+        <div className="font-bold text-lg hover:cursor-pointer" onClick={clickUsername}>
             <FancySpan word={username} />
         </div>
-    )
-}
+    );
+};
 
-export default UsernameButton
+export default UsernameButton;

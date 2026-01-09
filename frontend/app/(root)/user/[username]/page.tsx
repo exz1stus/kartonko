@@ -1,13 +1,13 @@
-import React from 'react'
-import { UserData } from '@/app/contexts/AuthContext';
-import { notFound } from 'next/navigation';
-import Image from 'next/image';
-import GalleryServer from '@/components/Gallery/GalleryServer';
+import React from "react";
+import { UserData } from "@/app/contexts/AuthContext";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import GalleryServer from "@/components/Gallery/GalleryServer";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
-const UserPage = async ({ params }: { params: Promise<{ username: string }> }) => {
-    const { username } = await params;
+const UserPage = async ({ params }: { params: { username: string } }) => {
+    const { username } = params;
     let user: UserData;
     try {
         const res = await fetch(`${API_ORIGIN}/user/${username}`);
@@ -15,13 +15,14 @@ const UserPage = async ({ params }: { params: Promise<{ username: string }> }) =
 
         user = await res.json();
         if (!user) return notFound();
-    }
-    catch (err) {
+    } catch (err) {
         console.error("Failed to fetch user:", err);
         return notFound();
     }
 
-    const pictureURL: string = user.picture_url?.replace("s96-c", "s256-c") || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+    const pictureURL: string =
+        user.picture_url?.replace("s96-c", "s256-c") ||
+        "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     return (
         <div className="flex flex-row h-full">
@@ -53,7 +54,7 @@ const UserPage = async ({ params }: { params: Promise<{ username: string }> }) =
                 <GalleryServer initialFetchSize={50} />
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default UserPage
+export default UserPage;

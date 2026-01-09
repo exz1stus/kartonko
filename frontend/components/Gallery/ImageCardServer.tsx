@@ -1,14 +1,11 @@
 import Image from "next/image";
+import ImageMetadata from "@/app/lib/image";
 
 interface Tag {
     Name: string;
 }
 
-interface Props {
-    filename: string;
-    tags: string[];
-    width: number;
-    height: number;
+interface Props extends ImageMetadata {
     onLoad?: () => void;
 }
 
@@ -20,7 +17,7 @@ const ImageCardServer: React.FC<Props> = ({ filename, tags, onLoad, width, heigh
             <Image
                 src={`${API_ORIGIN}/raw-image/${filename}`}
                 alt={filename}
-                className="rounded-t-xl"
+                className="rounded-t-xl w-full h-auto"
                 width={width}
                 height={height}
                 onLoad={onLoad}
@@ -30,4 +27,4 @@ const ImageCardServer: React.FC<Props> = ({ filename, tags, onLoad, width, heigh
     );
 };
 
-export { type Props as ImageData, ImageCardServer };
+export default ImageCardServer;

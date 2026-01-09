@@ -29,5 +29,5 @@ func (api *api) GetAuditLogEntriesRequest(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"entries": entries})
+	c.JSON(http.StatusOK, entries)
 }

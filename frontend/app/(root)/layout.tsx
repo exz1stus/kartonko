@@ -9,12 +9,8 @@ export default function RootLayout({
     return (
         <html lang="en" className="h-screen">
             <ClientShell>
-                <main className="h-full overflow-hidden">
-                    {children}
-                </main>
+                <main className="h-full overflow-hidden">{children}</main>
             </ClientShell>
-        </html >
+        </html>
     );
 }
-
-

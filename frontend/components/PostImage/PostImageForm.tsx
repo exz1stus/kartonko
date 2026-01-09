@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Tag, TagSelector } from "@/components/Gallery/TagSelector";
-import { Metadata, useUploadImage } from "./useUploadImage";
+import TagSelector from "@/components/Gallery/TagSelector";
+import { ImageUploadRequest, useUploadImage } from "@/hooks/useUploadImage";
+import { toast } from "sonner";
 
 interface PostImageFormProps {
     file: File;
@@ -34,22 +35,24 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
             return tag;
         });
 
-        const data: Metadata = {
+        const data: ImageUploadRequest = {
             name: name || "",
             tags: tagsNames,
         };
 
-        const uploaded = await uploadImage(data, file);
-        if (uploaded) {
-            onSubmit();
-        }
+        const uploaded = toast.promise<boolean>(uploadImage(data, file), {
+            loading: "Loading...",
+            success: () => {
+                onSubmit();
+                `image has been uploaded`;
+            },
+            error: (error) => error.message,
+        });
     };
 
     const onTagsUpdate = (tags: string[]) => {
         setTags(tags);
     };
-
-    // const tagElements = tags.map((tag, index) => <TagElement key={index} tag={tag} removeTag={removeTag} />);
 
     return (
         <form className="space-y-6 w-full" onSubmit={submitImage}>

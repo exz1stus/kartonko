@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import SideBarPanel from './SideBar/SideBarPanel'
+import React, { ReactNode } from "react";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import SideBarPanel from "@/components/SideBar/SideBarPanel";
 
 const ResizableGrid = ({ children }: { children: ReactNode }) => {
     return (
@@ -11,7 +11,7 @@ const ResizableGrid = ({ children }: { children: ReactNode }) => {
                 {children}
             </ResizablePanel>
         </ResizablePanelGroup>
-    )
-}
+    );
+};
 
-export default ResizableGrid
+export default ResizableGrid;
