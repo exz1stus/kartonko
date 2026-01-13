@@ -15,7 +15,7 @@ import (
 // @Summary Returns imageData by it's unique name
 // @Tags Image
 // @Produce  application/json
-// @Param   name query string true "name"
+// @Param   name path string true "name"
 // @Failure 200 {object} map[string]interface{}
 // @Failure 404 {object} ErrorResponse
 // @Router /image/{name} [get]
@@ -35,10 +35,10 @@ func (api *api) GetImageByNameRequest(c *gin.Context) {
 // @Summary Returns image file by its unique name
 // @Tags Image
 // @Produce  application/octet-stream
-// @Param   name query string true "name"
+// @Param   name path string true "name"
 // @Failure 200 {object} map[string]interface{}
 // @Failure 404 {object} ErrorResponse
-// @Router /raw-image/{name} [get]
+// @Router /image/raw/{name} [get]
 func (api *api) GetRawImageByNameRequest(c *gin.Context) {
 	req := c.Param("name")
 	img, err := api.models.Images.GetImageByName(req)
@@ -141,11 +141,11 @@ func (api *api) PostImageRequest(c *gin.Context) {
 
 	imgFormat, err := image.MIMETypeToFormat(file.Header.Get("Content-Type"))
 
-	if err != nil || !image.IsFormatSupported(imgFormat) {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unsoported image format: " + err.Error()})
-		return
-	}
-
+	// if err != nil || !image.IsFormatSupported(imgFormat) {
+	// 	c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unsoported image format: " + err.Error()})
+	// 	return
+	// }
+	//TODO fix . + format
 	imgWidth, imgHeight, err := image.GetDimensions(file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error getting image dimensions: %s", err.Error())})
@@ -178,7 +178,7 @@ func (api *api) PostImageRequest(c *gin.Context) {
 		return
 	}
 
-	thumbDst := env.GetEnvString("THUMBS_PATH") + "/" + file.Filename
+	thumbDst := env.GetEnvString("THUMBNAILS_PATH") + "/" + file.Filename
 	if err := image.GenerateThumbnail(uploadDst, thumbDst); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error generating thumbnail: %s", err.Error())})
 		return

@@ -1,6 +1,7 @@
 tmp
-uploads*
-internal/database
+uploads
+thumbs
+database
 
 node_modules
 target
@@ -9,7 +10,7 @@ logs
 .cache
 .vscode
 .DS_Store
-.idea
+.idea 
 .next
 yarn-error.log
 npm-debug.log

@@ -5,7 +5,8 @@ const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 const nextConfig: NextConfig = {
     images: {
         remotePatterns: [
-            new URL(`${API_ORIGIN}/raw-image/**`),
+            new URL(`${API_ORIGIN}/image/raw/**`),
+            new URL(`${API_ORIGIN}/image/thumb/**`),
             new URL(`https://lh3.googleusercontent.com/a/**`),
         ],
     },

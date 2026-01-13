@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"server/internal/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,21 @@ type UserDataResponce struct {
 	JoinedAt   string `json:"joined_at"`
 	LastSeen   string `json:"last_seen"`
 	Online     bool   `json:"online"`
+}
+
+func buildUserResponce(user *models.User) UserDataResponce {
+	res := UserDataResponce{
+		Username:   user.Username,
+		Privileage: user.Privileage.String(),
+		JoinedAt:   user.CreatedAt.Format(time.DateOnly),
+		LastSeen:   user.LastSeen.Format(time.DateTime),
+	}
+
+	if user.IsOauth() {
+		res.PictureURL = user.PictureURL
+	}
+
+	return res
 }
 
 // GetUserRequest godoc
@@ -36,16 +52,7 @@ func (api *api) GetUserRequest(c *gin.Context) {
 		return
 	}
 
-	res := UserDataResponce{
-		Username:   user.Username,
-		Privileage: user.Privileage.String(),
-		JoinedAt:   user.CreatedAt.Format(time.DateOnly),
-		LastSeen:   user.LastSeen.Format(time.DateTime),
-	}
-
-	if user.IsOauth() {
-		res.PictureURL = user.PictureURL
-	}
+	res := buildUserResponce(user)
 
 	c.JSON(http.StatusOK, res)
 }
@@ -57,5 +64,6 @@ func (api *api) GetMeRequest(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, "user/"+user.Username)
+	res := buildUserResponce(user)
+	c.JSON(http.StatusOK, res)
 }

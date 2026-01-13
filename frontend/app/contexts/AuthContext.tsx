@@ -61,10 +61,15 @@ const useProvideAuth = () => {
         setLoading(true);
         try {
             const res = await fetch(`${API_ORIGIN}/me`, { credentials: "include" });
-            if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
                 setUser(null);
                 return;
             }
+
+            if (!res.ok) {
+                throw new Error(`Request failed: ${res.status}`);
+            }
+
             const data = await res.json();
             if (data?.username && data?.picture_url) {
                 setUser(data);

@@ -29,7 +29,7 @@ const ImagePage = async ({ params }: { params: { filename: string } }) => {
             <Scrollbar>
                 <div className="flex justify-center">
                     <Image
-                        src={`${API_ORIGIN}/raw-image/${filename}`}
+                        src={`${API_ORIGIN}/image/raw/${filename}`}
                         alt={filename}
                         width={image.width}
                         height={image.height}

@@ -28,8 +28,8 @@ func (api *api) initRoutes() {
 	r.GET("/user/:username", api.GetUserRequest)
 
 	r.GET("/image/:name", api.GetImageByNameRequest)
-	r.GET("/raw-image/:name", api.GetRawImageByNameRequest)
-	r.Static("/raw-image/thumb", env.GetEnvString("THUMBNAILS_PATH"))
+	r.GET("/image/raw/:name", api.GetRawImageByNameRequest)
+	r.Static("/image/thumb", env.GetEnvString("THUMBNAILS_PATH"))
 
 	r.GET("/images", api.GetImagesByQueryRequest)
 	r.GET("/log", api.GetAuditLogEntriesRequest)

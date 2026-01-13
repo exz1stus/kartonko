@@ -9,7 +9,15 @@ interface Props extends ImageMetadata {
     style?: React.CSSProperties;
 }
 
-const ImageCard: React.FC<Props> = ({ filename, tags, className, width, height, style }) => {
+const ImageCard: React.FC<Props> = ({
+    filename,
+    tags,
+    format,
+    className,
+    width,
+    height,
+    style,
+}) => {
     const selfRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const onClick = () => {
@@ -26,6 +34,7 @@ const ImageCard: React.FC<Props> = ({ filename, tags, className, width, height, 
             <PerspectiveCard>
                 <ImageCardServer
                     filename={filename}
+                    format={format}
                     tags={tags}
                     onLoad={onLoad}
                     width={width}

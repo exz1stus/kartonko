@@ -117,7 +117,7 @@ paths:
     get:
       parameters:
       - description: name
-        in: query
+        in: path
         name: name
         required: true
         type: string
@@ -134,6 +134,29 @@ paths:
           schema:
             $ref: '#/definitions/api.ErrorResponse'
       summary: Returns imageData by it's unique name
+      tags:
+      - Image
+  /image/raw/{name}:
+    get:
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: Returns image file by its unique name
       tags:
       - Image
   /images:
@@ -205,29 +228,6 @@ paths:
       summary: Gets audit log entries by given range
       tags:
       - AuditLog
-  /raw-image/{name}:
-    get:
-      parameters:
-      - description: name
-        in: query
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/octet-stream
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Returns image file by its unique name
-      tags:
-      - Image
   /tags:
     get:
       description: Returns a list of tags at "cursor + limit" matching the "query"

@@ -7,7 +7,7 @@ import GalleryServer from "@/components/Gallery/GalleryServer";
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
 const UserPage = async ({ params }: { params: { username: string } }) => {
-    const { username } = params;
+    const { username } = await params;
     let user: UserData;
     try {
         const res = await fetch(`${API_ORIGIN}/user/${username}`);

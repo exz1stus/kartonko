@@ -58,24 +58,24 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	fmt.Printf("Query:%s, offset: %d\n", query, offset)
 	images, err := searchImages(query, offset)
 	if err != nil {
-		print(err.Error())
+		println(err.Error())
 		return
 	}
 
 	if len(images) == 0 {
-		print("No images found\n")
+		println("No images found")
 		return
 	}
 
-	print(len(images), " images found\n")
+	println(len(images), " images found")
 
 	results := []tgbotapi.InlineQueryResultPhoto{}
 
 	for _, img := range images {
 		photo := tgbotapi.NewInlineQueryResultPhotoWithThumb(
 			img.Hash,
-			API_ORIGIN+"/raw-image/"+img.Filename,                      // photo_url
-			API_ORIGIN+"/raw-image/thumb/"+img.Filename+"."+img.Format, // thumb_url
+			API_ORIGIN+"/image/raw/"+img.Filename,                  // photo_url
+			API_ORIGIN+"/image/thumb/"+img.Filename+"."+img.Format, // thumb_url
 		)
 		photo.Title = img.Filename
 		photo.Caption = img.Filename

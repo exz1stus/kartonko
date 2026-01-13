@@ -100,6 +100,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         item: (
             <ImageCard
                 filename={image.filename}
+                format={image.format}
                 tags={image.tags}
                 width={image.width}
                 height={image.height}
@@ -122,18 +123,18 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
 
     const contentRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (loading || reachedEnd) return;
+    // useEffect(() => {
+    //     if (loading || reachedEnd) return;
 
-        const container = galleryHover.ref.current;
-        const content = contentRef.current;
+    //     const container = galleryHover.ref.current;
+    //     const content = contentRef.current;
 
-        if (!container || !content) return;
+    //     if (!container || !content) return;
 
-        if (content.scrollHeight <= container.clientHeight) {
-            fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
-        }
-    }, [images, loading, reachedEnd]);
+    //     if (content.scrollHeight <= container.clientHeight) {
+    //         fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
+    //     }
+    // }, [images, loading, reachedEnd]);
 
     useEffect(() => {
         if (!inView || loading || reachedEnd) return;
@@ -162,7 +163,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
                         <div ref={sentinelRef} style={{ height: 1 }} />
                         <div
                             className={`${
-                                !loading && items.length > 0 ? "border-t" : ""
+                                reachedEnd && !loading && items.length > 0 ? "border-t" : ""
                             } flex justify-center p-4`}
                         >
                             {loading && <div>Loading...</div>}
