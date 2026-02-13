@@ -1,21 +1,20 @@
-"use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { noUse } from "@/app/AudioEffects";
 import useTypingHints from "@/app/hooks/useTypingHints";
 
-interface TagSelectorProps {
-    selected: boolean;
+interface Props {
+    active: boolean;
     tags: string[];
     onTagsUpdate: (tags: string[]) => void;
 }
 
 interface TagHintResponse {
-    tags: string[];
+    tags: { name: string }[];
 }
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 
-const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate }) => {
+const useTagSelector = ({ active, tags, onTagsUpdate }: Props) => {
     const [tagField, setTagField] = useState<string>("");
 
     const onQueryMatchedHint = () => {
@@ -28,7 +27,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
         try {
             if (query.length === 0) return [];
             const response = await fetch(
-                `${API_ORIGIN}/tags?query=${query}&limit=${FETCH_HINTS_LIMIT}`
+                `${API_ORIGIN}/tags?query=${query}&limit=${FETCH_HINTS_LIMIT}`,
             );
             if (response.ok) {
                 const responseJson: TagHintResponse = await response.json();
@@ -36,7 +35,9 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
                 if (parsedTags.length === 0) {
                     return [];
                 }
-                const hints = parsedTags.filter((tag) => !tags.some((t) => t === tag));
+                const hints = parsedTags
+                    .map((tag) => tag.name)
+                    .filter((tag) => !tags.some((t) => t === tag));
                 return hints;
             }
             return [];
@@ -55,13 +56,13 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
         setTagField("");
         await new Promise((resolve) => setTimeout(resolve, 0));
         let tagsQuery = tags.concat(hint);
-        onTagsUpdate(tagsQuery);
+        onTagsUpdate?.(tagsQuery);
     };
 
     const { hint, difference, selectNext, selectPrevious } = useTypingHints(
         tagField,
         fetchTagFieldHint,
-        onQueryMatchedHint
+        onQueryMatchedHint,
     );
 
     const onTagKeyDown = (e: KeyboardEvent) => {
@@ -114,21 +115,14 @@ const TagSelector: React.FC<TagSelectorProps> = ({ selected, tags, onTagsUpdate 
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (!selected) return;
+            if (!active) return;
             onTagKeyDown(e);
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [selected, difference]);
+    }, [active, difference]);
 
-    return (
-        <div className="flex flex-row items-center px-3">
-            <span className={`text-lg ${hint.length > 0 ? "text-amber-200" : "text-primary-10"}`}>
-                {tagField}
-            </span>
-            <span className="opacity-50 text-primary-10 text-lg">{difference}</span>
-        </div>
-    );
+    return { hint, tagField, difference };
 };
-export default TagSelector;
+export default useTagSelector;

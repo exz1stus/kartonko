@@ -1,18 +1,20 @@
 "use client";
 import React, { useState } from "react";
-import { UserData, UserModal } from "./UserModal";
+import { UserModal } from "./UserModal";
+import UserPicture from "./UserPicture";
+import { UserData } from "@/app/lib/user";
 
-const UserProfile: React.FC<UserData> = (user: UserData) => {
+interface Props {
+    user: UserData;
+}
+
+const UserProfile = ({ user }: Props) => {
     const [modalShown, setModalShown] = useState(false);
-    const pictureURL: string =
-        user.picture_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     return (
         <div>
-            <div className="flex gap-2">
-                <div className="rounded-full" onClick={() => setModalShown(true)}>
-                    <img src={pictureURL} className="rounded-full w-10 h-10" alt="User picture" />
-                </div>
+            <div className="m-2" onClick={() => setModalShown(true)}>
+                <UserPicture user={user} />
             </div>
             <UserModal user={user} shown={modalShown} onClose={() => setModalShown(false)} />
         </div>

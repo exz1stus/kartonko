@@ -2,10 +2,6 @@ import ImageMetadata from "@/app/lib/image";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
 
-interface ImagesResponse {
-    imageData: ImageMetadata[];
-}
-
 const fetchImages = async (intialFetchSize: number, initialQuery: SearchQuery) => {
     const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
     const nameQueryString =
@@ -16,13 +12,13 @@ const fetchImages = async (intialFetchSize: number, initialQuery: SearchQuery) =
         `${API_ORIGIN}/images?${nameQueryString}${tagsQueryString}cursor=${0}&limit=${intialFetchSize}`,
         {
             cache: "no-store",
-        }
+        },
     );
 
     if (!response.ok) throw new Error("Failed to fetch images");
     console.log(`server intial fetching cursor ${0} limit ${intialFetchSize}`);
-    const data: ImagesResponse = await response.json();
-    return data.imageData;
+    const data: ImageMetadata[] = await response.json();
+    return data;
 };
 
 interface Props {

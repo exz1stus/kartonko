@@ -3,6 +3,7 @@ import { UserData } from "@/app/contexts/AuthContext";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import GalleryServer from "@/components/Gallery/GalleryServer";
+import TimeField from "@/components/TimeField";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
@@ -10,7 +11,7 @@ const UserPage = async ({ params }: { params: { username: string } }) => {
     const { username } = await params;
     let user: UserData;
     try {
-        const res = await fetch(`${API_ORIGIN}/user/${username}`);
+        const res = await fetch(`${API_ORIGIN}/user?username=${username}`);
         if (!res.ok) return notFound();
 
         user = await res.json();
@@ -46,7 +47,7 @@ const UserPage = async ({ params }: { params: { username: string } }) => {
                     </div>
                     <div className="flex justify-between">
                         <span>Last seen: </span>
-                        <span>{user.last_seen}</span>
+                        <TimeField time={user.last_seen} />
                     </div>
                 </div>
             </div>

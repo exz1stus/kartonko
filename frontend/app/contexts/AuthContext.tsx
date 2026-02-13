@@ -3,14 +3,7 @@ import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
 import { usePathname } from "next/navigation";
 import router from "next/router";
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
-
-interface UserData {
-    username: string;
-    privileage: string;
-    picture_url: string;
-    joined_at: Timestamp;
-    last_seen: Timestamp;
-}
+import { UserData } from "@/app/lib/user";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 const FRONTEND_URI = process.env.NEXT_PUBLIC_FRONTEND_URI;
@@ -91,7 +84,7 @@ const useProvideAuth = () => {
     const login = () => {
         const currentPath = pathname || "/";
         window.location.href = `${API_ORIGIN}/auth/google?redirect=${encodeURIComponent(
-            `${FRONTEND_URI}${currentPath}`
+            `${FRONTEND_URI}${currentPath}`,
         )}`;
     };
 

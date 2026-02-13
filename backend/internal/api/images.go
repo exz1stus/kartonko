@@ -7,9 +7,38 @@ import (
 	"server/internal/env"
 	"server/internal/models"
 	"server/pkg/image"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+type ImageResponse struct {
+	ID       uint
+	Filename string   `json:"filename"`
+	Tags     []string `json:"tags"`
+	Format   string   `json:"format"`
+	Width    uint     `json:"width"`
+	Height   uint     `json:"height"`
+	UserID   uint     `json:"user_id"`
+	Uploaded string   `json:"uploaded_at"`
+}
+
+const TimeFormat = time.RFC3339
+
+func ConstructImageResponse(img *models.Image) ImageResponse {
+	tags := models.TagsToStrings(img.Tags)
+
+	return ImageResponse{
+		ID:       img.ID,
+		Filename: img.Filename,
+		Tags:     tags,
+		Format:   img.Format,
+		Width:    img.Width,
+		Height:   img.Height,
+		UserID:   img.UserID,
+		Uploaded: img.CreatedAt.Format(TimeFormat),
+	}
+}
 
 // GetImageByNameRequest godoc
 // @Summary Returns imageData by it's unique name
@@ -22,13 +51,14 @@ import (
 func (api *api) GetImageByNameRequest(c *gin.Context) {
 	req := c.Param("name")
 	img, err := api.models.Images.GetImageByName(req)
+	response := ConstructImageResponse(img)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, img)
+	c.JSON(http.StatusOK, response)
 }
 
 // GetRawImageByNameRequest godoc
@@ -89,12 +119,17 @@ func (api *api) GetImagesByQueryRequest(c *gin.Context) {
 	}
 
 	images, err := api.models.Images.SearchImages(query, cursor, limit)
+	response := make([]ImageResponse, len(images))
+	for i, img := range images {
+		response[i] = ConstructImageResponse(&img)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"imageData": images})
+	c.JSON(http.StatusOK, response)
 }
 
 // PostImageRequest godoc
@@ -146,13 +181,14 @@ func (api *api) PostImageRequest(c *gin.Context) {
 	// 	return
 	// }
 	//TODO fix . + format
+
 	imgWidth, imgHeight, err := image.GetDimensions(file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error getting image dimensions: %s", err.Error())})
 		return
 	}
 
-	img := api.models.Images.ConstructImage(request.Name, request.Tags, imgFormat, imgWidth, imgHeight)
+	img := api.models.Images.ConstructImage(request.Name, request.Tags, imgFormat, imgWidth, imgHeight, user.ID)
 
 	if err := api.models.Log.AddImageCreated(img, user); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to log image creation: " + err.Error()})
@@ -184,8 +220,6 @@ func (api *api) PostImageRequest(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Upload successful",
-		"img":     img,
-	})
+	response := ConstructImageResponse(img)
+	c.JSON(http.StatusOK, response)
 }

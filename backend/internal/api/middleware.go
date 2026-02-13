@@ -43,7 +43,7 @@ func (app *api) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		user, err := app.models.Users.GetUserById(userId)
+		user, err := app.models.Users.GetUserById(uint64(userId))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			c.Abort()

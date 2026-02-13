@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "@/app/contexts/AuthContext"
+import { useAuth } from "@/app/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -9,8 +9,8 @@ export default function MePage() {
     useEffect(() => {
         if (loading) return;
         if (!user) login();
-        else router.replace(`/user/${user?.username}`)
-    }, [user, loading, login])
+        else router.replace(`/user/${user?.username}`);
+    }, [user, loading, login]);
 
     return <div>Loading...</div>;
 }

@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"server/internal/models"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,7 @@ type UserDataResponce struct {
 	Online     bool   `json:"online"`
 }
 
-func buildUserResponce(user *models.User) UserDataResponce {
+func constructUserResponce(user *models.User) UserDataResponce {
 	res := UserDataResponce{
 		Username:   user.Username,
 		Privileage: user.Privileage.String(),
@@ -36,25 +37,40 @@ func buildUserResponce(user *models.User) UserDataResponce {
 // @Summary Returns user's data by username
 // @Tags User
 // @Produce  json
-// @Param   username path string true "username"
+// @Query   username path string true "username"
+// @Query   id path number true "id"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
-// @Router /user/{username} [get]
+// @Router /user [get]
 func (api *api) GetUserRequest(c *gin.Context) {
-	username := c.Param("username")
-	if username == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "empty username provided"})
+	username := c.Query("username")
+	idStr := c.Query("id")
+
+	if username == "" && idStr == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "username or id must be provided"})
+		return
 	}
 
-	user, err := api.models.Users.GetUserByUsername(username)
+	var user *models.User
+	var err error
+
+	if username != "" {
+		user, err = api.models.Users.GetUserByUsername(username)
+	} else {
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad id provided"})
+			return
+		}
+		user, err = api.models.Users.GetUserById(id)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	res := buildUserResponce(user)
-
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, constructUserResponce(user))
 }
 
 func (api *api) GetMeRequest(c *gin.Context) {
@@ -64,6 +80,6 @@ func (api *api) GetMeRequest(c *gin.Context) {
 		return
 	}
 
-	res := buildUserResponce(user)
+	res := constructUserResponce(user)
 	c.JSON(http.StatusOK, res)
 }

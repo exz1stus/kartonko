@@ -25,7 +25,7 @@ func (api *api) initRoutes() {
 	}))
 	r.GET("/health", api.GetHealthCheckRequest)
 
-	r.GET("/user/:username", api.GetUserRequest)
+	r.GET("/user", api.GetUserRequest)
 
 	r.GET("/image/:name", api.GetImageByNameRequest)
 	r.GET("/image/raw/:name", api.GetRawImageByNameRequest)

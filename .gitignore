@@ -2,6 +2,7 @@ tmp
 uploads
 thumbs
 database
+storage.db
 
 node_modules
 target
@@ -16,3 +17,4 @@ yarn-error.log
 npm-debug.log
 .air.toml
 .env
+backend/internal/database/storage.db

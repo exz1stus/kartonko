@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import useNameSelector from "./NameSelector";
-import TagSelector from "./TagSelector";
-import TagElement from "./TagElement";
+import TagSelectorField from "../Tags/TagSelector";
 import { useHover } from "@/app/contexts/HoverContex";
+import useTags from "../Tags/useTags";
+import TagSpan from "../Tags/TagSpan";
 
 interface SearchQuery {
     nameContains: string;
@@ -35,13 +36,12 @@ enum InsertingMode {
 }
 
 const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, className }) => {
-    const [tags, setTags] = useState<string[]>([]);
     const [name, setName] = useState<string>("");
     const [insertingMode, setInsertingMode] = useState<InsertingMode>(InsertingMode.NAME);
-
     const { ref, isHovered } = useHover<HTMLDivElement>();
 
     const hovered = isHovered();
+    const { tags, setTags, removeTag } = useTags();
 
     useEffect(() => {
         onQueryChange({
@@ -52,10 +52,6 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
 
     const onNameUpdated = (name: string) => {
         setName(name);
-    };
-
-    const onTagsUpdate = (tags: string[]) => {
-        setTags(tags);
     };
 
     useEffect(() => {
@@ -82,14 +78,6 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [hovered]);
-
-    const removeTag = (tag: string) => {
-        setTags(tags.filter((t) => t !== tag));
-    };
-
-    const tagElements = tags.map((tag, index) => (
-        <TagElement key={index} tag={tag} removeTag={removeTag} />
-    ));
 
     const active = selected || hovered;
 
@@ -126,11 +114,11 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
                         >
                             #
                         </span>
-                        {tagElements}
-                        <TagSelector
-                            selected={active && insertingMode === InsertingMode.TAG}
+                        <TagSpan tags={tags} removeTag={removeTag} />
+                        <TagSelectorField
+                            active={active && insertingMode === InsertingMode.TAG}
                             tags={tags}
-                            onTagsUpdate={onTagsUpdate}
+                            onTagsUpdate={(t: string[]) => setTags(t)}
                         />
                     </div>
                 </div>

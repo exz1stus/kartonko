@@ -11,10 +11,7 @@ import { useHover } from "@/app/contexts/HoverContex";
 import Masonry, { MasonryItem } from "@/components/template/Masonry";
 import { useInView } from "react-intersection-observer";
 import ImageMetadata from "@/app/lib/image";
-
-interface ImagesResponse {
-    imageData: ImageMetadata[];
-}
+import ImageContent from "../ImageContent";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -57,11 +54,11 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
                     ? ""
                     : `tags=${JSON.stringify(searchQuery.withTags)}&`;
             const response = await fetch(
-                `${API_ORIGIN}/images?${name}${tags}cursor=${cursor}&limit=${requestSize}`
+                `${API_ORIGIN}/images?${name}${tags}cursor=${cursor}&limit=${requestSize}`,
             );
             if (!response.ok) throw new Error("Failed to fetch images");
 
-            const { imageData }: ImagesResponse = await response.json();
+            const imageData: ImageMetadata[] = await response.json();
             setImages((prev) => [...prev, ...imageData]);
             if (imageData.length < requestSize) setReachedEnd(true);
 
@@ -104,15 +101,10 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
                 tags={image.tags}
                 width={image.width}
                 height={image.height}
+                user_id={image.user_id}
             />
         ),
     }));
-
-    const gallery = (
-        <div className="flex justify-center">
-            <Masonry className="p-4" items={items} colWidth={240} maxCols={0} />
-        </div>
-    );
 
     const isUploadModalShown = recievedImages.length > 0;
 
@@ -142,6 +134,28 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
     }, [inView]);
 
+    const gallery =
+        images.length === 1 && !isQueryEmpty(debouncedQuery) ? (
+            <ImageContent image={images[0]} />
+        ) : (
+            <>
+                <div ref={contentRef}>
+                    <div className="flex justify-center">
+                        <Masonry className="p-4" items={items} colWidth={240} maxCols={0} />
+                    </div>
+                </div>
+                <div ref={sentinelRef} style={{ height: 1 }} />
+                <div
+                    className={`${
+                        reachedEnd && !loading && items.length > 0 ? "border-t" : ""
+                    } flex justify-center p-4`}
+                >
+                    {loading && <div>Loading...</div>}
+                    {reachedEnd && <div>End of images</div>}
+                </div>
+            </>
+        );
+
     return (
         <div className="flex flex-col h-full">
             {/* <div>Client Fetches count: {FetchCount.current} Images count: {images.length}</div> */}
@@ -158,18 +172,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
                         onClose={handleClose}
                         onUploaded={handleUploaded}
                     />
-                    <Scrollbar className="overflow-x-hidden">
-                        <div ref={contentRef}>{gallery}</div>
-                        <div ref={sentinelRef} style={{ height: 1 }} />
-                        <div
-                            className={`${
-                                reachedEnd && !loading && items.length > 0 ? "border-t" : ""
-                            } flex justify-center p-4`}
-                        >
-                            {loading && <div>Loading...</div>}
-                            {reachedEnd && <div>End of images</div>}
-                        </div>
-                    </Scrollbar>
+                    <Scrollbar className="overflow-x-hidden">{gallery}</Scrollbar>
                 </DragDropZone>
             </div>
         </div>

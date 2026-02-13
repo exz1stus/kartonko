@@ -44,7 +44,7 @@ func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 		return nil, fmt.Errorf("invalid token claims")
 	}
 
-	user, err := rh.models.Users.GetUserById(userId)
+	user, err := rh.models.Users.GetUserById(uint64(userId))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %v", err)
 	}

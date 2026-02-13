@@ -4,6 +4,8 @@ interface ImageMetadata {
     width: number;
     height: number;
     format: string;
+    user_id: number;
+    uploaded_at: string;
 }
 
 export default ImageMetadata;

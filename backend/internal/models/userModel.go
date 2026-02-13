@@ -172,16 +172,16 @@ func (model *UserModel) EmailExists(email string) (bool, error) {
 	return false, nil
 }
 
-func (model *UserModel) GetUserById(id float64) (*User, error) {
+func (model *UserModel) GetUserById(id uint64) (*User, error) {
 	var user User
 	result := model.db.Model(&User{}).Where("id = ?", id).First(&user)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, fmt.Errorf("user with id %f not found", id)
+		return nil, fmt.Errorf("user with id %d not found", id)
 	}
 
 	if result.Error != nil {
-		return nil, fmt.Errorf("failed to retrieve user with id %f: %v", id, result.Error)
+		return nil, fmt.Errorf("failed to retrieve user with id %d: %v", id, result.Error)
 	}
 
 	return &user, nil

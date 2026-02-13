@@ -1,7 +1,11 @@
-import { noUse } from '@/app/AudioEffects'
-import { useEffect } from 'react'
+import { noUse } from "@/app/AudioEffects";
+import { useEffect } from "react";
 
-const useNameSelector = (selected: boolean, name: string, onNameUpdated: (name: string) => void) => {
+const useNameSelector = (
+    selected: boolean,
+    name: string,
+    onNameUpdated: (name: string) => void,
+) => {
     const onNameKeyDown = (e: KeyboardEvent) => {
         const allowed = /^[a-z0-9\s]+$/i;
         if (!allowed.test(e.key)) {
@@ -24,18 +28,17 @@ const useNameSelector = (selected: boolean, name: string, onNameUpdated: (name: 
                 nameQuery = nameQuery.concat("_");
                 break;
             default:
-                if (e.key.length === 1)
-                    nameQuery = nameQuery.concat(e.key.toLowerCase());
+                if (e.key.length === 1) nameQuery = nameQuery.concat(e.key.toLowerCase());
                 break;
         }
 
         onNameUpdated(nameQuery);
-    }
+    };
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!selected) return;
-            onNameKeyDown(e)
+            onNameKeyDown(e);
         };
 
         window.addEventListener("keydown", handleKeyDown);
@@ -43,6 +46,6 @@ const useNameSelector = (selected: boolean, name: string, onNameUpdated: (name: 
     }, [onNameKeyDown, selected]);
 
     return onNameUpdated;
-}
+};
 
 export default useNameSelector;

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import TagSelector from "@/components/Gallery/TagSelector";
+import TagSelectorField from "@/components/Tags/TagSelector";
 import { ImageUploadRequest, useUploadImage } from "@/hooks/useUploadImage";
 import { toast } from "sonner";
 
@@ -74,7 +74,7 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
                 <label className="w-32 font-medium text-gray-700 text-sm shrink-0">Add tags</label>
                 <div className="flex flex-col flex-1 gap-2">
                     {/* {tagElements} */}
-                    <TagSelector selected={true} tags={tags} onTagsUpdate={onTagsUpdate} />
+                    <TagSelectorField selected={true} tags={tags} onTagsUpdate={onTagsUpdate} />
                 </div>
             </div>
             <div className="flex justify-center">

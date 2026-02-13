@@ -1,16 +1,9 @@
 import { cookies } from "next/headers";
-
-export interface UserData {
-    username: string;
-    privileage: string;
-    picture_url: string;
-    joined_at: string;
-    last_seen: string;
-}
+import { UserData } from "./user";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
 
-export async function getUserServer(): Promise<UserData | null> {
+export async function getLoggedUserServer(): Promise<UserData | null> {
     try {
         const cookieStore = cookies();
         const cookieHeader = (await cookieStore)
@@ -28,7 +21,6 @@ export async function getUserServer(): Promise<UserData | null> {
 
         if (!res.ok) return null;
         const data: UserData = await res.json();
-        console.log(data);
         return data;
     } catch (e) {
         console.error("Failed to fetch user on server:", e);

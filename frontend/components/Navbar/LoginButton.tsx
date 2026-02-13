@@ -6,17 +6,15 @@ import UserProfile from "./UserProfile";
 const LoginButton: React.FC = () => {
     const { user, login } = useAuth();
 
-    if (!user) {
+    if (user === undefined || user === null) {
         return (
-            <button onClick={async () => await login()} className="w-auto h-10">
+            <button onClick={async () => await login()} className="w-auto h-10 cursor-pointer">
                 <span>Log in</span>
-            </button >
+            </button>
         );
     }
 
-    return (
-        <UserProfile {...user} />
-    )
-}
+    return <UserProfile user={user} />;
+};
 
-export default LoginButton
+export default LoginButton;

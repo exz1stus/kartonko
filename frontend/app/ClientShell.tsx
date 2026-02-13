@@ -13,7 +13,7 @@ const ClientShell = ({ children }: { children: React.ReactNode }) => {
                     <body
                         className="grid grid-rows-[auto_1fr] bg-image bg-surface-10 h-screen overflow-hidden"
                         style={{
-                            backgroundImage: `url(${process.env.NEXT_PUBLIC_API_ORIGIN}/image/raw/rem)`,
+                            backgroundImage: `url(${process.env.NEXT_PUBLIC_API_ORIGIN}/image/raw/bg)`,
                         }}
                     >
                         <NavBar />

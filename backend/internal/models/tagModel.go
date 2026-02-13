@@ -39,16 +39,8 @@ func (model *TagModel) SearchTags(query string, limit int) ([]Tag, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
 	return tags, nil
-}
-
-func ConstructTagsByNames(names []string) []Tag {
-	var tags []Tag
-	for _, name := range names {
-		tags = append(tags, Tag{Name: name})
-	}
-
-	return tags
 }
 
 func (model *TagModel) AddTag(tag string) error {
@@ -101,4 +93,21 @@ func (model *TagModel) TagExists(name string) bool {
 	var count int64
 	model.db.Model(&Tag{}).Where("name = ?", name).Count(&count)
 	return count > 0
+}
+
+func ConstructTagsByNames(names []string) []Tag {
+	var tags []Tag
+	for _, name := range names {
+		tags = append(tags, Tag{Name: name})
+	}
+
+	return tags
+}
+
+func TagsToStrings(tags []Tag) []string {
+	var names []string
+	for _, tag := range tags {
+		names = append(names, tag.Name)
+	}
+	return names
 }

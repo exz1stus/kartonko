@@ -14,6 +14,8 @@ type Image struct {
 	Format   string `json:"format" gorm:"not null"`
 	Width    uint   `json:"width" gorm:"not null"`
 	Height   uint   `json:"height" gorm:"not null"`
+	UserID   uint   `json:"user_id" gorm:"not null;default:1"`
+	User     User   `json:"user"`
 }
 
 type ImageModel struct {
@@ -60,7 +62,7 @@ func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) (
 	return images, nil
 }
 
-func (model *ImageModel) ConstructImage(name string, tagsNames []string, format string, width uint, height uint) *Image {
+func (model *ImageModel) ConstructImage(name string, tagsNames []string, format string, width uint, height uint, userID uint) *Image {
 	tags := ConstructTagsByNames(tagsNames)
 	image := &Image{
 		Filename: name,
@@ -68,6 +70,7 @@ func (model *ImageModel) ConstructImage(name string, tagsNames []string, format 
 		Format:   format,
 		Width:    width,
 		Height:   height,
+		UserID:   userID,
 	}
 	model.AddAutoTags(image)
 	return image
