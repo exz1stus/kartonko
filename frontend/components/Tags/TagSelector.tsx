@@ -1,28 +1,30 @@
-"use client";
 import React from "react";
-import useTagSelector from "./useTagSelector";
+import TagSpan from "./TagSpan";
+import TagSelectorField from "./TagSelectorField";
 
 interface Props {
-    active: boolean;
     tags: string[];
-    onTagsUpdate: (tags: string[]) => void;
+    removeTag: (tag: string) => void;
+    setTags: (tags: string[]) => void;
 }
 
-const TagSelectorField: React.FC<Props> = ({ active, tags, onTagsUpdate }) => {
-    const { hint, tagField, difference } = useTagSelector({
-        active,
-        tags,
-        onTagsUpdate,
-    });
+const TagSelector = ({ tags, removeTag, setTags }: Props) => {
+    const [tagFieldActive, setTagFieldActive] = React.useState<boolean>(false);
 
     return (
-        <div className="flex flex-row items-center px-3">
-            <span className={`text-lg ${hint.length > 0 ? "text-amber-200" : "text-primary-10"}`}>
-                {tagField}
-            </span>
-            <span className="opacity-50 text-primary-10 text-lg">{difference}</span>
+        <div className="flex flex-wrap gap-1">
+            <TagSpan
+                tags={tags}
+                removeTag={(t) => removeTag(t)}
+                tagStyle={"bg-surface-0 rounded-3xl px-2"}
+            />
+            <TagSelectorField
+                active={tagFieldActive}
+                tags={tags}
+                onTagsUpdate={(t) => setTags(t)}
+            />
         </div>
     );
 };
 
-export default TagSelectorField;
+export default TagSelector;

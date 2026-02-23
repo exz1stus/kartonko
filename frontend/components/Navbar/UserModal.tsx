@@ -1,9 +1,9 @@
-import React, { useRef } from 'react'
-import LogoutButton from './LogoutButton';
-import { UserData } from '@/app/contexts/AuthContext';
-import UsernameButton from './UsernameButton';
-import { useClickOutside } from '@/app/hooks/useClickOutside';
-import Image from 'next/image';
+import React, { useRef } from "react";
+import LogoutButton from "./LogoutButton";
+import { UserData } from "@/contexts/AuthContext";
+import UsernameButton from "./UsernameButton";
+import { useClickOutside } from "@/hooks/useClickOutside";
+import Image from "next/image";
 
 interface UserModalProps {
     user: UserData;
@@ -21,7 +21,10 @@ const UserModal: React.FC<UserModalProps> = ({ user, shown, onClose }: UserModal
     }
 
     return (
-        <div ref={modalRef} className="top-0 right-0 fixed bg-surface-10 border-1 border-surface-30 rounded-l">
+        <div
+            ref={modalRef}
+            className="top-0 right-0 fixed bg-surface-10 border-1 border-surface-30 rounded-l"
+        >
             <div className="flex flex-col justify-center items-center gap-2 p-2 pr-10 pl-10">
                 <div className="rounded-full">
                     <Image
@@ -36,7 +39,6 @@ const UserModal: React.FC<UserModalProps> = ({ user, shown, onClose }: UserModal
                 <LogoutButton />
             </div>
         </div>
-    )
-}
-export { UserModal, type UserData }
-
+    );
+};
+export { UserModal, type UserData };

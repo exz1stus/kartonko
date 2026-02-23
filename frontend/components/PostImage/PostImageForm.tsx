@@ -1,8 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import TagSelectorField from "@/components/Tags/TagSelector";
+import TagSelectorField from "@/components/Tags/TagSelectorField";
 import { ImageUploadRequest, useUploadImage } from "@/hooks/useUploadImage";
 import { toast } from "sonner";
+import TagSelector from "../Tags/TagSelector";
+import useTags from "../Tags/useTags";
+import { cn } from "@/lib/utils";
 
 interface PostImageFormProps {
     file: File;
@@ -10,10 +13,11 @@ interface PostImageFormProps {
 }
 
 const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
-    const [tags, setTags] = useState<string[]>([]);
     const [name, setName] = useState<string>();
 
-    const { uploadImage } = useUploadImage();
+    const { uploadImage, loading } = useUploadImage();
+
+    const { tags, removeTag, setTags } = useTags();
 
     useEffect(() => {
         const dotIndex = file.name.lastIndexOf(".");
@@ -24,6 +28,7 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
     const extension = file.name.split(".").pop();
 
     const submitImage = async (e: React.FormEvent) => {
+        if (loading) return;
         e.preventDefault();
 
         if (file === null) {
@@ -31,32 +36,24 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
             return;
         }
 
-        const tagsNames: string[] = tags.map((tag) => {
-            return tag;
-        });
-
         const data: ImageUploadRequest = {
             name: name || "",
-            tags: tagsNames,
+            tags: tags,
         };
 
         const uploaded = toast.promise<boolean>(uploadImage(data, file), {
             loading: "Loading...",
             success: () => {
                 onSubmit();
-                `image has been uploaded`;
+                return `image has been uploaded`;
             },
             error: (error) => error.message,
         });
     };
 
-    const onTagsUpdate = (tags: string[]) => {
-        setTags(tags);
-    };
-
     return (
-        <form className="space-y-6 w-full" onSubmit={submitImage}>
-            <div className="flex items-center gap-4">
+        <form className="space-y-6" onSubmit={submitImage}>
+            <div className="flex sm:flex-row flex-col sm:items-center gap-2 sm:gap-4">
                 <label className="w-32 font-medium text-gray-700 text-sm shrink-0">Name</label>
                 <div className="flex flex-1 items-center gap-2">
                     <input
@@ -72,15 +69,18 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
             </div>
             <div className="flex items-center gap-4">
                 <label className="w-32 font-medium text-gray-700 text-sm shrink-0">Add tags</label>
-                <div className="flex flex-col flex-1 gap-2">
-                    {/* {tagElements} */}
-                    <TagSelectorField selected={true} tags={tags} onTagsUpdate={onTagsUpdate} />
+                <div className="flex flex-wrap gap-1">
+                    <TagSelector tags={tags} removeTag={removeTag} setTags={setTags} />
                 </div>
             </div>
             <div className="flex justify-center">
                 <button
-                    className="w-96 px-12 py-1 text-gray-700 bg-white rounded-2xl hover:bg-blue-500 hover:text-white transition }"
+                    className={cn(
+                        "hover:bg-blue-500 px-12 py-1 rounded-2xl w-96 text-gray-700 hover:text-white transition",
+                        loading ? "animate-pulse bg-gray-400" : "bg-white",
+                    )}
                     type="submit"
+                    disabled={loading}
                 >
                     Upload
                 </button>

@@ -1,16 +1,19 @@
-import ImageMetadata from "@/app/lib/image";
+import ImageMetadata from "@/lib/image";
 import ImageContent from "@/components/ImageContent";
 import { notFound } from "next/navigation";
+import { serverFetch } from "@/lib/serverFetch";
 
-const API_ORIGIN_SERVER = process.env.NEXT_PUBLIC_API_LOCAL;
+interface Props {
+    filename: string;
+}
 
-const ImagePage = async ({ params }: { params: { filename: string } }) => {
+const ImagePage = async ({ params }: { params: Promise<Props> }) => {
     const { filename } = await params;
 
     let image: ImageMetadata;
 
     try {
-        const res = await fetch(`${API_ORIGIN_SERVER}/image/${filename}`);
+        const res = await serverFetch(`/image/${filename}`);
         if (!res.ok) return notFound();
 
         image = await res.json();
@@ -22,6 +25,7 @@ const ImagePage = async ({ params }: { params: { filename: string } }) => {
 
     return (
         <div className="flex justify-center items-center w-full h-full">
+            <title>{image.filename}</title>
             <ImageContent image={image} />
         </div>
     );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { noUse } from "@/app/AudioEffects";
-import useTypingHints from "@/app/hooks/useTypingHints";
+import useTypingHints from "@/hooks/useTypingHints";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface Props {
     active: boolean;
@@ -11,8 +12,6 @@ interface Props {
 interface TagHintResponse {
     tags: { name: string }[];
 }
-
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 
 const useTagSelector = ({ active, tags, onTagsUpdate }: Props) => {
     const [tagField, setTagField] = useState<string>("");
@@ -26,9 +25,7 @@ const useTagSelector = ({ active, tags, onTagsUpdate }: Props) => {
     const fetchTagFieldHint = async (query: string) => {
         try {
             if (query.length === 0) return [];
-            const response = await fetch(
-                `${API_ORIGIN}/tags?query=${query}&limit=${FETCH_HINTS_LIMIT}`,
-            );
+            const response = await apiFetch(`/tags?query=${query}&limit=${FETCH_HINTS_LIMIT}`);
             if (response.ok) {
                 const responseJson: TagHintResponse = await response.json();
                 const parsedTags = responseJson.tags;

@@ -11,6 +11,9 @@
     font-family: Arial, Helvetica, sans-serif;
 }
 
+@custom-variant portrait (@media (orientation: portrait));
+@custom-variant landscape (@media (orientation: landscape));
+
 @theme {
     --color-primary-0: var(--clr-primary-a0);
     --color-primary-10: var(--clr-primary-a10);
@@ -72,6 +75,10 @@
 
 .glass {
     @add ("backdrop-filter", "backdrop-blur-md");
+}
+
+button {
+    @add ("cursor-pointer");
 }
 
 /* @theme inline {

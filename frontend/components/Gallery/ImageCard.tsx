@@ -2,26 +2,19 @@ import PerspectiveCard from "./PerspectiveCard";
 import ImageCardServer from "./ImageCardServer";
 import React, { useRef } from "react";
 import { useRouter } from "next/navigation";
-import ImageMetadata from "@/app/lib/image";
+import ImageMetadata from "@/lib/image";
 
-interface Props extends ImageMetadata {
+interface Props {
+    image: ImageMetadata;
     className?: string;
     style?: React.CSSProperties;
 }
 
-const ImageCard: React.FC<Props> = ({
-    filename,
-    tags,
-    format,
-    className,
-    width,
-    height,
-    style,
-}) => {
+const ImageCard: React.FC<Props> = ({ image, className, style }) => {
     const selfRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const onClick = () => {
-        router.push(`/image/${filename}`);
+        router.push(`/image/${image.filename}`);
     };
 
     const onLoad = () => {
@@ -32,14 +25,7 @@ const ImageCard: React.FC<Props> = ({
     return (
         <div ref={selfRef} className={className + " opacity-0 "} style={style} onClick={onClick}>
             <PerspectiveCard>
-                <ImageCardServer
-                    filename={filename}
-                    format={format}
-                    tags={tags}
-                    onLoad={onLoad}
-                    width={width}
-                    height={height}
-                />
+                <ImageCardServer image={image} onLoad={onLoad} />
             </PerspectiveCard>
         </div>
     );

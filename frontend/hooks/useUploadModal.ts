@@ -12,7 +12,7 @@ const useUploadModal = () => {
         setRecievedImages([]);
     };
 
-    const handleDroppedFiles = (files: FileList) => {
+    const handleDroppedFiles = (files: File[]) => {
         let images = [];
 
         for (let i = 0; i < files.length; i++) {

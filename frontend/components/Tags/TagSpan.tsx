@@ -1,4 +1,4 @@
-import React from "react";
+"use client";
 import TagElement from "./TagElement";
 
 interface Props {

@@ -1,4 +1,4 @@
-interface ImageMetadata {
+export default interface ImageMetadata {
     filename: string;
     tags: string[];
     width: number;
@@ -7,5 +7,3 @@ interface ImageMetadata {
     user_id: number;
     uploaded_at: string;
 }
-
-export default ImageMetadata;

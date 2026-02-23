@@ -1,5 +1,8 @@
 import GalleryServer from "@/components/Gallery/GalleryServer";
 
 export default function Home() {
-    return <GalleryServer initialFetchSize={70} />;
+    return (<>
+    <meta name="description" content="Те, кому не нравятся слова ХУЙ и ПИЗДА, могут идти нахуй. Остальные пруцца!" />
+    <GalleryServer initialFetchSize={70} />
+    </>);
 }

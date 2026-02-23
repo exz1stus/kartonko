@@ -1,47 +1,56 @@
 "use client";
+
 import { useState, DragEvent } from "react";
 
 interface DragDropZoneProps {
     children: React.ReactNode;
-    onFilesDropped: (files: FileList) => void;
+    onFilesDropped: (files: File[]) => void;
 }
 
-const DragDropZone: React.FC<DragDropZoneProps> = ({ children, onFilesDropped }) => {
-    const [dragOver, setDragOver] = useState<boolean>(false);
+const DragDropZone = ({ children, onFilesDropped }: DragDropZoneProps) => {
+    const [dragOver, setDragOver] = useState(false);
 
-    const handleDragOver = (e: DragEvent<HTMLDivElement>): void => {
+    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
+        e.stopPropagation();
         setDragOver(true);
     };
 
-    const handleDrop = (e: DragEvent<HTMLDivElement>): void => {
+    const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+    };
+
+    const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
         setDragOver(false);
 
-        if (e.dataTransfer) {
-            onFilesDropped(e.dataTransfer.files);
+        const files = Array.from(e.dataTransfer.files);
+
+        if (files.length > 0) {
+            onFilesDropped(files);
         }
-    };
-
-    const handleDragEnd = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        setDragOver(false);
-    };
-
-    const handleMouseLeave = () => {
-        setDragOver(false);
     };
 
     return (
         <div
-            onDrop={handleDrop}
             onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-            onMouseLeave={handleMouseLeave}
-            className={`h-full w-full z-100 border-2 ${dragOver ? "border-dashed" : "border-transparent"}`}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`relative h-full w-full border-2 transition 
+                ${dragOver ? "border-dashed border-primary-10 bg-primary-10/20" : "border-transparent"}
+            `}
         >
             {children}
-        </div >
+
+            {dragOver && (
+                <div className="absolute inset-0 flex justify-center items-center pointer-events-none">
+                    <span className="font-semibold text-lg">Drop images here</span>
+                </div>
+            )}
+        </div>
     );
 };
 

@@ -1,9 +1,11 @@
-import ImageMetadata from "@/app/lib/image";
+import ImageMetadata from "@/lib/image";
 import Image from "next/image";
 import React from "react";
 import TagSpan from "./Tags/TagSpan";
 import UserElement from "./UserElement";
 import TimeField from "./TimeField";
+import { getLoggedUserServer, isModerator } from "@/lib/user";
+import EditImage from "./EditImage";
 
 interface Props {
     image: ImageMetadata;
@@ -11,7 +13,13 @@ interface Props {
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 
-const ImageContent: React.FC<Props> = ({ image }) => {
+const ImageContent: React.FC<Props> = async ({ image }) => {
+    const user = await getLoggedUserServer();
+    
+    const editImage = user && (isModerator(user) || user.id === image.user_id) && (
+        <EditImage image={image} />
+    );
+    
     const { filename } = image;
 
     const tags = image.tags?.length > 0 && (
@@ -23,16 +31,14 @@ const ImageContent: React.FC<Props> = ({ image }) => {
 
     return (
         <div className="flex justify-center gap-10 m-2">
-            <div className="flex justify-center max-w-[50vw]">
-                <Image
-                    src={`${API_ORIGIN}/image/raw/${filename}`}
-                    alt={filename}
-                    width={image.width}
-                    height={image.height}
-                    unoptimized
-                    className="rounded-2xl w-auto min-h-[30vh] max-h-[90vh]"
-                />
-            </div>
+            <Image
+                src={`${API_ORIGIN}/image/raw/${filename}`}
+                alt={filename}
+                width={image.width}
+                height={image.height}
+                unoptimized
+                className="rounded-2xl w-auto max-w-[50vw] min-h-[70vh] max-h-[80vh]"
+            />
             <div className="flex flex-col gap-5 bg-surface-tonal-0 p-5 rounded-2xl min-w-[20vw] max-w-[50vw]">
                 <span className="text-3xl">
                     {image.filename}.{image.format}
@@ -51,6 +57,7 @@ const ImageContent: React.FC<Props> = ({ image }) => {
                     <span className="text-l">Uploaded: </span>
                     <TimeField time={image.uploaded_at} />
                 </div>
+                {editImage}
                 {tags}
             </div>
         </div>

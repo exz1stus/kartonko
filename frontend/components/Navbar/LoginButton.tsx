@@ -1,20 +1,20 @@
 "use client";
-
-import { useAuth } from "@/app/contexts/AuthContext";
-import UserProfile from "./UserProfile";
+import { useRouter } from "next/navigation";
 
 const LoginButton: React.FC = () => {
-    const { user, login } = useAuth();
-
-    if (user === undefined || user === null) {
-        return (
-            <button onClick={async () => await login()} className="w-auto h-10 cursor-pointer">
-                <span>Log in</span>
-            </button>
-        );
-    }
-
-    return <UserProfile user={user} />;
+    const router = useRouter();
+    return (
+        <button
+            onClick={() =>
+                router.push(
+                    `/login?redirect=${encodeURIComponent(window.location.pathname || "/")}`,
+                )
+            }
+            className="w-auto h-10 cursor-pointer"
+        >
+            <span>Log in</span>
+        </button>
+    );
 };
 
 export default LoginButton;

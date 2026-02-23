@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
+	"time"
 
 	"tgbot/internal/env"
 
@@ -25,34 +27,44 @@ type Image struct {
 	Height   uint   `json:"height"`
 }
 
-type ApiResponse struct {
-	Images []Image `json:"imageData"`
-}
-
 var API_ORIGIN = env.GetEnvString("API_ORIGIN")
+var API_LOCAL = env.GetEnvString("API_LOCAL")
 
 const PAGE_SIZE = 10
 
 func searchImages(query string, cursor int) ([]Image, error) {
-	url := fmt.Sprintf("%s/images?cursor=%d&limit=%d&name=%s", API_ORIGIN, cursor, PAGE_SIZE, query)
+	url := fmt.Sprintf("%s/images?cursor=%d&limit=%d&name=%s", API_LOCAL, cursor, PAGE_SIZE, url.QueryEscape(query))
 
-	resp, err := http.Get(url)
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := client.Get(url)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status %d", resp.StatusCode)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var res ApiResponse
+	var res []Image
 	err = json.NewDecoder(resp.Body).Decode(&res)
-	return res.Images, err
+	return res, err
 }
 
 func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	query := update.InlineQuery.Query
 
-	offset := 0
+	offset, err := 0, error(nil)
+
 	if update.InlineQuery.Offset != "" {
-		offset, _ = strconv.Atoi(update.InlineQuery.Offset)
+		offset, err = strconv.Atoi(update.InlineQuery.Offset)
+		if err != nil {
+			offset = 0
+		}
 	}
 
 	fmt.Printf("Query:%s, offset: %d\n", query, offset)
@@ -72,10 +84,11 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	results := []tgbotapi.InlineQueryResultPhoto{}
 
 	for _, img := range images {
+		name := url.QueryEscape(img.Filename)
 		photo := tgbotapi.NewInlineQueryResultPhotoWithThumb(
-			img.Hash,
-			API_ORIGIN+"/image/raw/"+img.Filename,                  // photo_url
-			API_ORIGIN+"/image/thumb/"+img.Filename+"."+img.Format, // thumb_url
+			fmt.Sprintf("%d", img.ID),
+			API_ORIGIN+"/image/raw/"+name,
+			API_ORIGIN+"/image/thumb/"+name+"."+img.Format,
 		)
 		photo.Title = img.Filename
 		photo.Caption = img.Filename
@@ -98,7 +111,16 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	for i, result := range results {
 		inlineConf.Results[i] = result
 	}
-	bot.Request(inlineConf)
+
+	resp, err := bot.Request(inlineConf)
+	if err != nil {
+		fmt.Println("Telegram request error:", err)
+		return
+	}
+
+	if !resp.Ok {
+		fmt.Println("Telegram API error:", resp.Description)
+	}
 }
 
 func main() {

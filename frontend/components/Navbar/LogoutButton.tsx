@@ -1,15 +1,17 @@
-import { useAuth } from '@/app/contexts/AuthContext';
-import React from 'react'
-import Button from '../template/Button';
+import { useAuth } from "@/contexts/AuthContext";
+import React from "react";
 
 const LogoutButton: React.FC = () => {
     const { logout } = useAuth();
 
     return (
-        <div>
-            <Button text={"Log out"} onClick={async () => await logout()} />
-        </div>
-    )
-}
+        <button
+            className="cursor:bg-surface-10 px-2 border-1 border-surface-20 rounded-xl"
+            onClick={async () => await logout()}
+        >
+            Log out
+        </button>
+    );
+};
 
-export default LogoutButton
+export default LogoutButton;

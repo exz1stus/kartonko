@@ -132,6 +132,39 @@ func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {
 	return images, nil
 }
 
+func (model *ImageModel) DeleteImageByName(name string, userID uint) error {
+	var image Image
+
+	if err := model.db.
+		Where("filename = ?", name).
+		First(&image).Error; err != nil {
+
+		return fmt.Errorf("cannot delete %s: %w", name, err)
+	}
+
+	if image.UserID != userID {
+		var user User
+
+		err := model.db.
+			Where("user_id = ? AND privileage = ?", userID, Moderator).
+			First(&user).Error
+
+		if err != nil {
+			return fmt.Errorf(
+				"cannot delete %s: user %d is not owner or moderator",
+				name,
+				userID,
+			)
+		}
+	}
+
+	if err := model.db.Delete(&image).Error; err != nil {
+		return fmt.Errorf("cannot delete %s: %w", name, err)
+	}
+
+	return nil
+}
+
 func (model *ImageModel) containsImageHash(hash string) bool {
 	var count int64
 	model.db.Model(&Image{}).Where("hash = ?", hash).Count(&count)

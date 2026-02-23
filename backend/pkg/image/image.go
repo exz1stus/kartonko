@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"io"
 	"mime/multipart"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -86,4 +87,12 @@ func GenerateThumbnail(srcPath, dstPath string) error {
 		dstPath,
 		opts,
 	)
+}
+
+func DeleteImage(path string) error {
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("Failed deleting image %s: %w", err)
+	}
+
+	return nil
 }

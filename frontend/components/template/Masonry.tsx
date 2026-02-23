@@ -56,25 +56,24 @@ const Masonry: React.FC<Props> = ({ items, className, maxCols = 0, colWidth = 20
     }, [childrenArray, colWidth, maxCols]);
 
     return (
-        <div ref={containerRef} className={"w-full"}>
-            <div
-                className={ec("flex flex-row gap-4", className)}
-                style={{ maxWidth: maxCols > 0 ? `${maxCols * colWidth}px` : "100%" }}
-            >
-                {columns.map((column, i) => (
-                    <div
-                        key={i}
-                        className="flex flex-col gap-5"
-                        style={{
-                            width: `${100 / columns.length}%`,
-                        }}
-                    >
-                        {column.items.map((item) => (
-                            <React.Fragment key={item.key}>{item.item}</React.Fragment>
-                        ))}
-                    </div>
-                ))}
-            </div>
+        <div
+            ref={containerRef}
+            className={ec("flex-row justify-center flex gap-4 w-full", className)}
+            style={{ maxWidth: maxCols > 0 ? `${maxCols * colWidth}px` : "100%" }}
+        >
+            {columns.map((column, i) => (
+                <div
+                    key={i}
+                    className={`flex flex-col gap-5 lg:max-w-[25vw]`}
+                    style={{
+                        width: `${100 / columns.length}%`,
+                    }}
+                >
+                    {column.items.map((item) => (
+                        <React.Fragment key={item.key}>{item.item}</React.Fragment>
+                    ))}
+                </div>
+            ))}
         </div>
     );
 };

@@ -1,13 +1,12 @@
-import LogEntryData from "@/app/lib/log";
+import LogEntryData from "@/lib/log";
 import LogEntry from "@/components/Log/LogEntry";
-
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
+import { serverFetch } from "@/lib/serverFetch";
 
 const Log = async () => {
     let entriesData: LogEntryData[] = [];
 
     try {
-        const res = await fetch(`${API_ORIGIN}/log?cursor=0&limit=10`);
+        const res = await serverFetch(`/log?cursor=0&limit=10`);
         entriesData = await res.json();
     } catch (err) {
         console.error("Failed to fetch log:", err);

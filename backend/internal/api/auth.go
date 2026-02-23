@@ -17,6 +17,11 @@ type authRequest struct {
 	Password string `json:"password"`
 }
 
+type LoginResponse struct {
+	Token string      `json:"token"`
+	User  models.User `json:"user"`
+}
+
 func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 	tokenString, err := c.Cookie("jwt")
 	if err != nil {
@@ -87,8 +92,14 @@ func (rh *api) LoginRequest(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("jwt", tokenString, 3600, "/", "", false, true)
-	c.JSON(http.StatusOK, gin.H{"login": true})
+	setTokenCookie(tokenString, &c.Writer)
+
+	res := &LoginResponse{
+		Token: tokenString,
+		User:  *user,
+	}
+
+	c.JSON(http.StatusOK, res)
 }
 
 var JWT_COOKIE_MAX_AGE = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")) * time.Hour
@@ -130,16 +141,7 @@ func (rh *api) RegisterRequest(c *gin.Context) {
 		return
 	}
 
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     "jwt",
-		Value:    tokenString,
-		Path:     "/",
-		Domain:   env.GetEnvString("API_ORIGIN"),
-		MaxAge:   int(JWT_COOKIE_MAX_AGE.Seconds()),
-		Secure:   true,
-		HttpOnly: false,
-		SameSite: http.SameSiteNoneMode,
-	})
+	setTokenCookie(tokenString, &c.Writer)
 
 	c.JSON(http.StatusOK, gin.H{"register": true})
 }
@@ -153,7 +155,17 @@ func (rh *api) RegisterRequest(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /auth/logout [post]
 func (rh *api) LogoutRequest(c *gin.Context) {
-	c.SetCookie("jwt", "", -1, "/", "", false, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		Domain:   env.GetEnvString("DOMAIN"),
+		SameSite: http.SameSiteDefaultMode,
+	})
+
 	c.JSON(http.StatusOK, gin.H{"logout": true})
 }
 
@@ -169,4 +181,17 @@ func GenerateJwtToken(userID uint) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func setTokenCookie(token string, writer *gin.ResponseWriter) {
+	http.SetCookie(*writer, &http.Cookie{
+		Name:     "jwt",
+		Value:    token,
+		Path:     "/",
+		MaxAge:   int(JWT_COOKIE_MAX_AGE.Seconds()),
+		Domain:   env.GetEnvString("DOMAIN"),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteDefaultMode,
+	})
 }

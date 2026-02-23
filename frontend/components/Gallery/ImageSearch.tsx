@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import useNameSelector from "./NameSelector";
-import TagSelectorField from "../Tags/TagSelector";
-import { useHover } from "@/app/contexts/HoverContex";
+import TagSelectorField from "../Tags/TagSelectorField";
+import { useHover } from "@/contexts/HoverContex";
 import useTags from "../Tags/useTags";
 import TagSpan from "../Tags/TagSpan";
 

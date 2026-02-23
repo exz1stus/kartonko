@@ -1,6 +1,6 @@
 import React from "react";
 import ImageCreated from "./ImageCreated";
-import LogEntryData from "@/app/lib/log";
+import LogEntryData from "@/lib/log";
 
 interface Props {
     data: LogEntryData;

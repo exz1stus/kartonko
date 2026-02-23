@@ -1,35 +1,46 @@
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: backend
-    ports:
-      - "8080:8080"
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-    restart: unless-stopped
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        container_name: backend
+        ports:
+            - "8080:8080"
+        networks:
+            - app-network
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+            interval: 5s
+            timeout: 3s
+            retries: 5
+            start_period: 5s
+        restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - app-network
-    restart: unless-stopped
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        container_name: frontend
+        ports:
+            - "3000:3000"
+        depends_on:
+            backend:
+                condition: service_healthy
+        networks:
+            - app-network
+        restart: unless-stopped
+
+    tgbot:
+        build:
+            context: ./tgbot
+            dockerfile: Dockerfile
+        container_name: tgbot
+        depends_on:
+            backend:
+                condition: service_healthy
+        networks:
+            - app-network
 
 networks:
-  app-network:
-    driver: bridge
+    app-network:
+        driver: bridge

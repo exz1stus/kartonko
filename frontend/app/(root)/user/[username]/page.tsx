@@ -1,17 +1,16 @@
 import React from "react";
-import { UserData } from "@/app/contexts/AuthContext";
+import { UserData } from "@/contexts/AuthContext";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import GalleryServer from "@/components/Gallery/GalleryServer";
 import TimeField from "@/components/TimeField";
+import { serverFetch } from "@/lib/serverFetch";
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
-
-const UserPage = async ({ params }: { params: { username: string } }) => {
+const UserPage = async ({ params }: { params: Promise<{ username: string }> }) => {
     const { username } = await params;
     let user: UserData;
     try {
-        const res = await fetch(`${API_ORIGIN}/user?username=${username}`);
+        const res = await serverFetch(`/user?username=${username}`);
         if (!res.ok) return notFound();
 
         user = await res.json();

@@ -1,17 +1,21 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import ImageCard from "./ImageCard";
-import { SearchQuery, ImageSearch, isQueryEmpty, isQueriesEqual } from "./ImageSearch";
+import ImageCard from "@/components/Gallery/ImageCard";
+import {
+    SearchQuery,
+    ImageSearch,
+    isQueryEmpty,
+    isQueriesEqual,
+} from "./ImageSearch";
 import { useDebounce } from "use-debounce";
 import Scrollbar from "@/components/template/Scrollbar";
 import DragDropZone from "@/components/PostImage/DragDropZone";
-import useUploadModal from "@/hooks/useUploadModal";
-import UploadModal from "@/components/PostImage/UploadModal";
-import { useHover } from "@/app/contexts/HoverContex";
+import { useHover } from "@/contexts/HoverContex";
 import Masonry, { MasonryItem } from "@/components/template/Masonry";
 import { useInView } from "react-intersection-observer";
-import ImageMetadata from "@/app/lib/image";
-import ImageContent from "../ImageContent";
+import ImageMetadata from "@/lib/image";
+import useUpload from "@/hooks/useUpload";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -19,8 +23,11 @@ interface Props {
     initialQuery: SearchQuery;
 }
 
-const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery }) => {
-    const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
+const Gallery: React.FC<Props> = ({
+    initialImages,
+    initReachedEnd,
+    initialQuery,
+}) => {
     const REQUEST_SIZE = 30;
     const INIT_REQUEST_SIZE = 50;
 
@@ -29,6 +36,7 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery);
     const [loading, setLoading] = useState(false);
     const hasQueryChangedFromInit = useRef<boolean>(false);
+    const fetchingRef = useRef(false);
 
     const FetchCount = useRef<number>(0);
 
@@ -40,21 +48,28 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         setSearchQuery(query);
     };
 
-    const { recievedImages, handleClose, handleDroppedFiles, handleUploaded } = useUploadModal();
+    const { handleUploadFiles } = useUpload();
 
-    const fetchImages = async (searchQuery: SearchQuery, cursor: number, requestSize: number) => {
-        if (loading || reachedEnd) return;
+    const fetchImages = async (
+        searchQuery: SearchQuery,
+        cursor: number,
+        requestSize: number,
+    ) => {
+        if (fetchingRef.current || reachedEnd) return;
+        fetchingRef.current = true;
         setLoading(true);
 
         try {
             const name =
-                searchQuery?.nameContains.length === 0 ? "" : `name=${searchQuery.nameContains}&`;
+                searchQuery?.nameContains.length === 0
+                    ? ""
+                    : `name=${searchQuery.nameContains}&`;
             const tags =
                 searchQuery?.withTags.length === 0
                     ? ""
                     : `tags=${JSON.stringify(searchQuery.withTags)}&`;
-            const response = await fetch(
-                `${API_ORIGIN}/images?${name}${tags}cursor=${cursor}&limit=${requestSize}`,
+            const response = await apiFetch(
+                `/images?${name}${tags}cursor=${cursor}&limit=${requestSize}`,
             );
             if (!response.ok) throw new Error("Failed to fetch images");
 
@@ -66,13 +81,17 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         } catch (error) {
             console.error("Error fetching images:", error);
         } finally {
+            fetchingRef.current = false;
             setLoading(false);
         }
         FetchCount.current++;
     };
 
     const canFetch = () => {
-        if (!isQueryEmpty(debouncedQuery) && !isQueriesEqual(debouncedQuery, initialQuery))
+        if (
+            !isQueryEmpty(debouncedQuery) &&
+            !isQueriesEqual(debouncedQuery, initialQuery)
+        )
             hasQueryChangedFromInit.current = true;
 
         return hasQueryChangedFromInit.current;
@@ -94,19 +113,8 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
     const items: MasonryItem[] = images.map((image) => ({
         key: image.filename,
         ratio: image.height / image.width,
-        item: (
-            <ImageCard
-                filename={image.filename}
-                format={image.format}
-                tags={image.tags}
-                width={image.width}
-                height={image.height}
-                user_id={image.user_id}
-            />
-        ),
+        item: <ImageCard image={image} />,
     }));
-
-    const isUploadModalShown = recievedImages.length > 0;
 
     const { ref: sentinelRef, inView } = useInView({
         threshold: 0,
@@ -115,18 +123,24 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
 
     const contentRef = useRef<HTMLDivElement>(null);
 
-    // useEffect(() => {
-    //     if (loading || reachedEnd) return;
+    useEffect(() => {
+        const container = galleryHover.ref.current;
+        const content = contentRef.current;
 
-    //     const container = galleryHover.ref.current;
-    //     const content = contentRef.current;
+        if (!container || !content) return;
 
-    //     if (!container || !content) return;
+        const observer = new ResizeObserver(() => {
+            if (fetchingRef.current || reachedEnd) return;
 
-    //     if (content.scrollHeight <= container.clientHeight) {
-    //         fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
-    //     }
-    // }, [images, loading, reachedEnd]);
+            if (content.scrollHeight <= container.clientHeight) {
+                fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
+            }
+        });
+
+        observer.observe(content);
+
+        return () => observer.disconnect();
+    }, [debouncedQuery, loading, reachedEnd, images.length]);
 
     useEffect(() => {
         if (!inView || loading || reachedEnd) return;
@@ -134,45 +148,39 @@ const Gallery: React.FC<Props> = ({ initialImages, initReachedEnd, initialQuery 
         fetchImages(debouncedQuery, images.length, REQUEST_SIZE);
     }, [inView]);
 
-    const gallery =
-        images.length === 1 && !isQueryEmpty(debouncedQuery) ? (
-            <ImageContent image={images[0]} />
-        ) : (
-            <>
-                <div ref={contentRef}>
-                    <div className="flex justify-center">
-                        <Masonry className="p-4" items={items} colWidth={240} maxCols={0} />
-                    </div>
+    const content = (
+        <>
+            <div ref={contentRef}>
+                <div className="flex justify-center">
+                    <Masonry className="p-4" items={items} colWidth={240} />
                 </div>
-                <div ref={sentinelRef} style={{ height: 1 }} />
-                <div
-                    className={`${
-                        reachedEnd && !loading && items.length > 0 ? "border-t" : ""
-                    } flex justify-center p-4`}
-                >
-                    {loading && <div>Loading...</div>}
-                    {reachedEnd && <div>End of images</div>}
-                </div>
-            </>
-        );
+            </div>
+            <div ref={sentinelRef} style={{ height: 1 }} />
+            <div
+                className={`${
+                    reachedEnd && !loading && items.length > 0 ? "border-t" : ""
+                } flex justify-center p-4`}
+            >
+                {loading && <div>Loading...</div>}
+                {reachedEnd && <div>End of images</div>}
+            </div>
+        </>
+    );
 
     return (
         <div className="flex flex-col h-full">
             {/* <div>Client Fetches count: {FetchCount.current} Images count: {images.length}</div> */}
             <ImageSearch
                 initialQuery={initialQuery}
-                selected={galleryHover.isHovered() && !isUploadModalShown}
+                selected={galleryHover.isHovered()}
                 onQueryChange={handleSearch}
                 className="flex-shrink-0 p-4 border-b"
             />
             <div ref={galleryHover.ref} className="flex-1 overflow-hidden">
-                <DragDropZone onFilesDropped={handleDroppedFiles}>
-                    <UploadModal
-                        images={recievedImages}
-                        onClose={handleClose}
-                        onUploaded={handleUploaded}
-                    />
-                    <Scrollbar className="overflow-x-hidden">{gallery}</Scrollbar>
+                <DragDropZone onFilesDropped={handleUploadFiles}>
+                    <Scrollbar className="overflow-x-hidden">
+                        {content}
+                    </Scrollbar>
                 </DragDropZone>
             </div>
         </div>

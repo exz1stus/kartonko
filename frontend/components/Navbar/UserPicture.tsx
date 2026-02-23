@@ -1,5 +1,4 @@
-import { UserData } from "@/app/lib/user";
-import Link from "next/link";
+import { UserData } from "@/lib/user";
 
 interface Props {
     user: UserData;

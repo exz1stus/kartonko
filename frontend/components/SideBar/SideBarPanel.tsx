@@ -1,10 +1,10 @@
 "use client";
-import { useSidebar } from '@/app/contexts/SidebarContext';
-import React, { useEffect, useRef } from 'react'
-import { ImperativePanelHandle } from 'react-resizable-panels';
-import { ResizablePanel } from '../ui/resizable';
-import Scrollbar from '../template/Scrollbar';
-import SideBar from './SideBar';
+import { useSidebar } from "@/contexts/SidebarContext";
+import React, { useEffect, useRef } from "react";
+import { ImperativePanelHandle } from "react-resizable-panels";
+import { ResizablePanel } from "../ui/resizable";
+import Scrollbar from "../template/Scrollbar";
+import SideBar from "./SideBar";
 
 const SideBarPanel = () => {
     const { isOpen, setOpen } = useSidebar();
@@ -28,13 +28,13 @@ const SideBarPanel = () => {
             onExpand={() => setOpen(true)}
             className="bg-surface-0/80 backdrop-filter backdrop-blur-md"
         >
-            <Scrollbar >
+            <Scrollbar>
                 <div className="flex justify-center h-full">
                     <SideBar />
                 </div>
             </Scrollbar>
         </ResizablePanel>
-    )
-}
+    );
+};
 
-export default SideBarPanel
+export default SideBarPanel;

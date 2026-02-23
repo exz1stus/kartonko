@@ -10,6 +10,7 @@ import (
 )
 
 type UserDataResponce struct {
+	ID         uint   `json:"id"`
 	Username   string `json:"username"`
 	Privileage string `json:"privileage"`
 	PictureURL string `json:"picture_url"`
@@ -20,6 +21,7 @@ type UserDataResponce struct {
 
 func constructUserResponce(user *models.User) UserDataResponce {
 	res := UserDataResponce{
+		ID:         user.ID,
 		Username:   user.Username,
 		Privileage: user.Privileage.String(),
 		JoinedAt:   user.CreatedAt.Format(time.DateOnly),

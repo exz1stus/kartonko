@@ -18,3 +18,5 @@ npm-debug.log
 .air.toml
 .env
 backend/internal/database/storage.db
+run.dev.sh
+frontend/public/googleae4da882535ae8ac.html

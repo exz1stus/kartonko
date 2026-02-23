@@ -1,4 +1,6 @@
-import useAuthFetch from "@/app/hooks/useAuthorizedFetch";
+"use client";
+import useAuthFetch from "@/hooks/useAuthorizedFetch";
+import { useState } from "react";
 
 export interface ApiResponse {
     error?: string;
@@ -14,6 +16,7 @@ interface ImageUploadRequest {
 
 const useUploadImage = () => {
     const authFetch = useAuthFetch();
+    const [loading, setLoading] = useState(false);
 
     const handleError = (error: string) => {
         if (error.includes("already exists")) {
@@ -23,6 +26,8 @@ const useUploadImage = () => {
     };
 
     const uploadImage = async (imageMetadata: ImageUploadRequest, file: File): Promise<boolean> => {
+        if (loading) return false;
+        setLoading(true);
         const formData = new FormData();
         formData.append("metadata", JSON.stringify(imageMetadata));
         formData.append("file", file);
@@ -32,6 +37,7 @@ const useUploadImage = () => {
             body: formData,
         });
 
+        setLoading(false);
         const parsedResponse: ApiResponse = await response.json();
         if (parsedResponse?.error) {
             handleError(parsedResponse.error);
@@ -41,7 +47,7 @@ const useUploadImage = () => {
         return true;
     };
 
-    return { uploadImage };
+    return { uploadImage, loading };
 };
 
 export { type ImageUploadRequest, useUploadImage };

@@ -1,4 +1,4 @@
-import LogEntryData from "@/app/lib/log";
+import LogEntryData from "@/lib/log";
 import React from "react";
 
 interface Props {

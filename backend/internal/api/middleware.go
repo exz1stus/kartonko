@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -9,11 +10,19 @@ import (
 
 func (app *api) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString, err := c.Cookie("jwt")
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token not found"})
-			c.Abort()
-			return
+		var tokenString string
+
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		} else {
+			cookie, err := c.Cookie("jwt")
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token not found"})
+				c.Abort()
+				return
+			}
+			tokenString = cookie
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

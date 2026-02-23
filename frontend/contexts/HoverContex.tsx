@@ -1,13 +1,6 @@
 "use client";
 
-import {
-    createContext,
-    useContext,
-    useState,
-    useEffect,
-    useRef,
-    type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 
 type HoverContextType = {
     hoveredElement: HTMLElement | null;
@@ -19,9 +12,7 @@ type HoverContextType = {
 const HoverContext = createContext<HoverContextType | undefined>(undefined);
 
 export default function HoverProvider({ children }: { children: React.ReactNode }) {
-    const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(
-        null
-    );
+    const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
 
     const onMouseOver = (element: HTMLElement) => {
         setHoveredElement(element);
@@ -36,9 +27,7 @@ export default function HoverProvider({ children }: { children: React.ReactNode 
     const isHovered = (element: HTMLElement) => hoveredElement === element;
 
     return (
-        <HoverContext.Provider
-            value={{ hoveredElement, onMouseOver, onMouseOut, isHovered }}
-        >
+        <HoverContext.Provider value={{ hoveredElement, onMouseOver, onMouseOut, isHovered }}>
             {children}
         </HoverContext.Provider>
     );

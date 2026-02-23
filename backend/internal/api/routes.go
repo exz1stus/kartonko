@@ -23,6 +23,14 @@ func (api *api) initRoutes() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	r.Use(func(c *gin.Context) {
+		if c.Request.Method == http.MethodHead {
+			c.Request.Method = http.MethodGet
+		}
+		c.Next()
+	})
+
 	r.GET("/health", api.GetHealthCheckRequest)
 
 	r.GET("/user", api.GetUserRequest)
@@ -37,7 +45,7 @@ func (api *api) initRoutes() {
 
 	r.POST("/auth/login", api.LoginRequest)
 	r.POST("/auth/register", api.RegisterRequest)
-	r.GET("/auth/logout", api.LogoutRequest)
+	r.POST("/auth/logout", api.LogoutRequest)
 
 	r.GET("/auth/google", api.GoogleLoginRequest)
 	r.GET("/auth/google/callback", api.GoogleCallbackRequest)
@@ -47,6 +55,7 @@ func (api *api) initRoutes() {
 	{
 		authGroup.GET("/me", api.GetMeRequest)
 		authGroup.POST("/upload", api.PostImageRequest)
+		authGroup.DELETE("/image/:name", api.DeleteImageByNameRequest)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -31,6 +31,19 @@ services:
         networks:
             - app-network
 
+    tgbot:
+        build:
+            context: ./tgbot
+            dockerfile: Dockerfile.dev
+        container_name: tgbot
+        env_file:
+            - ./tgbot/.env
+        volumes:
+            - ./tgbot:/app
+        command: air -c .air.toml
+        networks:
+            - app-network
+
 networks:
     app-network:
         driver: bridge
