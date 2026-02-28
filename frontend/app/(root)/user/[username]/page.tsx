@@ -10,7 +10,7 @@ const UserPage = async ({ params }: { params: Promise<{ username: string }> }) =
     const { username } = await params;
     let user: UserData;
     try {
-        const res = await serverFetch(`/user?username=${username}`);
+        const res = await serverFetch(`/user/${username}`);
         if (!res.ok) return notFound();
 
         user = await res.json();

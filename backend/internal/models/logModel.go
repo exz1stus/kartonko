@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -89,6 +90,22 @@ func (model *AuditLog) GetEntries(cursor int, limit int) ([]EntryResponse, error
 	return responses, nil
 }
 
+type ImageEntryData struct {
+	Name string `json:"name"`
+}
+
 func (model *AuditLog) AddImageCreated(image *Image, user *User) error {
-	return model.addEntry("image_created", user.Model.ID, image.ID, nil)
+	data, err := json.Marshal(&ImageEntryData{Name: image.Filename})
+	if err != nil {
+		return fmt.Errorf("failed to marshal image log entry data: %w", err)
+	}
+	return model.addEntry("image_created", user.Model.ID, image.ID, datatypes.JSON(data))
+}
+
+func (model *AuditLog) AddImageDeleted(image *Image, user *User) error {
+	data, err := json.Marshal(&ImageEntryData{Name: image.Filename})
+	if err != nil {
+		return fmt.Errorf("failed to marshal image log entry data: %w", err)
+	}
+	return model.addEntry("image_deleted", user.Model.ID, image.ID, datatypes.JSON(data))
 }

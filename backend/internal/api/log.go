@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetAuditLogEntriesRequest godoc
+// GetAuditLogEntries godoc
 // @Summary Gets audit log entries by given range
 // @Description Returns a list of log entries at "cursor + limit" matching the "query"
 // @Tags AuditLog
@@ -16,7 +16,7 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} ErrorResponse
 // @Router /log [get]
-func (api *api) GetAuditLogEntriesRequest(c *gin.Context) {
+func (api *api) GetAuditLogEntries(c *gin.Context) {
 	cursor, limit, err := parseCursorLimit(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})

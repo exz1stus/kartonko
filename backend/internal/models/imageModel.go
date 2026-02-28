@@ -107,6 +107,21 @@ func (model *ImageModel) AddImage(image *Image) error {
 	return nil
 }
 
+func (model *ImageModel) GetImageByID(id uint64) (*Image, error) {
+	var img Image
+	result := model.db.Where("id = ?", id).First(&img)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
+	}
+
+	if img.Hash == "" {
+		return nil, fmt.Errorf("image with id %d not found", id)
+	}
+
+	return &img, nil
+}
+
 func (model *ImageModel) GetImageByName(name string) (*Image, error) {
 	var img Image
 	result := model.db.Where("filename = ?", name).First(&img)
@@ -132,34 +147,39 @@ func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {
 	return images, nil
 }
 
-func (model *ImageModel) DeleteImageByName(name string, userID uint) error {
-	var image Image
-
-	if err := model.db.
-		Where("filename = ?", name).
-		First(&image).Error; err != nil {
-
-		return fmt.Errorf("cannot delete %s: %w", name, err)
+func (model *ImageModel) UserCanEdit(image *Image, userID uint) bool {
+	if image.UserID == userID {
+		return true
 	}
 
-	if image.UserID != userID {
-		var user User
+	var user User
 
-		err := model.db.
-			Where("user_id = ? AND privileage = ?", userID, Moderator).
-			First(&user).Error
+	err := model.db.
+		Where("user_id = ? AND privileage = ?", userID, Moderator).
+		First(&user).Error
 
-		if err != nil {
-			return fmt.Errorf(
-				"cannot delete %s: user %d is not owner or moderator",
-				name,
-				userID,
-			)
-		}
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (model *ImageModel) DeleteImage(image *Image, userID uint) error {
+	if image == nil {
+		return fmt.Errorf("image is nil")
+	}
+
+	if !model.UserCanEdit(image, userID) {
+		return fmt.Errorf(
+			"cannot delete %s: user %d is not owner or moderator",
+			image.Filename,
+			userID,
+		)
 	}
 
 	if err := model.db.Delete(&image).Error; err != nil {
-		return fmt.Errorf("cannot delete %s: %w", name, err)
+		return fmt.Errorf("cannot delete %s: %w", image.Filename, err)
 	}
 
 	return nil

@@ -25,6 +25,7 @@ type api struct {
 
 func MustInitApi() *api {
 	models := models.MustInitStorageSqlite()
+	models.Users.SetUserPrivilage(1, 1)
 	api := &api{models: models, jwtSecret: env.GetEnvString("JWT_SECRET")}
 	api.initRoutes()
 

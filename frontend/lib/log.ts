@@ -1,12 +1,17 @@
-import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
-
-interface LogEntryData {
+export interface LogEntryData {
     id: number;
     user_id: number;
     entry_type: string;
     affected_obj_id: number;
-    created_at: Timestamp;
-    data: string;
+    created_at: string;
+    data: Object | null;
 }
 
-export default LogEntryData;
+export interface ImageEntryData {
+    name: string;
+}
+
+export function ParseLogData<T>(data: Object | null): T | null {
+    if (!data) return null;
+    return data as T;
+}

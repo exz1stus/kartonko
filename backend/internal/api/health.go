@@ -13,6 +13,6 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} ErrorResponse
 // @Router /health [get]
-func (api *api) GetHealthCheckRequest(c *gin.Context) {
+func (api *api) GetHealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

@@ -7,6 +7,7 @@ import (
 	"server/internal/env"
 	"server/internal/models"
 	"server/pkg/image"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,7 +41,7 @@ func ConstructImageResponse(img *models.Image) ImageResponse {
 	}
 }
 
-// GetImageByNameRequest godoc
+// GetImageByName godoc
 // @Summary Returns imageData by it's unique name
 // @Tags Image
 // @Produce  application/json
@@ -48,20 +49,40 @@ func ConstructImageResponse(img *models.Image) ImageResponse {
 // @Failure 200 {object} map[string]interface{}
 // @Failure 404 {object} ErrorResponse
 // @Router /image/{name} [get]
-func (api *api) GetImageByNameRequest(c *gin.Context) {
+func (api *api) GetImageByName(c *gin.Context) {
 	req := c.Param("name")
 	img, err := api.models.Images.GetImageByName(req)
-	response := ConstructImageResponse(img)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
 		return
 	}
 
+	response := ConstructImageResponse(img)
 	c.JSON(http.StatusOK, response)
 }
 
-func (api *api) DeleteImageByNameRequest(c *gin.Context) {
+func (api *api) GetImageByID(c *gin.Context) {
+	idStr := c.Param("id")
+
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad id"})
+		return
+	}
+
+	img, err := api.models.Images.GetImageByID(id)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
+		return
+	}
+
+	response := ConstructImageResponse(img)
+	c.JSON(http.StatusOK, response)
+}
+
+func (api *api) DeleteImageByName(c *gin.Context) {
 	req := c.Param("name")
 
 	user, err := api.GetUserFromContext(c)
@@ -70,27 +91,37 @@ func (api *api) DeleteImageByNameRequest(c *gin.Context) {
 		return
 	}
 
-	if err = api.models.Images.DeleteImageByName(req, user.ID); err != nil {
+	img, err := api.models.Images.GetImageByName(req)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
+		return
+	}
+
+	if err = api.models.Images.DeleteImage(img, user.ID); err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + err.Error()})
 		return
 	}
 
-	uploadPath := env.GetEnvString("UPLOADS_PATH") + "/" + req
-	if err := image.DeleteImage(uploadPath); err != nil {
+	uploadPath := env.GetEnvString("UPLOADS_PATH")
+	if err := image.DeleteImagesWithName(req, uploadPath); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
 		return
 	}
 
-	thumbPath := env.GetEnvString("THUMBNAILS_PATH") + "/" + req
-	if err := image.DeleteImage(thumbPath); err != nil {
+	thumbPath := env.GetEnvString("THUMBNAILS_PATH")
+	if err := image.DeleteImagesWithName(req, thumbPath); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image thumbnail: " + err.Error()})
 		return
+	}
+
+	if err = api.models.Log.AddImageDeleted(img, user); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + err.Error()})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "image deleted"})
 }
 
-// GetRawImageByNameRequest godoc
+// GetRawImageByName godoc
 // @Summary Returns image file by its unique name
 // @Tags Image
 // @Produce  application/octet-stream
@@ -98,7 +129,7 @@ func (api *api) DeleteImageByNameRequest(c *gin.Context) {
 // @Failure 200 {object} map[string]interface{}
 // @Failure 404 {object} ErrorResponse
 // @Router /image/raw/{name} [get]
-func (api *api) GetRawImageByNameRequest(c *gin.Context) {
+func (api *api) GetRawImageByName(c *gin.Context) {
 	req := c.Param("name")
 	img, err := api.models.Images.GetImageByName(req)
 	if err != nil {
@@ -110,7 +141,7 @@ func (api *api) GetRawImageByNameRequest(c *gin.Context) {
 	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
 }
 
-// GetImagesByQueryRequest godoc
+// GetImagesByQuery godoc
 // @Summary Searches images by given query
 // @Description Returns a list of images at "cursor + limit" matching the "query"
 // @Tags Image
@@ -123,7 +154,7 @@ func (api *api) GetRawImageByNameRequest(c *gin.Context) {
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /images [get]
-func (api *api) GetImagesByQueryRequest(c *gin.Context) {
+func (api *api) GetImagesByQuery(c *gin.Context) {
 	cursor, limit, err := parseCursorLimit(c)
 
 	if err != nil {
@@ -161,7 +192,7 @@ func (api *api) GetImagesByQueryRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// PostImageRequest godoc
+// PostImage godoc
 // @Summary Uploads image
 // @Description Uploads image, name and hash must be unique
 // @Tags Image
@@ -172,7 +203,7 @@ func (api *api) GetImagesByQueryRequest(c *gin.Context) {
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /upload [post]
-func (api *api) PostImageRequest(c *gin.Context) {
+func (api *api) PostImage(c *gin.Context) {
 	type ImageRequest struct {
 		Name string   `json:"name"`
 		Tags []string `json:"tags"`

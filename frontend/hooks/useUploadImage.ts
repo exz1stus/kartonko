@@ -18,14 +18,10 @@ const useUploadImage = () => {
     const authFetch = useAuthFetch();
     const [loading, setLoading] = useState(false);
 
-    const handleError = (error: string) => {
-        if (error.includes("already exists")) {
-            console.log("Image already exists");
-            return;
-        } else console.log(error);
-    };
-
-    const uploadImage = async (imageMetadata: ImageUploadRequest, file: File): Promise<boolean> => {
+    const uploadImage = async (
+        imageMetadata: ImageUploadRequest,
+        file: File,
+    ): Promise<boolean> => {
         if (loading) return false;
         setLoading(true);
         const formData = new FormData();
@@ -40,7 +36,6 @@ const useUploadImage = () => {
         setLoading(false);
         const parsedResponse: ApiResponse = await response.json();
         if (parsedResponse?.error) {
-            handleError(parsedResponse.error);
             throw new Error(parsedResponse.error);
         }
 

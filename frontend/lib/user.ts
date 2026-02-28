@@ -9,13 +9,13 @@ export interface UserData {
     last_seen: string;
 }
 
-export async function isModerator(user: UserData) {
-    return user.privileage === "moderator";
+export function isModerator(user: UserData) {
+    return user.privileage === "Moderator";
 }
 
 export async function getUserByIdServer(id: number): Promise<UserData | null> {
     try {
-        const response = await serverFetch(`/user?id=${id}`);
+        const response = await serverFetch(`/user/id/${id}`);
 
         if (!response.ok) {
             if (response.status === 404) {

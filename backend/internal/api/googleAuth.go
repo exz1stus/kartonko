@@ -20,7 +20,7 @@ var googleOauthConfig = &oauth2.Config{
 	Endpoint:     google.Endpoint,
 }
 
-func (rh *api) GoogleLoginRequest(c *gin.Context) {
+func (rh *api) GetGoogleLogin(c *gin.Context) {
 	redirect := c.Query("redirect")
 	state := redirect
 	url := googleOauthConfig.AuthCodeURL(state)
@@ -34,7 +34,7 @@ type UserInfo struct {
 	Picture string `json:"picture"`
 }
 
-func (rh *api) GoogleCallbackRequest(c *gin.Context) {
+func (rh *api) GetGoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	redirectURL := state

@@ -15,9 +15,9 @@ const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 
 const ImageContent: React.FC<Props> = async ({ image }) => {
     const user = await getLoggedUserServer();
-    
+
     const editImage = user && (isModerator(user) || user.id === image.user_id) && (
-        <EditImage image={image} />
+        <EditImage image={image}/>
     );
     
     const { filename } = image;

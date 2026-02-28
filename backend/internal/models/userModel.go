@@ -216,3 +216,16 @@ func (model *UserModel) GetUserByEmail(email string) (*User, error) {
 
 	return &user, nil
 }
+
+func (model *UserModel) SetUserPrivilage(userID uint64, privileage Privileage) error {
+	user, err := model.GetUserById(userID)
+	if err != nil {
+		return err
+	}
+	user.Privileage = privileage
+	err = model.db.Save(user).Error
+	if err != nil {
+		return fmt.Errorf("failed to set user %s privileage: %v", user.Username, err)
+	}
+	return nil
+}

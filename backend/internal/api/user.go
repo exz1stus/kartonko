@@ -35,37 +35,9 @@ func constructUserResponce(user *models.User) UserDataResponce {
 	return res
 }
 
-// GetUserRequest godoc
-// @Summary Returns user's data by username
-// @Tags User
-// @Produce  json
-// @Query   username path string true "username"
-// @Query   id path number true "id"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} ErrorResponse
-// @Router /user [get]
-func (api *api) GetUserRequest(c *gin.Context) {
-	username := c.Query("username")
-	idStr := c.Query("id")
-
-	if username == "" && idStr == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "username or id must be provided"})
-		return
-	}
-
-	var user *models.User
-	var err error
-
-	if username != "" {
-		user, err = api.models.Users.GetUserByUsername(username)
-	} else {
-		id, err := strconv.ParseUint(idStr, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad id provided"})
-			return
-		}
-		user, err = api.models.Users.GetUserById(id)
-	}
+func (api *api) GetUserByName(c *gin.Context) {
+	username := c.Param("username")
+	user, err := api.models.Users.GetUserByUsername(username)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
@@ -75,7 +47,26 @@ func (api *api) GetUserRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, constructUserResponce(user))
 }
 
-func (api *api) GetMeRequest(c *gin.Context) {
+func (api *api) GetUserByID(c *gin.Context) {
+	idStr := c.Param("id")
+
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad id"})
+		return
+	}
+
+	user, err := api.models.Users.GetUserById(id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, constructUserResponce(user))
+}
+
+func (api *api) GetMe(c *gin.Context) {
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})

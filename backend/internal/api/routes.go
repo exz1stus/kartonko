@@ -31,31 +31,33 @@ func (api *api) initRoutes() {
 		c.Next()
 	})
 
-	r.GET("/health", api.GetHealthCheckRequest)
+	r.GET("/health", api.GetHealthCheck)
 
-	r.GET("/user", api.GetUserRequest)
+	r.GET("/user/:name", api.GetUserByName)
+	r.GET("/user/id/:id", api.GetUserByID)
 
-	r.GET("/image/:name", api.GetImageByNameRequest)
-	r.GET("/image/raw/:name", api.GetRawImageByNameRequest)
+	r.GET("/image/:name", api.GetImageByName)
+	r.GET("/image/id/:id", api.GetImageByID)
+	r.GET("/image/raw/:name", api.GetRawImageByName)
 	r.Static("/image/thumb", env.GetEnvString("THUMBNAILS_PATH"))
 
-	r.GET("/images", api.GetImagesByQueryRequest)
-	r.GET("/log", api.GetAuditLogEntriesRequest)
-	r.GET("/tags", api.GetTagsRequest)
+	r.GET("/images", api.GetImagesByQuery)
+	r.GET("/log", api.GetAuditLogEntries)
+	r.GET("/tags", api.GetTags)
 
-	r.POST("/auth/login", api.LoginRequest)
-	r.POST("/auth/register", api.RegisterRequest)
-	r.POST("/auth/logout", api.LogoutRequest)
+	r.POST("/auth/login", api.PostLogin)
+	r.POST("/auth/register", api.PostRegister)
+	r.POST("/auth/logout", api.PostLogout)
 
-	r.GET("/auth/google", api.GoogleLoginRequest)
-	r.GET("/auth/google/callback", api.GoogleCallbackRequest)
+	r.GET("/auth/google", api.GetGoogleLogin)
+	r.GET("/auth/google/callback", api.GetGoogleCallback)
 
 	authGroup := r.Group("/")
 	authGroup.Use(api.AuthMiddleware())
 	{
-		authGroup.GET("/me", api.GetMeRequest)
-		authGroup.POST("/upload", api.PostImageRequest)
-		authGroup.DELETE("/image/:name", api.DeleteImageByNameRequest)
+		authGroup.GET("/me", api.GetMe)
+		authGroup.POST("/upload", api.PostImage)
+		authGroup.DELETE("/image/:name", api.DeleteImageByName)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

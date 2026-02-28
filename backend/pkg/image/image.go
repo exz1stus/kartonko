@@ -91,7 +91,26 @@ func GenerateThumbnail(srcPath, dstPath string) error {
 
 func DeleteImage(path string) error {
 	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("Failed deleting image %s: %w", err)
+		return fmt.Errorf("Failed deleting image %s: %w", path, err)
+	}
+
+	return nil
+}
+
+func DeleteImagesWithName(name string, path string) error {
+	files, err := filepath.Glob(filepath.Join(path, name+"*"))
+	if err != nil {
+		return err
+	}
+
+	if len(files) == 0 {
+		return fmt.Errorf("image %s not found in path %s", name, path)
+	}
+
+	for _, file := range files {
+		if err := os.Remove(file); err != nil {
+			return fmt.Errorf("Failed deleting image %s: %w", file, err)
+		}
 	}
 
 	return nil

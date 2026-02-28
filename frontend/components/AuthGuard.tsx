@@ -3,11 +3,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 
-interface AuthGuardProps {
+interface Props {
+    moderator?: boolean;
     children: ReactNode;
 }
 
-const AuthGuard = ({ children }: AuthGuardProps) => {
+const AuthGuard = ({ moderator, children }: Props) => {
     const { user, loading } = useAuth();
     const router = useRouter();
     useEffect(() => {
@@ -18,7 +19,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     }, [user, loading, router]);
 
     if (!user) return <div>Loading...</div>;
-
+    if(moderator && user.privileage !== "Moderator") return <div>Forbidden</div>;
     return <>{children}</>;
 };
 

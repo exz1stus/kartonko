@@ -17,7 +17,7 @@ import (
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /tags [get]
-func (api *api) GetTagsRequest(c *gin.Context) {
+func (api *api) GetTags(c *gin.Context) {
 	query := c.Query("query")
 	limit, err := strconv.Atoi(c.Query("limit"))
 	if err != nil {

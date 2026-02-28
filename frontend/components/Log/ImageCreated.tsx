@@ -1,16 +1,27 @@
-import LogEntryData from "@/lib/log";
-import React from "react";
+import { getImageMetadataByIdServer } from "@/lib/image";
+import { LogEntryData, ParseLogData, ImageEntryData } from "@/lib/log";
+import Link from "next/link";
 
 interface Props {
     data: LogEntryData;
 }
 
-const ImageCreated = ({ data }: Props) => {
+const ImageCreated = async ({ data }: Props) => {
+    const entryData = ParseLogData<ImageEntryData>(data.data);
+    const image = await getImageMetadataByIdServer(data.affected_obj_id);
+
+    const description = entryData ? (
+        image ? (
+            <Link className="text-blue-400" href={`/image/${image.filename}`}>{image.filename}</Link>
+        ) : (
+            <span className="line-through hover:cursor-not-allowed"> {entryData.name} </span>
+        )
+    ) : (
+        <span className="italic">error retrieving image data</span>
+    );
     return (
-        <div className="flex justify-around">
-            <div>{data.affected_obj_id}</div>
-            <div>{data.user_id}</div>
-            <div>{data.created_at}</div>
+        <div className="flex">
+            <span>uploaded image {description}</span>
         </div>
     );
 };

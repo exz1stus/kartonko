@@ -15,7 +15,6 @@ import (
 //@name jwt
 
 func main() {
-	// media.RegenerateThumbnails(env.GetEnvString("UPLOADS_PATH"), env.GetEnvString("THUMBNAILS_PATH"))
 	api := api.MustInitApi()
 	api.Run()
 }

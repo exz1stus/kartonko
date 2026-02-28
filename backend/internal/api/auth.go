@@ -57,7 +57,7 @@ func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 	return user, nil
 }
 
-// LoginRequest godoc
+// PostLogin godoc
 // @Summary Login a user
 // @Description Logs in a user, generating a JWT token.
 // @Tags Auth
@@ -68,7 +68,7 @@ func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
-func (rh *api) LoginRequest(c *gin.Context) {
+func (rh *api) PostLogin(c *gin.Context) {
 	var input authRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprint("invalid input: ", err.Error())})
@@ -104,7 +104,7 @@ func (rh *api) LoginRequest(c *gin.Context) {
 
 var JWT_COOKIE_MAX_AGE = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")) * time.Hour
 
-// RegisterRequest godoc
+// PostRegister godoc
 // @Summary Register a user
 // @Description Registers a new user, generating a JWT token.
 // @Tags Auth
@@ -115,7 +115,7 @@ var JWT_COOKIE_MAX_AGE = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/register [post]
-func (rh *api) RegisterRequest(c *gin.Context) {
+func (rh *api) PostRegister(c *gin.Context) {
 	var input authRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -146,7 +146,7 @@ func (rh *api) RegisterRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"register": true})
 }
 
-// LogoutRequest godoc
+// PostLogout godoc
 // @Summary Logout a user
 // @Description Logs out a user, deleting the JWT token.
 // @Tags Auth
@@ -154,7 +154,7 @@ func (rh *api) RegisterRequest(c *gin.Context) {
 // @Produce  json
 // @Success 200 {object} map[string]interface{}
 // @Router /auth/logout [post]
-func (rh *api) LogoutRequest(c *gin.Context) {
+func (rh *api) PostLogout(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "jwt",
 		Value:    "",

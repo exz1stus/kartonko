@@ -7,7 +7,7 @@ interface Props {
 }
 
 const ImageCardServer: React.FC<Props> = ({ image, onLoad }) => {
-    const API_ORIGIN = process.env.NEXT_PUBLIC_API_LOCAL;
+    const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
     const { filename, format, width, height } = image;
     return (
         <div className="flex flex-col items-center bg-surface-20 rounded-xl hover:cursor-pointer">
