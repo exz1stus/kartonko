@@ -1,10 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import useNameSelector from "./NameSelector";
-import TagSelectorField from "../Tags/TagSelectorField";
+import useNameSelector from "@/hooks/useNameSelector";
+import TagSelector, { TagSelectorRef } from "@/components/Tags/TagSelector";
 import { useHover } from "@/contexts/HoverContex";
-import useTags from "../Tags/useTags";
-import TagSpan from "../Tags/TagSpan";
+import useTags from "@/components/Tags/useTags";
 
 interface SearchQuery {
     nameContains: string;
@@ -23,8 +22,8 @@ export function isQueriesEqual(query1: SearchQuery, query2: SearchQuery) {
 }
 
 interface Props {
-    initialQuery?: SearchQuery;
     selected: boolean;
+    initialQuery?: SearchQuery;
     onQueryChange: (query: SearchQuery) => void;
     className?: string;
 }
@@ -35,13 +34,23 @@ enum InsertingMode {
     TAG,
 }
 
-const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, className }) => {
-    const [name, setName] = useState<string>("");
-    const [insertingMode, setInsertingMode] = useState<InsertingMode>(InsertingMode.NAME);
+const ImageSearch: React.FC<Props> = ({
+    initialQuery,
+    onQueryChange,
+    className,
+}) => {
+    const [insertingMode, setInsertingMode] = useState<InsertingMode>(
+        InsertingMode.NONE,
+    );
     const { ref, isHovered } = useHover<HTMLDivElement>();
 
     const hovered = isHovered();
-    const { tags, setTags, removeTag } = useTags();
+
+    const tagSelectorRef = React.useRef<TagSelectorRef>(null);
+    const nameSelectorRef = React.useRef<HTMLInputElement>(null);
+
+    const { tags, setTags, removeTag } = useTags(initialQuery?.withTags);
+    const { onNameKeyDown, name } = useNameSelector(initialQuery?.nameContains);
 
     useEffect(() => {
         onQueryChange({
@@ -50,27 +59,18 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
         });
     }, [name, tags]);
 
-    const onNameUpdated = (name: string) => {
-        setName(name);
-    };
-
-    useEffect(() => {
-        if (initialQuery) {
-            setTags(initialQuery.withTags);
-            setName(initialQuery.nameContains);
-        }
-    }, [initialQuery]);
-
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!hovered) return;
-            e.preventDefault();
+
             switch (e.key) {
                 case "ArrowDown":
                     setInsertingMode(InsertingMode.TAG);
+                    tagSelectorRef.current?.focus();
                     break;
                 case "ArrowUp":
                     setInsertingMode(InsertingMode.NAME);
+                    nameSelectorRef.current?.focus();
                     break;
             }
         };
@@ -79,46 +79,52 @@ const ImageSearch: React.FC<Props> = ({ initialQuery, selected, onQueryChange, c
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [hovered]);
 
-    const active = selected || hovered;
-
-    useNameSelector(active && insertingMode === InsertingMode.NAME, name, onNameUpdated);
-
     return (
         <div ref={ref} className={className}>
             <div className="gap-2 grid grid-rows-2">
                 <div className="flex items-center gap-2">
                     <span
-                        className={`px-2 border-1 rounded-2xl hover:cursor-pointer 
+                        className={`px-2 border rounded-2xl hover:cursor-pointer 
                         ${
                             insertingMode === InsertingMode.NAME
                                 ? "bg-surface-0/50 border-primary-0"
                                 : "border-transparent"
                         }`}
-                        onClick={() => setInsertingMode(InsertingMode.NAME)}
                     >
                         name
                     </span>
-                    <span className="text-3xl">{name}</span>
-                    <span className="inline-block h-[2.5rem]" />
+                    <input
+                        ref={nameSelectorRef}
+                        className="z-10 relative bg-transparent border-none outline-none w-full text-3xl"
+                        value={name}
+                        onChange={() => {}}
+                        onKeyDown={onNameKeyDown}
+                        onFocus={() => setInsertingMode(InsertingMode.NAME)}
+                        onBlur={() => setInsertingMode(InsertingMode.NONE)}
+                        autoComplete="off"
+                        spellCheck={false}
+                        placeholder={name.length === 0 ? "Search name" : ""}
+                    />
+                    <span className="inline-block h-10" />
                 </div>
                 <div>
                     <div className="flex">
                         <span
-                            className={`px-2 text-2xl border-1 rounded-2xl hover:cursor-pointer 
+                            className={`px-2 text-2xl border rounded-2xl hover:cursor-pointer 
                             ${
                                 insertingMode === InsertingMode.TAG
                                     ? "bg-surface-0/50 border-primary-0"
                                     : "border-transparent"
                             }`}
-                            onClick={() => setInsertingMode(InsertingMode.TAG)}
                         >
                             #
                         </span>
-                        <TagSpan tags={tags} removeTag={removeTag} />
-                        <TagSelectorField
-                            active={active && insertingMode === InsertingMode.TAG}
+                        <TagSelector
+                            ref={tagSelectorRef}
                             tags={tags}
                             onTagsUpdate={(t: string[]) => setTags(t)}
+                            removeTag={removeTag}
+                            onFocus={() => setInsertingMode(InsertingMode.TAG)}
                         />
                     </div>
                 </div>

@@ -1,32 +1,55 @@
-import {LogEntryData} from "@/lib/log";
+"use client";
+import { LogEntryData } from "@/lib/log";
 import LogEntry from "@/components/Log/LogEntry";
-import { serverFetch } from "@/lib/serverFetch";
 import AuthGuard from "@/components/AuthGuard";
 import Scrollbar from "@/components/template/Scrollbar";
+import useInfiniteScroll from "@/hooks/useInfiniteScroll";
+import { apiFetch } from "@/lib/apiFetch";
 
-const Log = async () => {
-    let entriesData: LogEntryData[] = [];
+interface SearchLogEntriesQuery {}
 
-    try {
-        const res = await serverFetch(`/log?cursor=0&limit=100`);
-        entriesData = await res.json();
-    } catch (err) {
-        console.error("Failed to fetch log:", err);
-    }
+const Log = () => {
+    const fetchEntries = async (
+        query: SearchLogEntriesQuery,
+        cursor: number,
+        limit: number,
+    ) => {
+        const res = await apiFetch(`/log?cursor=${cursor}&limit=${limit}`);
+        const data = await res.json();
 
-    const entries = entriesData.map((entry, index) => {
+        return data;
+    };
+
+    const { items, loading, sentinelRef, containerRef, contentRef } =
+        useInfiniteScroll<SearchLogEntriesQuery, LogEntryData>({
+            fetchFn: fetchEntries,
+            query: {},
+            isQueryEmpty: () => true,
+        });
+
+    const entries = items.map((entry, index) => {
         return (
-            <div key={index} className="w-full lg:max-w-[50%]">
+            <div key={index} className="w-full lg:max-w-[50%] h-full">
                 <LogEntry data={entry} />
             </div>
         );
     });
 
+    if (loading) return <div>Loading...</div>;
+
     return (
         <AuthGuard moderator={true}>
-            <Scrollbar>
-                <div className="flex flex-col items-center gap-2 m-2">{entries}</div>
-            </Scrollbar>
+            <div ref={containerRef} className="h-full">
+                <Scrollbar>
+                    <div
+                        ref={contentRef}
+                        className="flex flex-col items-center gap-2 m-2 overflow-auto"
+                    >
+                        {entries}
+                    </div>
+                    <div ref={sentinelRef} style={{ height: 1 }} />
+                </Scrollbar>
+            </div>
         </AuthGuard>
     );
 };

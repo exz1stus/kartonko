@@ -36,7 +36,7 @@ func constructUserResponce(user *models.User) UserDataResponce {
 }
 
 func (api *api) GetUserByName(c *gin.Context) {
-	username := c.Param("username")
+	username := c.Param("name")
 	user, err := api.models.Users.GetUserByUsername(username)
 
 	if err != nil {

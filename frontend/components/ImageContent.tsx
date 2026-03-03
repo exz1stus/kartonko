@@ -4,8 +4,10 @@ import React from "react";
 import TagSpan from "./Tags/TagSpan";
 import UserElement from "./UserElement";
 import TimeField from "./TimeField";
-import { getLoggedUserServer, isModerator } from "@/lib/user";
+import { getLoggedUserServer, getUserByIdServer } from "@/lib/user.server";
+import { isModerator } from "@/lib/user";
 import EditImage from "./EditImage";
+import { get } from "http";
 
 interface Props {
     image: ImageMetadata;
@@ -15,17 +17,21 @@ const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
 
 const ImageContent: React.FC<Props> = async ({ image }) => {
     const user = await getLoggedUserServer();
+    const imageOwner = await getUserByIdServer(image.user_id);
+    const editImage = user &&
+        (isModerator(user) || user.id === image.user_id) && (
+            <EditImage image={image} />
+        );
 
-    const editImage = user && (isModerator(user) || user.id === image.user_id) && (
-        <EditImage image={image}/>
-    );
-    
     const { filename } = image;
 
     const tags = image.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1">
             <span className="text-2xl">Tags:</span>
-            <TagSpan tags={image.tags} tagStyle={"bg-surface-0 rounded-3xl px-2"} />
+            <TagSpan
+                tags={image.tags}
+                tagStyle={"bg-surface-0 rounded-3xl px-2"}
+            />
         </div>
     );
 
@@ -51,7 +57,7 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                 </span>
                 <div className="flex flex-row items-center gap-2">
                     <span className="text-l">Uploaded by:</span>
-                    <UserElement id={image.user_id} />
+                    {imageOwner && <UserElement user={imageOwner} />}
                 </div>
                 <div className="flex flex-row items-center gap-2">
                     <span className="text-l">Uploaded: </span>

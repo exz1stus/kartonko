@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
 
 export const useTypingHints = (
-    query: string,
+    inputQuery: string,
     fetchHints: (query: string) => Promise<string[]>,
-    onQueryMatchedHint: () => void,
+    onQueryMatchedHint?: () => void,
 ) => {
+    const query = inputQuery.toLowerCase().trim();
     const [hints, setHints] = useState<string[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number>(-1);
 
@@ -41,7 +42,11 @@ export const useTypingHints = (
 
     useEffect(() => {
         if (debouncedQuery.length <= 0) return;
-        if (hint.startsWith(debouncedQuery) && debouncedQuery.length < hint.length) return;
+        if (
+            hint.startsWith(debouncedQuery) &&
+            debouncedQuery.length < hint.length
+        )
+            return;
         let cancelled = false;
 
         const fetchHintsAsync = async () => {
@@ -68,7 +73,7 @@ export const useTypingHints = (
     }, [query]);
 
     useEffect(() => {
-        if (hints.length == 1 && query == hints[0]) onQueryMatchedHint();
+        if (hints.length == 1 && query == hints[0]) onQueryMatchedHint?.();
     }, [hint, query, onQueryMatchedHint]);
 
     return { hint, difference, selectNext, selectPrevious };

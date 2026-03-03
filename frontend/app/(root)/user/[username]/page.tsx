@@ -1,12 +1,15 @@
-import React from "react";
-import { UserData } from "@/contexts/AuthContext";
+import { UserData } from "@/lib/user";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import GalleryServer from "@/components/Gallery/GalleryServer";
 import TimeField from "@/components/TimeField";
 import { serverFetch } from "@/lib/serverFetch";
 
-const UserPage = async ({ params }: { params: Promise<{ username: string }> }) => {
+const UserPage = async ({
+    params,
+}: {
+    params: Promise<{ username: string }>;
+}) => {
     const { username } = await params;
     let user: UserData;
     try {
@@ -25,33 +28,35 @@ const UserPage = async ({ params }: { params: Promise<{ username: string }> }) =
         "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     return (
-        <div className="flex flex-row h-full">
-            <div className="flex flex-col flex-1 bg-surface-0/80 h-full glass">
-                <Image
-                    src={pictureURL}
-                    className="w-full"
-                    alt="User picture"
-                    width={256}
-                    height={256}
-                />
-                <div className="flex flex-col p-2">
-                    <span className="text-5xl">{user.username}</span>
-                    <div className="flex justify-between">
-                        <span>Privileage: </span>
-                        <span>{user.privileage}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>Joined at: </span>
-                        <span>{user.joined_at}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>Last seen: </span>
-                        <TimeField time={user.last_seen} />
+        <div className="flex flex-row justify-center w-full h-full">
+            <div className="flex flex-row border-r w-full xl:w-1/2 h-full">
+                <div className="flex flex-col flex-1 bg-surface-0/80 border-x h-full glass">
+                    <Image
+                        src={pictureURL}
+                        className="w-full"
+                        alt="User picture"
+                        width={256}
+                        height={256}
+                    />
+                    <div className="flex flex-col p-2">
+                        <span className="text-5xl">{user.username}</span>
+                        <div className="flex justify-between">
+                            <span>Privileage: </span>
+                            <span>{user.privileage}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Joined at: </span>
+                            <span>{user.joined_at}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Last seen: </span>
+                            <TimeField time={user.last_seen} />
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div className="flex-5">
-                <GalleryServer initialFetchSize={50} />
+                <div className="flex-5">
+                    <GalleryServer initialFetchSize={50} />
+                </div>
             </div>
         </div>
     );

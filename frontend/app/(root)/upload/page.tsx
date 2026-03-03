@@ -5,8 +5,9 @@ import PostImageForm from "@/components/PostImage/PostImageForm";
 import FancySpan from "@/components/template/FancySpan";
 import useUploadStore from "@/hooks/useUploadStore";
 import { Upload } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import TagSelector from "@/components/Tags/TagSelector";
 
 const UploadPage = () => {
     const images = useUploadStore((state) => state.files);
@@ -24,19 +25,20 @@ const UploadPage = () => {
     };
 
     const onFilesDropped = (files: File[]) => {
-        //check for file format
+        //TODO: check for file format
+        //TODO: check for file names
 
         addFiles(files);
     };
 
     const removeCurrentImage = () => {
-        if(images.length === 0) return;
+        if (images.length === 0) return;
         if (imageIndex > 0 && images.length - 1 === imageIndex) {
             setImageIndex((prev) => prev - 1);
         }
 
         removeFileAt(imageIndex);
-    }
+    };
 
     useEffect(() => {
         const image = images?.[imageIndex];
@@ -55,7 +57,7 @@ const UploadPage = () => {
         };
     }, [images, imageIndex]);
 
-    useEffect(()=>{
+    useEffect(() => {
         const onEscape = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
                 removeCurrentImage();
@@ -66,7 +68,7 @@ const UploadPage = () => {
         return () => {
             document.removeEventListener("keydown", onEscape);
         };
-    },[removeCurrentImage]);
+    }, [removeCurrentImage]);
 
     const content =
         images.length > 0 ? (
@@ -88,7 +90,9 @@ const UploadPage = () => {
                             />
                             <div className="flex flex-col gap-10 p-8">
                                 <div className="flex justify-between">
-                                    <FancySpan word={images[imageIndex]?.name} />
+                                    <FancySpan
+                                        word={images[imageIndex]?.name}
+                                    />
                                     <div className="flex justify-center items-center w-10 h-10 text-gray-700">
                                         {imageIndex + 1}/{images.length}
                                     </div>
@@ -98,7 +102,12 @@ const UploadPage = () => {
                                     onSubmit={removeCurrentImage}
                                 />
                             </div>
-                            <div className="flex justify-center items-center w-10 h-10 cursor-pointer" onClick={removeCurrentImage}>X</div>
+                            <div
+                                className="flex justify-center items-center w-10 h-10 cursor-pointer"
+                                onClick={removeCurrentImage}
+                            >
+                                X
+                            </div>
                         </>
                     ) : (
                         <div>No image selected</div>
@@ -114,7 +123,9 @@ const UploadPage = () => {
 
     return (
         <AuthGuard>
-            <DragDropZone onFilesDropped={(files) => onFilesDropped(files)}>{content}</DragDropZone>
+            <DragDropZone onFilesDropped={(files) => onFilesDropped(files)}>
+                {content}
+            </DragDropZone>
         </AuthGuard>
     );
 };

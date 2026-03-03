@@ -9,7 +9,7 @@ export default function RootLayout({
     return (
         <html lang="en" className="h-screen">
             <head>
-                <title>Kartonko</title>
+                <title>kartonko</title>
                 <link rel="icon" href="@/favicon.ico" sizes="any"></link>
             </head>
             <ClientShell>

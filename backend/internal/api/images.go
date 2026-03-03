@@ -250,11 +250,6 @@ func (api *api) PostImage(c *gin.Context) {
 
 	img := api.models.Images.ConstructImage(request.Name, request.Tags, imgFormat, imgWidth, imgHeight, user.ID)
 
-	if err := api.models.Log.AddImageCreated(img, user); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to log image creation: " + err.Error()})
-		return
-	}
-
 	hash, err := image.HashFile(file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error hashing the image: %s", err.Error())})
@@ -277,6 +272,11 @@ func (api *api) PostImage(c *gin.Context) {
 	thumbDst := env.GetEnvString("THUMBNAILS_PATH") + "/" + file.Filename
 	if err := image.GenerateThumbnail(uploadDst, thumbDst); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error generating thumbnail: %s", err.Error())})
+		return
+	}
+
+	if err := api.models.Log.AddImageCreated(img, user); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to log image creation: " + err.Error()})
 		return
 	}
 

@@ -2,7 +2,13 @@
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import router from "next/router";
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import {
+    useState,
+    useEffect,
+    useCallback,
+    createContext,
+    useContext,
+} from "react";
 import { UserData } from "@/lib/user";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -15,7 +21,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
+export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({
+    children,
+}) => {
     const auth = useProvideAuth();
     useEffect(() => {
         const pageLeave = async () => {
@@ -101,5 +109,3 @@ const useProvideAuth = () => {
 
     return { user, loading, login, logout };
 };
-
-export { type UserData };

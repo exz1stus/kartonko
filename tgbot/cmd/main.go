@@ -30,7 +30,7 @@ type Image struct {
 var API_ORIGIN = env.GetEnvString("API_ORIGIN")
 var API_LOCAL = env.GetEnvString("API_LOCAL")
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 30
 
 func searchImages(query string, cursor int) ([]Image, error) {
 	url := fmt.Sprintf("%s/images?cursor=%d&limit=%d&name=%s", API_LOCAL, cursor, PAGE_SIZE, url.QueryEscape(query))
@@ -40,15 +40,14 @@ func searchImages(query string, cursor int) ([]Image, error) {
 	}
 
 	resp, err := client.Get(url)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status %d", resp.StatusCode)
-	}
-
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status %d", resp.StatusCode)
+	}
 
 	var res []Image
 	err = json.NewDecoder(resp.Body).Decode(&res)
@@ -93,6 +92,7 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		photo.Title = img.Filename
 		photo.Caption = img.Filename
 		results = append(results, photo)
+		// print(img.Filename, img.ID, " added\n")
 	}
 
 	nextOffset := ""
@@ -103,9 +103,9 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	inlineConf := tgbotapi.InlineConfig{
 		InlineQueryID: update.InlineQuery.ID,
 		Results:       make([]interface{}, len(results)),
-		CacheTime:     10,
+		CacheTime:     100,
 		NextOffset:    nextOffset,
-		IsPersonal:    true,
+		IsPersonal:    false,
 	}
 
 	for i, result := range results {

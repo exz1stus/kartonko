@@ -9,7 +9,12 @@ interface Props {
 
 const TagSpan = ({ tags, removeTag, tagStyle }: Props) => {
     const tagElements = tags.map((tag, index) => (
-        <TagElement key={index} tag={tag} removeTag={removeTag} className={tagStyle} />
+        <TagElement
+            key={index}
+            tag={tag}
+            removeTag={removeTag}
+            className={tagStyle}
+        />
     ));
 
     return <>{tagElements}</>;

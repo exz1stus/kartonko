@@ -1,9 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import TagSelectorField from "@/components/Tags/TagSelectorField";
 import { ImageUploadRequest, useUploadImage } from "@/hooks/useUploadImage";
 import { toast } from "sonner";
-import TagSelector from "../Tags/TagSelector";
+import TagSelector from "@/components/Tags/TagSelector";
 import useTags from "../Tags/useTags";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +20,8 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
 
     useEffect(() => {
         const dotIndex = file.name.lastIndexOf(".");
-        const name = dotIndex !== -1 ? file.name.substring(0, dotIndex) : file.name;
+        const name =
+            dotIndex !== -1 ? file.name.substring(0, dotIndex) : file.name;
         setName(name);
     }, [file]);
 
@@ -54,7 +54,9 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
     return (
         <form className="space-y-6" onSubmit={submitImage}>
             <div className="flex sm:flex-row flex-col sm:items-center gap-2 sm:gap-4">
-                <label className="w-32 font-medium text-gray-700 text-sm shrink-0">Name</label>
+                <label className="w-32 font-medium text-gray-700 text-sm shrink-0">
+                    Name
+                </label>
                 <div className="flex flex-1 items-center gap-2">
                     <input
                         type="text"
@@ -68,9 +70,15 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
                 </div>
             </div>
             <div className="flex items-center gap-4">
-                <label className="w-32 font-medium text-gray-700 text-sm shrink-0">Add tags</label>
-                <div className="flex flex-wrap gap-1">
-                    <TagSelector tags={tags} removeTag={removeTag} setTags={setTags} />
+                <label className="w-32 font-medium text-gray-700 text-sm shrink-0">
+                    Add tags
+                </label>
+                <div className="flex flex-wrap gap-1 w-full">
+                    <TagSelector
+                        tags={tags}
+                        removeTag={removeTag}
+                        onTagsUpdate={setTags}
+                    />
                 </div>
             </div>
             <div className="flex justify-center">

@@ -1,5 +1,6 @@
+"use client";
+import Image from "next/image";
 import PerspectiveCard from "./PerspectiveCard";
-import ImageCardServer from "./ImageCardServer";
 import React, { useRef } from "react";
 import { useRouter } from "next/navigation";
 import ImageMetadata from "@/lib/image";
@@ -11,6 +12,8 @@ interface Props {
 }
 
 const ImageCard: React.FC<Props> = ({ image, className, style }) => {
+    const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
+    const { filename, format, width, height } = image;
     const selfRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const onClick = () => {
@@ -23,9 +26,27 @@ const ImageCard: React.FC<Props> = ({ image, className, style }) => {
     };
 
     return (
-        <div ref={selfRef} className={className + " opacity-0 "} style={style} onClick={onClick}>
+        <div
+            ref={selfRef}
+            className={className + " opacity-0 "}
+            style={style}
+            onClick={onClick}
+        >
             <PerspectiveCard>
-                <ImageCardServer image={image} onLoad={onLoad} />
+                <div className="flex flex-col items-center bg-surface-20 rounded-xl hover:cursor-pointer">
+                    <Image
+                        src={`${API_ORIGIN}/image/thumb/${filename + "." + format}`}
+                        alt={filename}
+                        className="rounded-t-xl w-full h-auto"
+                        width={width}
+                        height={height}
+                        onLoad={onLoad}
+                        draggable={false}
+                    />
+                    <span className="px-2 max-w-[20ch] truncate">
+                        {filename}
+                    </span>
+                </div>
             </PerspectiveCard>
         </div>
     );

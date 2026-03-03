@@ -1,9 +1,8 @@
-import React from "react";
 import MenuButton from "../SideBar/MenuButton";
 import LoginButton from "./LoginButton";
 import Logo from "./Logo";
 import UserProfile from "./UserProfile";
-import { getLoggedUserServer } from "@/lib/user";
+import { getLoggedUserServer } from "@/lib/user.server";
 
 const NavBar = async () => {
     const user = await getLoggedUserServer();

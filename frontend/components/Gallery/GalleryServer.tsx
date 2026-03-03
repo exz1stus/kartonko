@@ -3,29 +3,38 @@ import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
 import { serverFetch } from "@/lib/serverFetch";
 
-const fetchImages = async (intialFetchSize: number, initialQuery: SearchQuery) => {
-    const nameQueryString =
-        initialQuery.nameContains.length === 0 ? "" : `name=${initialQuery.nameContains}&`;
-    const tagsQueryString =
-        initialQuery.withTags.length === 0 ? "" : `tags=${JSON.stringify(initialQuery.withTags)}&`;
-    const response = await serverFetch(
-        `/images?${nameQueryString}${tagsQueryString}cursor=${0}&limit=${intialFetchSize}`,
-        {
-            cache: "no-store",
-        },
-    );
-
-    if (!response.ok) throw new Error("Failed to fetch images");
-    console.log(`server intial fetching cursor ${0} limit ${intialFetchSize}`);
-    const data: ImageMetadata[] = await response.json();
-    return data;
-};
-
 interface Props {
     initialFetchSize: number;
 }
 
 const GalleryServer = async ({ initialFetchSize }: Props) => {
+    const fetchImages = async (
+        intialFetchSize: number,
+        initialQuery: SearchQuery,
+    ) => {
+        const nameQueryString =
+            initialQuery.nameContains.length === 0
+                ? ""
+                : `name=${initialQuery.nameContains}&`;
+        const tagsQueryString =
+            initialQuery.withTags.length === 0
+                ? ""
+                : `tags=${JSON.stringify(initialQuery.withTags)}&`;
+        const response = await serverFetch(
+            `/images?${nameQueryString}${tagsQueryString}cursor=${0}&limit=${intialFetchSize}`,
+            {
+            cache: "no-store",
+            },
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch images");
+        console.log(
+            `server intial fetching cursor ${0} limit ${intialFetchSize}`,
+        );
+        const data: ImageMetadata[] = await response.json();
+        return data;
+    };
+
     const INITIAL_QUERY: SearchQuery = {
         nameContains: "",
         withTags: [],

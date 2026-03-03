@@ -7,16 +7,12 @@ interface Props {
 const ImageDeleted = ({ data }: Props) => {
     const entryData = ParseLogData<ImageEntryData>(data.data);
     const description = entryData ? (
-        <>
-            {entryData.name}
-        </>
+        <>{entryData.name}</>
     ) : (
         "error retrieving image data"
     );
     return (
-        <div className="flex justify-around">
-            deleted image {description}
-        </div>
+        <div className="flex justify-around">deleted image {description}</div>
     );
 };
 export default ImageDeleted;

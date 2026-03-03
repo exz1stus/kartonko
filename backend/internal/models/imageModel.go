@@ -8,7 +8,7 @@ import (
 
 type Image struct {
 	gorm.Model
-	Hash     string `json:"hash" gorm:"primaryKey;unique;not null"`
+	Hash     string `json:"hash" gorm:"not null"`
 	Filename string `json:"filename" gorm:"not null"`
 	Tags     []Tag  `json:"tags"  gorm:"many2many:image_tags"`
 	Format   string `json:"format" gorm:"not null"`
