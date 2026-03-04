@@ -24,3 +24,8 @@ export async function getImageMetadataById(
     console.log(image);
     return image;
 }
+
+export async function existsOnServer(hash: string) {
+    const res = await apiFetch(`/image/hash/${hash}`);
+    return res.status === 200;
+}

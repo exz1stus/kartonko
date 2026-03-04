@@ -19,20 +19,35 @@ interface Column {
     height: number;
 }
 
-const Masonry: React.FC<Props> = ({ items, className, maxCols = 0, colWidth = 200 }: Props) => {
+const Masonry: React.FC<Props> = ({
+    items,
+    className,
+    maxCols = 0,
+    colWidth = 200,
+}: Props) => {
     const [columns, setColumns] = useState<Column[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const childrenArray = useMemo(() => (Array.isArray(items) ? items.flat() : [items]), [items]);
+    const childrenArray = useMemo(
+        () => (Array.isArray(items) ? items.flat() : [items]),
+        [items],
+    );
 
-    const createColumns = (items: MasonryItem[], count: number, width: number) => {
+    const createColumns = (
+        items: MasonryItem[],
+        count: number,
+        width: number,
+    ) => {
         const cols = Array.from({ length: count }, () => ({
             items: [] as MasonryItem[],
             height: 0,
         }));
         items.forEach((item) => {
             const h = item.ratio * width;
-            const targetCol = cols.reduce((min, c) => (c.height < min.height ? c : min), cols[0]);
+            const targetCol = cols.reduce(
+                (min, c) => (c.height < min.height ? c : min),
+                cols[0],
+            );
             targetCol.items.push(item);
             targetCol.height += h + 1;
         });
@@ -47,7 +62,10 @@ const Masonry: React.FC<Props> = ({ items, className, maxCols = 0, colWidth = 20
             if (!width) return;
             const cols = Math.floor(width / colWidth);
             const clamped = maxCols === 0 ? cols : Math.min(cols, maxCols);
-            const finalCount = Math.min(Math.max(1, clamped), childrenArray.length);
+            const finalCount = Math.min(
+                Math.max(1, clamped),
+                childrenArray.length,
+            );
             setColumns(createColumns(childrenArray, finalCount, width));
         });
 
@@ -58,8 +76,13 @@ const Masonry: React.FC<Props> = ({ items, className, maxCols = 0, colWidth = 20
     return (
         <div
             ref={containerRef}
-            className={ec("flex-row justify-center flex gap-4 w-full", className)}
-            style={{ maxWidth: maxCols > 0 ? `${maxCols * colWidth}px` : "100%" }}
+            className={ec(
+                "flex-row justify-center flex gap-4 w-full",
+                className,
+            )}
+            style={{
+                maxWidth: maxCols > 0 ? `${maxCols * colWidth}px` : "100%",
+            }}
         >
             {columns.map((column, i) => (
                 <div
@@ -70,7 +93,9 @@ const Masonry: React.FC<Props> = ({ items, className, maxCols = 0, colWidth = 20
                     }}
                 >
                     {column.items.map((item) => (
-                        <React.Fragment key={item.key}>{item.item}</React.Fragment>
+                        <React.Fragment key={item.key}>
+                            {item.item}
+                        </React.Fragment>
                     ))}
                 </div>
             ))}

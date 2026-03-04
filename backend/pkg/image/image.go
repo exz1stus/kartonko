@@ -67,6 +67,27 @@ func HashFile(file *multipart.FileHeader) (string, error) {
 	return hash, nil
 }
 
+func CopyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+
+	return out.Sync()
+}
+
 func GenerateThumbnail(srcPath, dstPath string) error {
 	img, err := imaging.Open(srcPath, imaging.AutoOrientation(true))
 	if err != nil {
@@ -75,6 +96,10 @@ func GenerateThumbnail(srcPath, dstPath string) error {
 
 	ext := filepath.Ext(dstPath)
 	thumb := imaging.Fit(img, 320, 320, imaging.Lanczos)
+
+	if ext == ".gif" {
+		return CopyFile(srcPath, dstPath)
+	}
 
 	opts := imaging.JPEGQuality(75)
 

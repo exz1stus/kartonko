@@ -8,7 +8,6 @@ import React, {
 import useTagHints from "./useTagHints";
 import TagSpan from "./TagSpan";
 import { cn } from "@/lib/utils";
-import { input } from "motion/react-client";
 
 interface Props {
     tags: string[];
@@ -91,34 +90,33 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             if (keys.includes(e.key)) e.preventDefault();
             else disableAutocomplete.current = false;
 
-            if (e.key)
-                switch (e.key) {
-                    case complete:
-                        if (hint !== "") {
-                            autoComplete();
-                            saveTag();
-                            removeTag(hint);
-                            setQuery("");
-                        }
-                        break;
-                    case remove:
-                        if (e.ctrlKey || e.metaKey) {
-                            if (query.length === 0) removeLast();
-                            else setQuery("");
-                        } else tryRemove();
-                        break;
-                    case previous:
-                        selectPrevious();
-                        break;
-                    case next:
-                        selectNext();
-                        break;
-                    case cancel:
+            switch (e.key) {
+                case complete:
+                    if (hint !== "") {
+                        autoComplete();
+                        saveTag();
+                        removeTag(hint);
                         setQuery("");
-                        break;
-                    default:
-                        break;
-                }
+                    }
+                    break;
+                case remove:
+                    if (e.ctrlKey || e.metaKey) {
+                        if (query.length === 0) removeLast();
+                        else setQuery("");
+                    } else tryRemove();
+                    break;
+                case previous:
+                    selectPrevious();
+                    break;
+                case next:
+                    selectNext();
+                    break;
+                case cancel:
+                    setQuery("");
+                    break;
+                default:
+                    break;
+            }
         };
 
         return (

@@ -50,7 +50,7 @@ const UploadModal: React.FC<Props> = ({ images = [], onUploaded, onClose }) => {
     return (
         <div className="z-50 fixed inset-0 flex justify-center items-center backdrop-blur-sm overflow-hidden">
             <div
-                className="flex flex-row bg-surface-0/95 rounded-2xl h-[50vh]"
+                className="flex flex-row bg-surface-0/95 rounded-2xl"
                 onWheel={handleWheel}
             >
                 <img
@@ -65,7 +65,10 @@ const UploadModal: React.FC<Props> = ({ images = [], onUploaded, onClose }) => {
                             {imageIndex + 1}/{images.length}
                         </div>
                     </div>
-                    <PostImageForm file={images[imageIndex]} onSubmit={handleUploaded} />
+                    <PostImageForm
+                        file={images[imageIndex]}
+                        onSubmit={handleUploaded}
+                    />
                 </div>
             </div>
         </div>

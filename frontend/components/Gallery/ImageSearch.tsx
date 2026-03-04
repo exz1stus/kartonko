@@ -50,7 +50,9 @@ const ImageSearch: React.FC<Props> = ({
     const nameSelectorRef = React.useRef<HTMLInputElement>(null);
 
     const { tags, setTags, removeTag } = useTags(initialQuery?.withTags);
-    const { onNameKeyDown, name } = useNameSelector(initialQuery?.nameContains);
+    const { onNameKeyDown, onNameChange, name } = useNameSelector(
+        initialQuery?.nameContains,
+    );
 
     useEffect(() => {
         onQueryChange({
@@ -97,8 +99,8 @@ const ImageSearch: React.FC<Props> = ({
                         ref={nameSelectorRef}
                         className="z-10 relative bg-transparent border-none outline-none w-full text-3xl"
                         value={name}
-                        onChange={() => {}}
-                        onKeyDown={onNameKeyDown}
+                        onChange={(e) => onNameChange(e.target.value)}
+                        onKeyDown={(e) => onNameKeyDown(e)}
                         onFocus={() => setInsertingMode(InsertingMode.NAME)}
                         onBlur={() => setInsertingMode(InsertingMode.NONE)}
                         autoComplete="off"
@@ -110,7 +112,7 @@ const ImageSearch: React.FC<Props> = ({
                 <div>
                     <div className="flex">
                         <span
-                            className={`px-2 text-2xl border rounded-2xl hover:cursor-pointer 
+                            className={`px-2 text-2xl border inline-flex items-center rounded-2xl hover:cursor-pointer 
                             ${
                                 insertingMode === InsertingMode.TAG
                                     ? "bg-surface-0/50 border-primary-0"

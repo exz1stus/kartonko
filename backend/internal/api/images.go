@@ -62,6 +62,19 @@ func (api *api) GetImageByName(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (api *api) GetImageByHash(c *gin.Context) {
+	req := c.Param("hash")
+	img, err := api.models.Images.GetImageByHash(req)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
+		return
+	}
+
+	response := ConstructImageResponse(img)
+	c.JSON(http.StatusOK, response)
+}
+
 func (api *api) GetImageByID(c *gin.Context) {
 	idStr := c.Param("id")
 

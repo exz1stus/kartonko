@@ -38,6 +38,7 @@ func (api *api) initRoutes() {
 
 	r.GET("/image/:name", api.GetImageByName)
 	r.GET("/image/id/:id", api.GetImageByID)
+	r.GET("/image/hash/:hash", api.GetImageByHash)
 	r.GET("/image/raw/:name", api.GetRawImageByName)
 	r.Static("/image/thumb", env.GetEnvString("THUMBNAILS_PATH"))
 

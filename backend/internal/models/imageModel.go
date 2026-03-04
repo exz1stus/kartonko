@@ -10,7 +10,7 @@ type Image struct {
 	gorm.Model
 	Hash     string `json:"hash" gorm:"not null"`
 	Filename string `json:"filename" gorm:"not null"`
-	Tags     []Tag  `json:"tags"  gorm:"many2many:image_tags"`
+	Tags     []Tag  `json:"tags"  gorm:"many2many:image_tags;constraint:OnDelete:CASCADE;"`
 	Format   string `json:"format" gorm:"not null"`
 	Width    uint   `json:"width" gorm:"not null"`
 	Height   uint   `json:"height" gorm:"not null"`
@@ -72,6 +72,7 @@ func (model *ImageModel) ConstructImage(name string, tagsNames []string, format 
 		Height:   height,
 		UserID:   userID,
 	}
+
 	model.AddAutoTags(image)
 	return image
 }
@@ -107,9 +108,24 @@ func (model *ImageModel) AddImage(image *Image) error {
 	return nil
 }
 
+func (model *ImageModel) GetImageByHash(hash string) (*Image, error) {
+	var img Image
+	result := model.db.Preload("Tags").Where("hash = ?", hash).First(&img)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
+	}
+
+	if img.Hash == "" {
+		return nil, fmt.Errorf("image with hash %s not found", hash)
+	}
+
+	return &img, nil
+}
+
 func (model *ImageModel) GetImageByID(id uint64) (*Image, error) {
 	var img Image
-	result := model.db.Where("id = ?", id).First(&img)
+	result := model.db.Preload("Tags").Where("id = ?", id).First(&img)
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
@@ -124,7 +140,7 @@ func (model *ImageModel) GetImageByID(id uint64) (*Image, error) {
 
 func (model *ImageModel) GetImageByName(name string) (*Image, error) {
 	var img Image
-	result := model.db.Where("filename = ?", name).First(&img)
+	result := model.db.Preload("Tags").Where("filename = ?", name).First(&img)
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
@@ -139,7 +155,7 @@ func (model *ImageModel) GetImageByName(name string) (*Image, error) {
 
 func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {
 	var images []Image
-	result := model.db.Model(&Image{}).Order("id desc").Limit(limit).Offset(cursor).Find(&images)
+	result := model.db.Model(&Image{}).Preload("Tags").Order("id desc").Limit(limit).Offset(cursor).Find(&images)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to retrieve images: %w", result.Error)
 	}

@@ -7,7 +7,6 @@ import TimeField from "./TimeField";
 import { getLoggedUserServer, getUserByIdServer } from "@/lib/user.server";
 import { isModerator } from "@/lib/user";
 import EditImage from "./EditImage";
-import { get } from "http";
 
 interface Props {
     image: ImageMetadata;
@@ -63,8 +62,8 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                     <span className="text-l">Uploaded: </span>
                     <TimeField time={image.uploaded_at} />
                 </div>
-                {editImage}
                 {tags}
+                {editImage}
             </div>
         </div>
     );

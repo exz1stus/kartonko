@@ -85,7 +85,7 @@ const Gallery: React.FC<Props> = ({
     const content = (
         <div ref={galleryHover.ref}>
             <div ref={contentRef} className="flex justify-center">
-                <Masonry className="p-4" items={masonryItems} colWidth={240} />
+                <Masonry className="p-4" items={masonryItems} colWidth={200} />
             </div>
             <div ref={sentinelRef} style={{ height: 1 }} />
             <div
