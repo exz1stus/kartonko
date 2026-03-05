@@ -2,28 +2,31 @@ import ImageMetadata from "@/lib/image";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
 import { serverFetch } from "@/lib/serverFetch";
+import { constructQueryString } from "@/lib/query";
 
 interface Props {
     initialFetchSize: number;
+    initialQuery?: SearchQuery;
 }
 
-const GalleryServer = async ({ initialFetchSize }: Props) => {
+const INITIAL_QUERY: SearchQuery = {
+    nameContains: "",
+    withTags: [],
+};
+
+const GalleryServer = async ({
+    initialFetchSize,
+    initialQuery = INITIAL_QUERY,
+}: Props) => {
     const fetchImages = async (
         intialFetchSize: number,
         initialQuery: SearchQuery,
     ) => {
-        const nameQueryString =
-            initialQuery.nameContains.length === 0
-                ? ""
-                : `name=${initialQuery.nameContains}&`;
-        const tagsQueryString =
-            initialQuery.withTags.length === 0
-                ? ""
-                : `tags=${JSON.stringify(initialQuery.withTags)}&`;
+        const queryString = constructQueryString(initialQuery);
         const response = await serverFetch(
-            `/images?${nameQueryString}${tagsQueryString}cursor=${0}&limit=${intialFetchSize}`,
+            `/images?${queryString}&limit=${intialFetchSize}`,
             {
-            cache: "no-store",
+                cache: "no-store",
             },
         );
 
@@ -35,15 +38,11 @@ const GalleryServer = async ({ initialFetchSize }: Props) => {
         return data;
     };
 
-    const INITIAL_QUERY: SearchQuery = {
-        nameContains: "",
-        withTags: [],
-    };
     let images: ImageMetadata[] = [];
     let initReachedEnd = false;
     if (initialFetchSize > 0) {
         try {
-            images = await fetchImages(initialFetchSize, INITIAL_QUERY);
+            images = await fetchImages(initialFetchSize, initialQuery);
             initReachedEnd = images.length < initialFetchSize;
         } catch (error) {
             console.error("Error fetching images:", error);
@@ -55,7 +54,7 @@ const GalleryServer = async ({ initialFetchSize }: Props) => {
         <Gallery
             initialImages={images}
             initReachedEnd={initReachedEnd}
-            initialQuery={INITIAL_QUERY}
+            initialQuery={initialQuery}
         />
     );
 };

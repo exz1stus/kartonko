@@ -4,14 +4,10 @@ import useNameSelector from "@/hooks/useNameSelector";
 import TagSelector, { TagSelectorRef } from "@/components/Tags/TagSelector";
 import { useHover } from "@/contexts/HoverContex";
 import useTags from "@/components/Tags/useTags";
-
-interface SearchQuery {
-    nameContains: string;
-    withTags: string[];
-}
+import { SearchQuery } from "@/lib/query";
 
 export function isQueryEmpty(query: SearchQuery) {
-    return query.nameContains === "" && query.withTags.length === 0;
+    return query.nameContains === "" && query.withTags?.length === 0;
 }
 
 export function isQueriesEqual(query1: SearchQuery, query2: SearchQuery) {
@@ -22,7 +18,6 @@ export function isQueriesEqual(query1: SearchQuery, query2: SearchQuery) {
 }
 
 interface Props {
-    selected: boolean;
     initialQuery?: SearchQuery;
     onQueryChange: (query: SearchQuery) => void;
     className?: string;
@@ -54,36 +49,19 @@ const ImageSearch: React.FC<Props> = ({
         initialQuery?.nameContains,
     );
 
+    const userID = initialQuery?.userID;
+
     useEffect(() => {
         onQueryChange({
             nameContains: name,
             withTags: tags,
+            userID,
         });
-    }, [name, tags]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (!hovered) return;
-
-            switch (e.key) {
-                case "ArrowDown":
-                    setInsertingMode(InsertingMode.TAG);
-                    tagSelectorRef.current?.focus();
-                    break;
-                case "ArrowUp":
-                    setInsertingMode(InsertingMode.NAME);
-                    nameSelectorRef.current?.focus();
-                    break;
-            }
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [hovered]);
+    }, [name, tags, userID]);
 
     return (
         <div ref={ref} className={className}>
-            <div className="gap-2 grid grid-rows-2">
+            <div className="gap-1 grid grid-rows-2">
                 <div className="flex items-center gap-2">
                     <span
                         className={`px-2 border rounded-2xl hover:cursor-pointer 

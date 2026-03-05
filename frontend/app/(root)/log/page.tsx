@@ -20,12 +20,14 @@ const Log = () => {
         return data;
     };
 
-    const { items, loading, sentinelRef, containerRef, contentRef } =
-        useInfiniteScroll<SearchLogEntriesQuery, LogEntryData>({
-            fetchFn: fetchEntries,
-            query: {},
-            isQueryEmpty: () => true,
-        });
+    const { items, loading, reachedEnd, sentinelRef } = useInfiniteScroll<
+        SearchLogEntriesQuery,
+        LogEntryData
+    >({
+        fetchFn: fetchEntries,
+        query: {},
+        isQueryEmpty: () => true,
+    });
 
     const entries = items.map((entry, index) => {
         return (
@@ -35,19 +37,15 @@ const Log = () => {
         );
     });
 
-    if (loading) return <div>Loading...</div>;
-
     return (
         <AuthGuard moderator={true}>
-            <div ref={containerRef} className="h-full">
+            <div className="h-full">
                 <Scrollbar>
-                    <div
-                        ref={contentRef}
-                        className="flex flex-col items-center gap-2 m-2 overflow-auto"
-                    >
+                    <div className="flex flex-col items-center gap-2 m-2 overflow-auto">
                         {entries}
                     </div>
-                    <div ref={sentinelRef} style={{ height: 1 }} />
+                    {loading && <div>Loading...</div>}
+                    {!reachedEnd && <div ref={sentinelRef} />}
                 </Scrollbar>
             </div>
         </AuthGuard>

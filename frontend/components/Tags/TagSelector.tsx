@@ -1,14 +1,17 @@
 "use client";
 import React, {
     forwardRef,
+    useEffect,
     useImperativeHandle,
     useRef,
     useState,
 } from "react";
 import useTagHints from "./useTagHints";
+import { useDialog } from "@/contexts/AlertDialogContext";
 import TagSpan from "./TagSpan";
 import { cn } from "@/lib/utils";
-
+import { addNewTag } from "@/lib/tag.client";
+import { toast } from "sonner";
 interface Props {
     tags: string[];
     removeTag: (tag: string) => void;
@@ -25,10 +28,18 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
     ({ tags, removeTag, onTagsUpdate, onFocus, onBlur }, ref) => {
         const [query, setQuery] = useState<string>("");
         const [active, setActive] = useState<boolean>(false);
+        const [showNewTagChip, setShowNewTagChip] = useState<boolean>(false);
         const inputRef = React.useRef<HTMLInputElement>(null);
         const placeholder = "Add a tag...";
 
         const disableAutocomplete = useRef<boolean>(false);
+
+        const dialog = useDialog();
+
+        const NO_HINT_DELAY_MS = 600;
+        const noHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+            null,
+        );
 
         useImperativeHandle(ref, () => ({
             focus: () => {
@@ -75,28 +86,64 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             removeTag(last);
         };
 
+        useEffect(() => {
+            if (noHintTimerRef.current) clearTimeout(noHintTimerRef.current);
+            if (query.trim().length > 0 && hint === "") {
+                noHintTimerRef.current = setTimeout(() => {
+                    setShowNewTagChip(true);
+                }, NO_HINT_DELAY_MS);
+            } else {
+                setShowNewTagChip(false);
+            }
+
+            return () => {
+                if (noHintTimerRef.current)
+                    clearTimeout(noHintTimerRef.current);
+            };
+        }, [query, hint]);
+
+        const showNewTagDialog = async () => {
+            const result = await dialog(`Add tag ${query}?`, {
+                confirmText: "Yes",
+                cancelText: "No",
+            });
+
+            if (!result) return;
+            toast.promise(addNewTag(query), {
+                loading: "Loading...",
+                success: () => {
+                    onTagsUpdate(tags.concat(query));
+                    setQuery("");
+                    return `tag has been added`;
+                },
+                error: (error) => error.message,
+            });
+        };
+
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (!active) return;
             // const allowed = /^[a-z0-9\s]+$/i;
             // if (!allowed.test(e.key)) return;
             const complete = "Tab";
+            const comma = ",";
             const remove = "Backspace";
             const previous = "ArrowUp";
             const next = "ArrowDown";
             const cancel = "Escape";
 
-            const keys = [complete, remove, previous, next, cancel];
+            const keys = [complete, remove, previous, next, cancel, comma];
 
             if (keys.includes(e.key)) e.preventDefault();
             else disableAutocomplete.current = false;
 
             switch (e.key) {
+                case comma:
                 case complete:
                     if (hint !== "") {
-                        autoComplete();
                         saveTag();
-                        removeTag(hint);
                         setQuery("");
+                    } else if (showNewTagChip) {
+                        showNewTagDialog();
                     }
                     break;
                 case remove:
@@ -156,13 +203,20 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                         }
                     />
 
-                    {/* Hint overlay */}
-                    <div className="absolute inset-0 flex items-center text-lg pointer-events-none">
-                        <span className="invisible whitespace-pre">
+                    <div className="z-10 absolute inset-0 flex items-center text-lg">
+                        <span className="invisible whitespace-pre pointer-events-none">
                             {query}
                         </span>
-                        <span className="text-white/25 whitespace-pre">
-                            {query.length !== 0 && difference}
+                        <span className="text-white/25 whitespace-pre pointer-events-none">
+                            {difference}
+                        </span>
+                        <span
+                            className={"px-2 whitespace-pre cursor-pointer"}
+                            onClick={() => {
+                                if (showNewTagChip) showNewTagDialog();
+                            }}
+                        >
+                            {showNewTagChip && "+"}
                         </span>
                     </div>
                 </div>
@@ -170,5 +224,6 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
         );
     },
 );
+TagSelector.displayName = "TagSelector";
 
 export default TagSelector;

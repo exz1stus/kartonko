@@ -24,20 +24,22 @@ type ImageModel struct {
 }
 
 type ImageQuery struct {
-	NameContains string   `json:"nameContains"`
-	WithTags     []string `json:"withTags"`
+	NameContains string
+	WithTags     []string
+	User         *User
 }
 
 func EmptyQuery() ImageQuery {
 	return ImageQuery{
 		NameContains: "",
 		WithTags:     []string{},
+		User:         nil,
 	}
 }
 
 func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]Image, error) {
 	var images []Image
-	result := model.db.Model(&Image{}).Order("id desc")
+	result := model.db.Preload("Tags").Model(&Image{}).Order("images.id desc")
 
 	if query.NameContains != "" {
 		result = result.Where("filename LIKE ?", "%"+query.NameContains+"%").Find(&images)
@@ -46,11 +48,15 @@ func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) (
 	if len(query.WithTags) > 0 {
 		result = result.
 			Joins("JOIN image_tags ON image_tags.image_id = images.id").
-			Joins("JOIN tags ON tags.name = image_tags.tag_name").
+			Joins("JOIN tags ON tags.id = image_tags.tag_id").
 			Where("tags.name IN ?", query.WithTags).
 			Group("images.id").
-			Having("COUNT(DISTINCT tags.name) = ?", len(query.WithTags)).
+			Having("COUNT(DISTINCT tags.id) = ?", len(query.WithTags)).
 			Find(&images)
+	}
+
+	if query.User != nil {
+		result = result.Where("user_id = ?", query.User.ID)
 	}
 
 	result = result.Limit(limit).Offset(cursor).Find(&images)
@@ -88,6 +94,7 @@ func (model *ImageModel) AddAutoTags(image *Image) {
 }
 
 func (model *ImageModel) AddImage(image *Image) error {
+
 	if model.containsImageHash(image.Hash) {
 		return fmt.Errorf("image with hash %s already exists", image.Hash)
 	}
@@ -100,9 +107,16 @@ func (model *ImageModel) AddImage(image *Image) error {
 		return err
 	}
 
-	result := model.db.Create(image)
-	if result.Error != nil {
-		return fmt.Errorf("failed to insert image: %w", result.Error)
+	tagNames := TagsToStrings(image.Tags)
+	var dbTags []Tag
+	if err := model.db.Where("name IN ?", tagNames).Find(&dbTags).Error; err != nil {
+		return fmt.Errorf("failed to retrieve tags: %w", err)
+	}
+
+	image.Tags = dbTags
+
+	if err := model.db.Create(image).Error; err != nil {
+		return fmt.Errorf("failed to insert image: %w", err)
 	}
 
 	return nil

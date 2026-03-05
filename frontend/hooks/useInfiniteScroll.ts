@@ -10,7 +10,6 @@ interface Props<TQuery, TItem> {
     initialItems?: TItem[];
     initialReachedEnd?: boolean;
     isQueryEmpty: (query: TQuery) => boolean;
-    isQueriesEqual?: (a: TQuery, b: TQuery) => boolean;
 }
 
 export default function useInfiniteScroll<TQuery, TItem>({
@@ -23,106 +22,98 @@ export default function useInfiniteScroll<TQuery, TItem>({
     isQueryEmpty,
 }: Props<TQuery, TItem>) {
     const [items, setItems] = useState<TItem[]>(initialItems);
-    const [reachedEnd, setReachedEnd] = useState<boolean>(initialReachedEnd);
     const [loading, setLoading] = useState(false);
+    const [reachedEnd, setReachedEnd] = useState(initialReachedEnd);
 
-    const hasQueryChangedFromInit = useRef<boolean>(false);
     const fetchingRef = useRef(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const contentRef = useRef<HTMLDivElement>(null);
-
-    const fetchCount = useRef<number>(0);
-    const debugEvents = useRef<string[]>([]);
+    const reachedEndRef = useRef(initialReachedEnd);
+    const loadingRef = useRef(false);
+    const cursorRef = useRef(initialItems.length);
+    const fetchIdRef = useRef(0);
+    const queryRef = useRef(query);
+    const hasQueryChangedFromInit = useRef(false);
 
     const fetchItems = useCallback(
-        async (query: TQuery, cursor: number, limit: number) => {
-            if (fetchingRef.current || reachedEnd) return;
+        async (query: TQuery, limit: number) => {
+            if (fetchingRef.current || reachedEndRef.current) return;
+
+            const cursor = cursorRef.current;
+            cursorRef.current += limit;
             fetchingRef.current = true;
+            loadingRef.current = true;
+            const myFetchId = fetchIdRef.current;
             setLoading(true);
 
             try {
                 const data = await fetchFn(query, cursor, limit);
+
+                if (myFetchId !== fetchIdRef.current) return;
+
                 setItems((prev) => [...prev, ...data]);
-                if (data.length < limit) setReachedEnd(true);
+
+                if (data.length < limit) {
+                    reachedEndRef.current = true;
+                    setReachedEnd(true);
+                }
             } catch (error) {
                 console.error("useInfiniteScroll fetch error:", error);
+                if (myFetchId === fetchIdRef.current) {
+                    cursorRef.current = cursor;
+                }
             } finally {
-                fetchingRef.current = false;
-                setLoading(false);
+                if (myFetchId === fetchIdRef.current) {
+                    fetchingRef.current = false;
+                    loadingRef.current = false;
+                    setLoading(false);
+                }
             }
-            fetchCount.current++;
         },
-        [fetchFn, reachedEnd],
+        [fetchFn],
     );
 
-    const canFetch = (query: TQuery) => {
-        if (!isQueryEmpty(query)) hasQueryChangedFromInit.current = true;
-
-        return hasQueryChangedFromInit.current;
-    };
-
+    // Reset and re-fetch when query changes
     useEffect(() => {
-        if (!canFetch(query)) return;
+        if (!isQueryEmpty(query)) hasQueryChangedFromInit.current = true;
+        if (!hasQueryChangedFromInit.current) return;
+
+        queryRef.current = query;
+        fetchIdRef.current++;
+        fetchingRef.current = false;
+        loadingRef.current = false;
+        reachedEndRef.current = false;
+        cursorRef.current = 0;
 
         setItems([]);
         setReachedEnd(false);
-        fetchItems(query, 0, requestSize);
-        debugEvents.current.push(
-            `refetch on query cursor ${0} limit ${requestSize}`,
-        );
-    }, [query, requestSize]);
+        fetchItems(query, requestSize);
+    }, [fetchItems, isQueryEmpty, query, requestSize]);
 
+    // Initial fetch
     useEffect(() => {
         if (initialItems.length > 0) return;
-        fetchItems(query, items.length, initRequestSize);
-        debugEvents.current.push(
-            `initial fetch cursor ${items.length} limit ${requestSize}`,
-        );
+        fetchItems(query, initRequestSize);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Sentinel — place <div ref={sentinelRef} /> at the bottom of your list,
+    // inside the scrollable container. That's all you need.
     const { ref: sentinelRef, inView } = useInView({
         threshold: 0,
         rootMargin: "400px",
     });
 
+    // Fires when sentinel enters view (user scrolled down, or content doesn't fill screen)
     useEffect(() => {
-        const container = containerRef.current;
-        const content = contentRef.current;
+        if (!inView || loadingRef.current || reachedEndRef.current) return;
+        fetchItems(queryRef.current, requestSize);
+    }, [inView, fetchItems, requestSize]);
 
-        if (!container || !content) return;
+    // inView won't re-fire if it's already true when loading ends (sentinel
+    // stayed visible the whole time). Re-check manually after each fetch.
+    useEffect(() => {
+        if (loading || !inView || reachedEndRef.current) return;
+        fetchItems(queryRef.current, requestSize);
+    }, [loading, inView, fetchItems, requestSize]);
 
-        const observer = new ResizeObserver(() => {
-            if (fetchingRef.current || reachedEnd) return;
-
-            if (content.scrollHeight <= container.clientHeight) {
-                fetchItems(query, items.length, requestSize);
-                debugEvents.current.push(
-                    `fetch on resize cursor ${items.length} limit ${requestSize}`,
-                );
-            }
-        });
-
-        observer.observe(content);
-
-        return () => observer.disconnect();
-    }, [query, loading, reachedEnd, items.length]);
-
-    // useEffect(() => {
-    //     if (!inView || loading || reachedEnd) return;
-
-    //     fetchItems(query, items.length, requestSize);
-    //     debugEvents.current.push(
-    //         `fetch on scroll cursor ${items.length} limit ${requestSize}`,
-    //     );
-    // }, [inView, query, loading, reachedEnd, items.length]);
-
-    return {
-        items,
-        loading,
-        reachedEnd,
-        sentinelRef,
-        containerRef,
-        contentRef,
-        debugEvents,
-    };
+    return { items, loading, reachedEnd, sentinelRef };
 }

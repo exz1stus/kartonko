@@ -9,7 +9,8 @@ import (
 )
 
 type Tag struct {
-	Name string `json:"name" gorm:"primaryKey;unique;not null"`
+	gorm.Model
+	Name string `json:"name" gorm:"unique;not null"`
 }
 
 type TagModel struct {
@@ -43,17 +44,17 @@ func (model *TagModel) SearchTags(query string, limit int) ([]Tag, error) {
 	return tags, nil
 }
 
-func (model *TagModel) AddTag(tag string) error {
+func (model *TagModel) AddTag(tag string) (*Tag, error) {
 	if model.TagExists(tag) {
-		return fmt.Errorf("tag %s already exists", tag)
+		return nil, fmt.Errorf("tag %s already exists", tag)
 	}
 
 	newTag := &Tag{Name: tag}
 	result := model.db.Create(newTag)
 	if result.Error != nil {
-		return fmt.Errorf("failed to insert tag: %v", result.Error)
+		return nil, fmt.Errorf("failed to insert tag: %v", result.Error)
 	}
-	return nil
+	return newTag, nil
 }
 
 func (model *TagModel) CheckTags(tags []Tag) error {

@@ -1,12 +1,7 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import ImageCard from "@/components/Gallery/ImageCard";
-import {
-    SearchQuery,
-    ImageSearch,
-    isQueryEmpty,
-    isQueriesEqual,
-} from "./ImageSearch";
+import { SearchQuery, ImageSearch, isQueryEmpty } from "./ImageSearch";
 import { useDebounce } from "use-debounce";
 import Scrollbar from "@/components/template/Scrollbar";
 import DragDropZone from "@/components/PostImage/DragDropZone";
@@ -16,6 +11,8 @@ import ImageMetadata from "@/lib/image";
 import useUpload from "@/hooks/useUpload";
 import { apiFetch } from "@/lib/apiFetch";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
+import { constructQueryString } from "@/lib/query";
+import { LucideLoader } from "lucide-react";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -40,16 +37,9 @@ const Gallery: React.FC<Props> = ({
             cursor: number,
             requestSize: number,
         ): Promise<ImageMetadata[]> => {
-            const name =
-                searchQuery?.nameContains.length === 0
-                    ? ""
-                    : `name=${searchQuery.nameContains}&`;
-            const tags =
-                searchQuery?.withTags.length === 0
-                    ? ""
-                    : `tags=${JSON.stringify(searchQuery.withTags)}&`;
+            const queryString = constructQueryString(searchQuery);
             const response = await apiFetch(
-                `/images?${name}${tags}cursor=${cursor}&limit=${requestSize}`,
+                `/images?${queryString}cursor=${cursor}&limit=${requestSize}`,
             );
             if (!response.ok) throw new Error("Failed to fetch images");
 
@@ -60,15 +50,10 @@ const Gallery: React.FC<Props> = ({
         [],
     );
 
-    const {
-        items,
-        loading,
-        reachedEnd,
-        sentinelRef,
-        containerRef,
-        contentRef,
-        debugEvents,
-    } = useInfiniteScroll<SearchQuery, ImageMetadata>({
+    const { items, loading, reachedEnd, sentinelRef } = useInfiniteScroll<
+        SearchQuery,
+        ImageMetadata
+    >({
         fetchFn: fetchImages,
         query: debouncedQuery,
         initialItems: initialImages,
@@ -84,10 +69,10 @@ const Gallery: React.FC<Props> = ({
 
     const content = (
         <div ref={galleryHover.ref}>
-            <div ref={contentRef} className="flex justify-center">
+            <div className="flex justify-center">
                 <Masonry className="p-4" items={masonryItems} colWidth={200} />
             </div>
-            <div ref={sentinelRef} style={{ height: 1 }} />
+            {!reachedEnd && <div ref={sentinelRef} />}
             <div
                 className={`${
                     reachedEnd && !loading && masonryItems.length > 0
@@ -95,7 +80,7 @@ const Gallery: React.FC<Props> = ({
                         : ""
                 } flex justify-center p-4`}
             >
-                {loading && <div>Loading...</div>}
+                {loading && <LucideLoader />}
                 {reachedEnd && <div>End of images</div>}
             </div>
         </div>
@@ -103,23 +88,12 @@ const Gallery: React.FC<Props> = ({
 
     return (
         <div className="flex flex-col h-full">
-            {false && (
-                <div className="right-[50%] z-99 fixed bg-green-400 m-2 p-2 inset">
-                    Images count : {items.length}
-                    <div className="flex flex-col max-h-50 overflow-y-auto scroll-auto">
-                        {debugEvents.current.map((event, i) => (
-                            <span key={i}>{event}</span>
-                        ))}
-                    </div>
-                </div>
-            )}
             <ImageSearch
                 initialQuery={initialQuery}
-                selected={galleryHover.isHovered()}
                 onQueryChange={(query: SearchQuery) => setSearchQuery(query)}
-                className="p-4 border-b shrink-0"
+                className="p-4 border-primary-0 border-b shrink-0"
             />
-            <div ref={containerRef} className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden">
                 <DragDropZone onFilesDropped={handleUploadFiles}>
                     <Scrollbar className="overflow-x-hidden">
                         {content}

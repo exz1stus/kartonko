@@ -177,6 +177,8 @@ func (api *api) GetImagesByQuery(c *gin.Context) {
 
 	nameContains := c.Query("name")
 	tagsString := c.Query("tags")
+	fromUsername := c.Query("username")
+	fromUserID := c.Query("user_id")
 	var tags []string
 	var query models.ImageQuery = models.EmptyQuery()
 	if nameContains != "" {
@@ -189,6 +191,28 @@ func (api *api) GetImagesByQuery(c *gin.Context) {
 			return
 		}
 		query.WithTags = tags
+	}
+	if fromUsername != "" {
+		uploader, err := api.models.Users.GetUserByUsername(fromUsername)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+		query.User = uploader
+	}
+	if fromUserID != "" {
+		userID, err := strconv.ParseUint(fromUserID, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+
+		uploader, err := api.models.Users.GetUserById(userID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+		query.User = uploader
 	}
 
 	images, err := api.models.Images.SearchImages(query, cursor, limit)

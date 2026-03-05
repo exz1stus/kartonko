@@ -123,6 +123,14 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 }
 
+var helloMessage string = "загружати картонкі: kartonko.lol\nшукати картонкі в тг @kartonkobot <запит>"
+
+func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, helloMessage)
+	msg.ReplyToMessageID = update.Message.MessageID
+	bot.Send(msg)
+}
+
 func main() {
 	bot, err := tgbotapi.NewBotAPI(env.GetEnvString("BOT_TOKEN"))
 	if err != nil {
@@ -136,10 +144,13 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.InlineQuery == nil {
-			continue
+		if update.Message != nil {
+			handleMessage(bot, update)
 		}
 
-		handleInlineQuery(bot, update)
+		if update.InlineQuery != nil {
+			handleInlineQuery(bot, update)
+		}
+
 	}
 }

@@ -11,6 +11,10 @@ export interface ImageEntryData {
     name: string;
 }
 
+export interface TagEntryData {
+    name: string;
+}
+
 export function ParseLogData<T>(data: Object | null): T | null {
     if (!data) return null;
     return data as T;

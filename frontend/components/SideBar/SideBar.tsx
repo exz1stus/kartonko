@@ -16,7 +16,7 @@ const SideBar: React.FC = () => {
 
     const moderator =
         user?.privileage === "Moderator" ? (
-            <Dropdown text="Moderator" open={true}>
+            <Dropdown open={true}>
                 <Link href="/log">Log</Link>
             </Dropdown>
         ) : null;

@@ -1,6 +1,3 @@
-import { createHash } from "crypto";
-import { createReadStream } from "fs";
-
 export default interface ImageMetadata {
     filename: string;
     tags: string[];

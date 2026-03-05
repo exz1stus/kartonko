@@ -26,7 +26,7 @@ const PostImageForm: React.FC<PostImageFormProps> = ({ file, onSubmit }) => {
     const { name, onNameChange, onNameKeyDown } =
         useNameSelector(intialFilename);
 
-    const submitImage = async (e: React.SubmitEvent) => {
+    const submitImage = async (e: React.FormEvent) => {
         if (loading) return;
         e.preventDefault();
 

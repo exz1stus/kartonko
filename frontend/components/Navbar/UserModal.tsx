@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import LogoutButton from "./LogoutButton";
-import { UserData } from "@/contexts/AuthContext";
+import { UserData } from "@/lib/user";
 import UsernameButton from "./UsernameButton";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import Image from "next/image";
@@ -11,7 +11,11 @@ interface UserModalProps {
     onClose: () => void;
 }
 
-const UserModal: React.FC<UserModalProps> = ({ user, shown, onClose }: UserModalProps) => {
+const UserModal: React.FC<UserModalProps> = ({
+    user,
+    shown,
+    onClose,
+}: UserModalProps) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
     useClickOutside(modalRef, onClose);
@@ -23,7 +27,7 @@ const UserModal: React.FC<UserModalProps> = ({ user, shown, onClose }: UserModal
     return (
         <div
             ref={modalRef}
-            className="top-0 right-0 fixed bg-surface-10 border-1 border-surface-30 rounded-l"
+            className="top-0 right-0 fixed bg-surface-10 border border-surface-30 rounded-l"
         >
             <div className="flex flex-col justify-center items-center gap-2 p-2 pr-10 pl-10">
                 <div className="rounded-full">

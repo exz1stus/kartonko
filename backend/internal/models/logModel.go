@@ -94,6 +94,10 @@ type ImageEntryData struct {
 	Name string `json:"name"`
 }
 
+type TagEntryData struct {
+	Name string `json:"name"`
+}
+
 func (model *AuditLog) AddImageCreated(image *Image, user *User) error {
 	data, err := json.Marshal(&ImageEntryData{Name: image.Filename})
 	if err != nil {
@@ -108,4 +112,20 @@ func (model *AuditLog) AddImageDeleted(image *Image, user *User) error {
 		return fmt.Errorf("failed to marshal image log entry data: %w", err)
 	}
 	return model.addEntry("image_deleted", user.Model.ID, image.ID, datatypes.JSON(data))
+}
+
+func (model *AuditLog) AddTagCreated(tag *Tag, user *User) error {
+	data, err := json.Marshal(&TagEntryData{Name: tag.Name})
+	if err != nil {
+		return fmt.Errorf("failed to marshal tag log entry data: %w", err)
+	}
+	return model.addEntry("tag_created", user.Model.ID, tag.ID, datatypes.JSON(data))
+}
+
+func (model *AuditLog) AddTagDeleted(tag *Tag, user *User) error {
+	data, err := json.Marshal(&TagEntryData{Name: tag.Name})
+	if err != nil {
+		return fmt.Errorf("failed to marshal tag log entry data: %w", err)
+	}
+	return model.addEntry("tag_deleted", user.Model.ID, tag.ID, datatypes.JSON(data))
 }

@@ -1,17 +1,21 @@
 import React from "react";
 
 interface DropdownProps {
-    text: string;
+    text?: string;
     open: boolean;
     children: React.ReactNode;
 }
 
-const Dropdown: React.FC<DropdownProps> = ({ text, open, children }: DropdownProps) => {
+const Dropdown: React.FC<DropdownProps> = ({
+    text,
+    open,
+    children,
+}: DropdownProps) => {
     const [isOpen, setOpen] = React.useState(open);
     return (
-        <div className="relative flex flex-col gap-2">
+        <div className="relative flex flex-col items-center font-bold">
             <span
-                className="font-bold text-xl hover:cursor-pointer"
+                className="text-xl hover:cursor-pointer"
                 onClick={() => setOpen(!isOpen)}
             >
                 {text}

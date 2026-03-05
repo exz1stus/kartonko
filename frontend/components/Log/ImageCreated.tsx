@@ -13,10 +13,10 @@ const ImageCreated = ({ data }: Props) => {
     const entryData = ParseLogData<ImageEntryData>(data.data);
     const [image, setImage] = useState<ImageMetadata | null>(null);
 
-    const fetchImageData = useEffectEvent(async () => {
+    const fetchImageData = async () => {
         const img = await getImageMetadataById(data.affected_obj_id);
         setImage(img);
-    });
+    };
 
     useEffect(() => {
         fetchImageData();

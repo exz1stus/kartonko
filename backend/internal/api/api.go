@@ -36,22 +36,28 @@ func (api *api) Run() {
 	api.router.Run(fmt.Sprintf(":%s", env.GetEnvString("PORT")))
 }
 
+const defaultLimit = 100
+
 func parseCursorLimit(c *gin.Context) (int, int, error) {
 	cursorStr := c.Query("cursor")
 	limitStr := c.Query("limit")
 
-	if cursorStr == "" || limitStr == "" {
-		return 0, 0, fmt.Errorf("no cursor or limit parameter provided")
+	var cursor = 0
+	var limit = defaultLimit
+	var err error
+
+	if cursorStr != "" {
+		cursor, err = strconv.Atoi(cursorStr)
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid cursor parameter: %w", err)
+		}
 	}
 
-	cursor, err := strconv.Atoi(cursorStr)
-	if err != nil {
-		return 0, 0, fmt.Errorf("invalid cursor parameter: %w", err)
-	}
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		return 0, 0, fmt.Errorf("invalid limit parameter: %w", err)
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid limit parameter: %w", err)
+		}
 	}
 
 	return cursor, limit, nil

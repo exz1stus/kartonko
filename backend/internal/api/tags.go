@@ -31,3 +31,26 @@ func (api *api) GetTags(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"tags": tags})
 }
+
+func (api *api) PostTag(c *gin.Context) {
+	req := c.Query("name")
+	if req == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required"})
+		return
+	}
+	tag, err := api.models.Tags.AddTag(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+	user, err := api.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+	if err = api.models.Log.AddTagCreated(tag, user); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"tag": tag})
+}

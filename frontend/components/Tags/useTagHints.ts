@@ -28,7 +28,6 @@ const useTagHints = ({
     const fetchTagHint = useCallback(
         async (tagQuery: string) => {
             try {
-                if (tagQuery.length === 0) return [];
                 const response = await apiFetch(
                     `/tags?query=${tagQuery}&limit=${FETCH_HINTS_LIMIT}`,
                 );
