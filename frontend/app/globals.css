@@ -7,9 +7,12 @@
 
 :root {
     --background: var(--clr-surface-a0);
-    --foreground: var(--clr-primary-a0);
+    --foreground: var(--clr-primary-a10);
     --card: var(--clr-surface-a10);
     --border: var(--clr-surface-a20);
+    --popover: var(--background);
+    --popover-foreground: var(--foreground);
+    --primary: var(--clr-primary-a0);
     font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -121,7 +124,7 @@ button {
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
-.dark {
+/* .dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
@@ -153,7 +156,7 @@ button {
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
-}
+} */
 
 @layer base {
     * {

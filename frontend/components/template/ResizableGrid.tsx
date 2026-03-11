@@ -10,7 +10,7 @@ import useOrientation from "@/hooks/useOrientation";
 
 const ResizableGrid = ({ children }: { children: ReactNode }) => {
     const orientation = useOrientation();
-    const direction =  orientation === "landscape" ? "horizontal" : "vertical";
+    const direction = orientation === "landscape" ? "horizontal" : "vertical";
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -22,7 +22,7 @@ const ResizableGrid = ({ children }: { children: ReactNode }) => {
     return (
         <ResizablePanelGroup direction={direction}>
             <SideBarPanel />
-            <ResizableHandle className="border-surface-20 landscape:border-r-1 portrait:border-b-1" />
+            <ResizableHandle className="border-surface-20 landscape:border-r portrait:border-b" />
             <ResizablePanel defaultSize={95} className="h-full overflow-hidden">
                 {children}
             </ResizablePanel>
