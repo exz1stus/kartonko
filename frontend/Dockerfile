@@ -5,6 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+ARG NEXT_PUBLIC_API_ORIGIN
+ENV NEXT_PUBLIC_API_ORIGIN=$NEXT_PUBLIC_API_ORIGIN
+
 # Copy all source files and build
 COPY . .
 RUN npm run build

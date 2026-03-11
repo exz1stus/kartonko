@@ -19,6 +19,8 @@ services:
     frontend:
         build:
             context: ./frontend
+            args:
+                - NEXT_PUBLIC_API_ORIGIN: ${NEXT_PUBLIC_API_ORIGIN}
             dockerfile: Dockerfile
         container_name: frontend
         ports:
