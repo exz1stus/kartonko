@@ -25,6 +25,8 @@ services:
                 NEXT_PUBLIC_API_ORIGIN: ${NEXT_PUBLIC_API_ORIGIN}
             dockerfile: Dockerfile
         container_name: frontend
+        env_file:
+            - .env
         ports:
             - "3000:3000"
         depends_on:
@@ -39,6 +41,8 @@ services:
             context: ./tgbot
             dockerfile: Dockerfile
         container_name: tgbot
+        env_file:
+            - .env
         depends_on:
             backend:
                 condition: service_healthy
