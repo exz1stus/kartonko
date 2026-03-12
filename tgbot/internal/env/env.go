@@ -11,7 +11,11 @@ import (
 var loaded bool = false
 
 func Init() {
-	if value, exists := os.LookupEnv("NO_DOTENV"); exists && value == "1" {
+	if loaded {
+		return
+	}
+
+	if _, exists := os.LookupEnv("DOTENV"); !exists{
 		loaded = true
 		return
 	}

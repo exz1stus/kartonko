@@ -8,6 +8,11 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o tgbot ./cmd
 
-FROM scratch
-COPY --from=builder /app/tgbot /
-ENTRYPOINT ["/tgbot"]
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+COPY --from=builder /app/tgbot .
+
+ENTRYPOINT ["./tgbot"]

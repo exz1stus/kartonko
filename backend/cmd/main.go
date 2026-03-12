@@ -3,8 +3,6 @@ package main
 import (
 	_ "server/docs"
 	"server/internal/api"
-
-	_ "ariga.io/atlas-provider-gorm/gormschema"
 )
 
 //@title kartonko API

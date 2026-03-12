@@ -33,7 +33,7 @@ func MustInitApi() *api {
 }
 
 func (api *api) Run() {
-	api.router.Run(fmt.Sprintf(":%s", env.GetEnvString("PORT")))
+	api.router.Run(fmt.Sprintf(":%s", env.GetEnvString("BACKEND_PORT")))
 }
 
 const defaultLimit = 100

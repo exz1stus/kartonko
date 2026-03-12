@@ -14,6 +14,7 @@ import (
 )
 
 type Tag struct {
+	ID   uint	`json:"id"`
 	Name string `json:"name"`
 }
 
@@ -21,7 +22,7 @@ type Image struct {
 	ID       uint
 	Hash     string `json:"hash"`
 	Filename string `json:"filename"`
-	Tags     []Tag  `json:"tags"`
+	Tags     []string  `json:"tags"`
 	Format   string `json:"format"`
 	Width    uint   `json:"width"`
 	Height   uint   `json:"height"`
