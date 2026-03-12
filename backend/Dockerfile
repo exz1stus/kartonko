@@ -17,9 +17,6 @@ RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib
 
 WORKDIR /app
 COPY --from=builder /app/main .
-RUN mkdir -p internal/uploads/images
-RUN mkdir -p internal/uploads/thumbs
-RUN mkdir -p internal/database
 
 ENV GIN_MODE=release
 CMD ["./main"]

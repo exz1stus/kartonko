@@ -10,6 +10,11 @@ services:
             - app-network
         env_file:
             - .env
+        volumes:
+            - ./data/db:/app/database
+            - ./data/thumbs:/app/thumbs
+            - ./data/images:/app/images
+
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
             interval: 5s
