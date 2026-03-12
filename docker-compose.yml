@@ -11,7 +11,7 @@ services:
         env_file:
             - .env
         volumes:
-            - ./data/db:/app/database
+            - ./data/db:/app/db
             - ./data/thumbs:/app/thumbs
             - ./data/images:/app/images
 
