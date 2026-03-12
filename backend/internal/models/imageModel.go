@@ -193,7 +193,7 @@ func (model *ImageModel) UserCanEdit(image *Image, userID uint) bool {
 	var user User
 
 	err := model.db.
-		Where("user_id = ? AND privileage = ?", userID, Moderator).
+		Where("id = ? AND privileage = ?", userID, Moderator).
 		First(&user).Error
 
 	if err != nil {
