@@ -8,6 +8,13 @@ services:
             - "8080:8080"
         networks:
             - app-network
+        env_file:
+            - .env
+        volumes:
+            - ./data/db:/app/database
+            - ./data/thumbs:/app/thumbs
+            - ./data/images:/app/images
+
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
             interval: 5s
@@ -20,7 +27,12 @@ services:
         build:
             context: ./frontend
             dockerfile: Dockerfile
+            args:
+                NEXT_PUBLIC_API_ORIGIN: ${NEXT_PUBLIC_API_ORIGIN}
+                NEXT_PUBLIC_FRONTEND_URI: ${NEXT_PUBLIC_FRONTEND_URI}
         container_name: frontend
+        env_file:
+            - .env
         ports:
             - "3000:3000"
         depends_on:
@@ -35,6 +47,8 @@ services:
             context: ./tgbot
             dockerfile: Dockerfile
         container_name: tgbot
+        env_file:
+            - .env
         depends_on:
             backend:
                 condition: service_healthy

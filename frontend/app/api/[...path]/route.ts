@@ -1,16 +1,22 @@
 import { NextRequest } from "next/server";
 
-export async function handler(req: NextRequest, { params }: any) {
-    const { path } = await params;
+async function proxyRequest(req: NextRequest, params: { path: string[] }) {
+    const { path } = params;
     const backendUrl =
-        process.env.NEXT_PUBLIC_API_LOCAL + "/" + path.join("/") + req.nextUrl.search;
+        process.env.NEXT_PUBLIC_API_LOCAL +
+        "/" +
+        path.join("/") +
+        req.nextUrl.search;
 
     const res = await fetch(backendUrl, {
         method: req.method,
         headers: {
             ...Object.fromEntries(req.headers),
         },
-        body: req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined,
+        body:
+            req.method !== "GET" && req.method !== "HEAD"
+                ? await req.text()
+                : undefined,
         credentials: "include",
     });
 
@@ -20,8 +26,24 @@ export async function handler(req: NextRequest, { params }: any) {
     });
 }
 
-export { handler as GET };
-export { handler as POST };
-export { handler as PUT };
-export { handler as PATCH };
-export { handler as DELETE };
+type RouteContext = { params: Promise<{ path: string[] }> };
+
+export async function GET(req: NextRequest, { params }: RouteContext) {
+    return proxyRequest(req, await params);
+}
+
+export async function POST(req: NextRequest, { params }: RouteContext) {
+    return proxyRequest(req, await params);
+}
+
+export async function PUT(req: NextRequest, { params }: RouteContext) {
+    return proxyRequest(req, await params);
+}
+
+export async function PATCH(req: NextRequest, { params }: RouteContext) {
+    return proxyRequest(req, await params);
+}
+
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
+    return proxyRequest(req, await params);
+}

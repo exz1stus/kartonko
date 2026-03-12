@@ -1,14 +1,14 @@
-"use client"
-import ImageMetadata from '@/lib/image'
-import { Delete, Trash, Trash2 } from "lucide-react"
-import { apiFetch } from "@/lib/apiFetch"
-import { useCallback } from "react"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+"use client";
+import ImageMetadata from "@/lib/image";
+import { Delete, Trash, Trash2 } from "lucide-react";
+import { apiFetch } from "@/lib/apiFetch";
+import { useCallback } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface Props {
-    image: ImageMetadata
-    onDelete?: () => void
+    image: ImageMetadata;
+    onDelete?: () => void;
 }
 
 interface ApiResponse {
@@ -19,14 +19,17 @@ interface ApiResponse {
 const EditImage = ({ image, onDelete }: Props) => {
     const router = useRouter();
     const fetchDelete = useCallback(async () => {
-        const res = await apiFetch(`/image/${image.filename}`, { method: "DELETE", credentials:"include" });
+        const res = await apiFetch(`/image/${image.filename}`, {
+            method: "DELETE",
+            credentials: "include",
+        });
         const data: ApiResponse = await res.json();
         if (data?.error) {
             throw new Error(data.error);
         }
 
         return true;
-    },[]);
+    }, [image.filename]);
 
     const deleteImage = useCallback(async () => {
         toast.promise(fetchDelete, {
@@ -38,14 +41,17 @@ const EditImage = ({ image, onDelete }: Props) => {
             },
             error: (error) => error.message,
         });
-    },[]);
+    }, [fetchDelete, onDelete, router]);
 
     return (
-      <div className="flex flex-row items-center gap-2">
-          <span className="text-2xl">Edit:</span>
-          <Trash2 onClick={deleteImage} className="m-2 hover:text-red-500 cursor-pointer"/>
-      </div>
-    )
-}
+        <div className="flex flex-row items-center gap-2">
+            <span className="text-2xl">Edit:</span>
+            <Trash2
+                onClick={deleteImage}
+                className="m-2 hover:text-red-500 cursor-pointer"
+            />
+        </div>
+    );
+};
 
-export default EditImage
+export default EditImage;

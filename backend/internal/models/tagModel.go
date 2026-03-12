@@ -1,9 +1,7 @@
 package models
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 
 	"gorm.io/gorm"
 )
@@ -18,19 +16,9 @@ type TagModel struct {
 }
 
 func (model *TagModel) RegisterAutoTags() error {
-	autoTagsFile, err := os.Open("autotags.txt")
-	if err != nil {
-		return err
-	}
-	scanner := bufio.NewScanner(autoTagsFile)
-	for scanner.Scan() {
-		tagName := scanner.Text()
-		if tagName != "" {
-			model.AddTag(tagName)
-		}
-	}
-
-	defer autoTagsFile.Close()
+	model.AddTag("jpeg")
+	model.AddTag("gif")
+	model.AddTag("png")
 	return nil
 }
 

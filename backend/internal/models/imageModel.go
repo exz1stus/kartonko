@@ -91,6 +91,14 @@ func (model *ImageModel) AddAutoTags(image *Image) {
 	if image.Format == "gif" {
 		image.Tags = append(image.Tags, Tag{Name: "gif"})
 	}
+
+	if image.Format == "jpg" || image.Format == "jpeg" {
+		image.Tags = append(image.Tags, Tag{Name: "jpeg"})
+	}
+
+	if image.Format == "png" {
+		image.Tags = append(image.Tags, Tag{Name: "png"})
+	}
 }
 
 func (model *ImageModel) AddImage(image *Image) error {

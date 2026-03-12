@@ -5,7 +5,7 @@ services:
             dockerfile: Dockerfile.dev
         container_name: backend
         env_file:
-            - ./backend/.env
+            - .env
         volumes:
             - ./backend:/app
         command: air -c .air.toml
@@ -20,7 +20,7 @@ services:
             dockerfile: Dockerfile.dev
         container_name: frontend
         env_file:
-            - ./frontend/.env
+            - .env
         volumes:
             - ./frontend:/app
         command: npm run dev
@@ -37,7 +37,7 @@ services:
             dockerfile: Dockerfile.dev
         container_name: tgbot
         env_file:
-            - ./tgbot/.env
+            - .env
         volumes:
             - ./tgbot:/app
         command: air -c .air.toml

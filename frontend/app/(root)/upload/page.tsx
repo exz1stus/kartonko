@@ -7,10 +7,7 @@ import useUploadStore from "@/hooks/useUploadStore";
 import { UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import isAllowed from "@/lib/allowedFormats";
-import { toast } from "sonner";
-import { existsOnServer } from "@/lib/image.client";
-import { hashFile } from "@/lib/image";
+import useUpload from "@/hooks/useUpload";
 
 const UploadPage = () => {
     const images = useUploadStore((state) => state.files);
@@ -29,35 +26,7 @@ const UploadPage = () => {
         });
     };
 
-    const sanitizeFormats = (files: File[]) =>
-        files.filter((file) => {
-            const format = file.type.split("/")[1];
-            if (!isAllowed(format))
-                toast.error(`format ${format} is not allowed`);
-            return isAllowed(format);
-        });
-
-    const checkForHashes = async (files: File[]): Promise<File[]> => {
-        const uniqueFiles: File[] = [];
-
-        for (const file of files) {
-            const hash = await hashFile(file);
-            const exists = await existsOnServer(hash);
-            if (exists) {
-                toast.error(`File with hash already uploaded!`);
-                continue;
-            }
-            uniqueFiles.push(file);
-        }
-
-        return uniqueFiles;
-    };
-
-    const onFilesDropped = async (files: File[]) => {
-        files = sanitizeFormats(files);
-        files = await checkForHashes(files);
-        addFiles(files);
-    };
+    const { handleUploadFiles } = useUpload();
 
     const removeCurrentImage = () => {
         if (images.length === 0) return;
@@ -123,7 +92,7 @@ const UploadPage = () => {
                 multiple
                 accept="image/*"
                 onChange={(e) =>
-                    onFilesDropped(Array.from(e.target.files || []))
+                    handleUploadFiles(Array.from(e.target.files || []))
                 }
             />
         </label>
@@ -199,7 +168,7 @@ const UploadPage = () => {
     return (
         <AuthGuard>
             <title>upload</title>
-            <DragDropZone onFilesDropped={(files) => onFilesDropped(files)}>
+            <DragDropZone onFilesDropped={(files) => handleUploadFiles(files)}>
                 {content}
             </DragDropZone>
         </AuthGuard>

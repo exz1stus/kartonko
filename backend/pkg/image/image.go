@@ -94,6 +94,13 @@ func GenerateThumbnail(srcPath, dstPath string) error {
 		return err
 	}
 
+	dstDir := filepath.Dir(dstPath)
+	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
+			return err
+		}
+	}
+
 	ext := filepath.Ext(dstPath)
 	thumb := imaging.Fit(img, 320, 320, imaging.Lanczos)
 

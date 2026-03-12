@@ -29,7 +29,7 @@ const TimeFormat = time.RFC3339
 func ConstructImageResponse(img *models.Image) ImageResponse {
 	tags := models.TagsToStrings(img.Tags)
 
-	return ImageResponse{
+return ImageResponse{
 		ID:       img.ID,
 		Filename: img.Filename,
 		Tags:     tags,
