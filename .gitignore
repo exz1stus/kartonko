@@ -1,8 +1,6 @@
 tmp
-uploads
-thumbs
-database
 storage.db
+data
 
 node_modules
 target
@@ -15,7 +13,6 @@ logs
 .next
 yarn-error.log
 npm-debug.log
-.air.toml
 .env
 backend/internal/database/storage.db
 run.dev.sh

@@ -181,7 +181,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                 />
                 <div className="relative flex-1 min-w-10">
                     <input
-                        className="z-10 relative bg-transparent border-none outline-none w-full text-lg"
+                        className="z-1 relative bg-transparent border-none outline-none w-full text-lg"
                         ref={inputRef}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -203,7 +203,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                         }
                     />
 
-                    <div className="z-10 absolute inset-0 flex items-center text-lg">
+                    <div className="z-1 absolute inset-0 flex items-center text-lg">
                         <span className="invisible whitespace-pre pointer-events-none">
                             {query}
                         </span>

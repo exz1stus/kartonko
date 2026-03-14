@@ -1,13 +1,16 @@
 import React, { useRef } from "react";
 
-const PerspectiveCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const PerspectiveCard: React.FC<{ children: React.ReactNode }> = ({
+    children,
+}) => {
     const boundingRef = useRef<DOMRect | null>(null);
     return (
-        <div className="hover:z-10 relative [perspective:500px]">
+        <div className="hover:z-10 isolate relative perspective-normal">
             <div
                 onMouseLeave={() => (boundingRef.current = null)}
                 onMouseEnter={(ev) => {
-                    boundingRef.current = ev.currentTarget.getBoundingClientRect();
+                    boundingRef.current =
+                        ev.currentTarget.getBoundingClientRect();
                 }}
                 onMouseMove={(ev) => {
                     if (!boundingRef.current) return;
@@ -18,12 +21,24 @@ const PerspectiveCard: React.FC<{ children: React.ReactNode }> = ({ children }) 
                     const xRotation = (xPercentage - 0.5) * 20;
                     const yRotation = (0.5 - yPercentage) * 20;
 
-                    ev.currentTarget.style.setProperty("--x-rotation", `${yRotation}deg`);
-                    ev.currentTarget.style.setProperty("--y-rotation", `${xRotation}deg`);
-                    ev.currentTarget.style.setProperty("--x", `${xPercentage * 100}%`);
-                    ev.currentTarget.style.setProperty("--y", `${yPercentage * 100}%`);
+                    ev.currentTarget.style.setProperty(
+                        "--x-rotation",
+                        `${yRotation}deg`,
+                    );
+                    ev.currentTarget.style.setProperty(
+                        "--y-rotation",
+                        `${xRotation}deg`,
+                    );
+                    ev.currentTarget.style.setProperty(
+                        "--x",
+                        `${xPercentage * 100}%`,
+                    );
+                    ev.currentTarget.style.setProperty(
+                        "--y",
+                        `${yPercentage * 100}%`,
+                    );
                 }}
-                className="transition-transform ease-out hover:[transform:rotateX(var(--x-rotation))_rotateY(var(--y-rotation))_scale(1.2)]"
+                className="hover:z-10 relative transition-transform ease-out hover:[transform:rotateX(var(--x-rotation))_rotateY(var(--y-rotation))_scale(1.2)]"
             >
                 {children}
             </div>

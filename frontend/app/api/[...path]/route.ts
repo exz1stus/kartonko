@@ -3,10 +3,7 @@ import { NextRequest } from "next/server";
 async function proxyRequest(req: NextRequest, params: { path: string[] }) {
     const { path } = params;
     const backendUrl =
-        process.env.NEXT_PUBLIC_API_LOCAL +
-        "/" +
-        path.join("/") +
-        req.nextUrl.search;
+        process.env.API_LOCAL + "/" + path.join("/") + req.nextUrl.search;
 
     const res = await fetch(backendUrl, {
         method: req.method,

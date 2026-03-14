@@ -27,9 +27,9 @@ const UserModal: React.FC<UserModalProps> = ({
     return (
         <div
             ref={modalRef}
-            className="top-0 right-0 fixed bg-surface-10 border border-surface-30 rounded-l"
+            className="top-0 right-0 fixed bg-surface-10 border rounded-bl-xl"
         >
-            <div className="flex flex-col justify-center items-center gap-2 p-2 pr-10 pl-10">
+            <div className="flex flex-col justify-center items-center gap-2 p-2 px-8">
                 <div className="rounded-full">
                     <Image
                         src={user.picture_url}

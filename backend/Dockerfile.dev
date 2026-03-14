@@ -10,4 +10,4 @@ RUN go install github.com/air-verse/air@latest
 
 ENV CGO_ENABLED=1
 
-CMD ["air", "-c", "./.air.toml"]
+CMD ["air", "-c", ".air.toml"]

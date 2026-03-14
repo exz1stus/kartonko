@@ -12,7 +12,7 @@ interface Props {
 }
 
 const ImageCard: React.FC<Props> = ({ image, className, style }) => {
-    const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
+    const API_LOCAL = process.env.NEXT_PUBLIC_API_LOCAL;
     const { filename, format, width, height } = image;
     const selfRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
@@ -35,7 +35,7 @@ const ImageCard: React.FC<Props> = ({ image, className, style }) => {
             <PerspectiveCard>
                 <div className="flex flex-col items-center bg-surface-20 rounded-xl hover:cursor-pointer">
                     <Image
-                        src={`${API_ORIGIN}/image/thumb/${filename + "." + format}`}
+                        src={`${API_LOCAL}/image/thumb/${filename + "." + format}`}
                         alt={filename}
                         className="rounded-t-xl w-full h-auto"
                         width={width}

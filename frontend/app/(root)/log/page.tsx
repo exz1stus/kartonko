@@ -5,6 +5,13 @@ import AuthGuard from "@/components/AuthGuard";
 import Scrollbar from "@/components/template/Scrollbar";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import { apiFetch } from "@/lib/apiFetch";
+import {
+    Loader,
+    Loader2,
+    Loader2Icon,
+    LoaderCircle,
+    LoaderPinwheel,
+} from "lucide-react";
 
 interface SearchLogEntriesQuery {}
 
@@ -44,7 +51,11 @@ const Log = () => {
                     <div className="flex flex-col items-center gap-2 m-2 overflow-auto">
                         {entries}
                     </div>
-                    {loading && <div>Loading...</div>}
+                    {loading && (
+                        <div className="flex justify-center items-center w-full">
+                            <Loader />
+                        </div>
+                    )}
                     {!reachedEnd && <div ref={sentinelRef} />}
                 </Scrollbar>
             </div>
