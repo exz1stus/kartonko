@@ -4,9 +4,8 @@ import React, { useEffect, useRef } from "react";
 import { ImperativePanelHandle } from "react-resizable-panels";
 import { ResizablePanel } from "../ui/resizable";
 import Scrollbar from "../template/Scrollbar";
-import SideBar from "./SideBar";
 
-const SideBarPanel = () => {
+const SideBarPanel = ({ sidebar }: { sidebar: React.ReactNode }) => {
     const { isOpen, setOpen } = useSidebar();
     const sidebarPanRef = useRef<ImperativePanelHandle>(null);
 
@@ -29,9 +28,7 @@ const SideBarPanel = () => {
             className="bg-surface-0/80 backdrop-filter backdrop-blur-md"
         >
             <Scrollbar>
-                <div className="flex justify-center h-full">
-                    <SideBar />
-                </div>
+                <div className="flex justify-center h-full">{sidebar}</div>
             </Scrollbar>
         </ResizablePanel>
     );

@@ -1,10 +1,9 @@
-"use client";
 import Dropdown from "@/components/template/Dropdown";
-import { useAuth } from "@/contexts/AuthContext";
+import { getLoggedUserServer } from "@/lib/user.server";
 import Link from "next/link";
 
-const SideBar: React.FC = () => {
-    const { user } = useAuth();
+const SideBar: React.FC = async () => {
+    const user = await getLoggedUserServer();
 
     const authed =
         user !== null ? (

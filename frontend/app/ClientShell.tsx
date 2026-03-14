@@ -5,6 +5,7 @@ import HoverProvider from "../contexts/HoverContex";
 import { AuthProvider } from "../contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { AlertDialogProvider } from "@/contexts/AlertDialogContext";
+import SideBar from "@/components/SideBar/SideBar";
 
 const ClientShell = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -19,7 +20,9 @@ const ClientShell = ({ children }: { children: React.ReactNode }) => {
                             }}
                         >
                             <NavBar />
-                            <ResizableGrid>{children}</ResizableGrid>
+                            <ResizableGrid sidebar={<SideBar />}>
+                                {children}
+                            </ResizableGrid>
                             <Toaster />
                         </body>
                     </AlertDialogProvider>
