@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     images: {
         remotePatterns: [
             new URL(`${process.env.NEXT_PUBLIC_API_ORIGIN}/**`),
-            new URL(`${process.env.API_LOCAL}/**`),
+            new URL(`${process.env.NEXT_PUBLIC_API_LOCAL}/**`),
             new URL(`https://lh3.googleusercontent.com/a/**`),
         ],
     },

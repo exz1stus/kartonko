@@ -29,8 +29,8 @@ services:
             dockerfile: Dockerfile
             args:
                 NEXT_PUBLIC_API_ORIGIN: ${NEXT_PUBLIC_API_ORIGIN}
-                API_LOCAL: ${API_LOCAL}
                 NEXT_PUBLIC_FRONTEND_URI: ${NEXT_PUBLIC_FRONTEND_URI}
+                API_LOCAL: ${API_LOCAL}
         container_name: frontend
         env_file:
             - .env
