@@ -6,7 +6,7 @@ const LogoutButton: React.FC = () => {
 
     return (
         <button
-            className="cursor:bg-surface-10 px-2 border border-surface-20 rounded-xl"
+            className="bg-surface-10 px-2 border hover:border-surface-30 rounded-xl w-full cursor-pointer"
             onClick={async () => await logout()}
         >
             Log out

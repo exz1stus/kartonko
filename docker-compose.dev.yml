@@ -8,11 +8,21 @@ services:
             - .env
         volumes:
             - ./backend:/app
+            - ./data/db:/app/db
+            - ./data/thumbs:/app/thumbs
+            - ./data/images:/app/images
         command: air -c .air.toml
         ports:
             - "8080:8080"
         networks:
             - app-network
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+            interval: 5s
+            timeout: 3s
+            retries: 5
+            start_period: 5s
+        restart: unless-stopped
 
     frontend:
         build:
@@ -27,22 +37,23 @@ services:
         ports:
             - "3000:3000"
         depends_on:
-            - backend
+            backend:
+                condition: service_healthy
         networks:
             - app-network
 
-    tgbot:
-        build:
-            context: ./tgbot
-            dockerfile: Dockerfile.dev
-        container_name: tgbot
-        env_file:
-            - .env
-        volumes:
-            - ./tgbot:/app
-        command: air -c .air.toml
-        networks:
-            - app-network
+    # tgbot:
+    #     build:
+    #         context: ./tgbot
+    #         dockerfile: Dockerfile.dev
+    #     container_name: tgbot
+    #     env_file:
+    #         - .env
+    #     volumes:
+    #         - ./tgbot:/app
+    #     command: air -c ./.air.toml
+    #     networks:
+    #         - app-network
 
 networks:
     app-network:

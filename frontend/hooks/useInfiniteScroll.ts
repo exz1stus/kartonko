@@ -46,9 +46,8 @@ export default function useInfiniteScroll<TQuery, TItem>({
 
             try {
                 const data = await fetchFn(query, cursor, limit);
-
+                if (!data) return;
                 if (myFetchId !== fetchIdRef.current) return;
-
                 setItems((prev) => [...prev, ...data]);
 
                 if (data.length < limit) {

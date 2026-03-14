@@ -75,7 +75,7 @@ const ImageSearch: React.FC<Props> = ({
                     </span>
                     <input
                         ref={nameSelectorRef}
-                        className="z-10 relative bg-transparent border-none outline-none w-full text-3xl"
+                        className="z-1 relative bg-transparent border-none outline-none w-full text-3xl"
                         value={name}
                         onChange={(e) => onNameChange(e.target.value)}
                         onKeyDown={(e) => onNameKeyDown(e)}
@@ -105,6 +105,7 @@ const ImageSearch: React.FC<Props> = ({
                             onTagsUpdate={(t: string[]) => setTags(t)}
                             removeTag={removeTag}
                             onFocus={() => setInsertingMode(InsertingMode.TAG)}
+                            onBlur={() => setInsertingMode(InsertingMode.NONE)}
                         />
                     </div>
                 </div>

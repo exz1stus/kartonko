@@ -8,7 +8,13 @@ import {
 import SideBarPanel from "@/components/SideBar/SideBarPanel";
 import useOrientation from "@/hooks/useOrientation";
 
-const ResizableGrid = ({ children }: { children: ReactNode }) => {
+const ResizableGrid = ({
+    children,
+    sidebar,
+}: {
+    children: React.ReactNode;
+    sidebar: React.ReactNode;
+}) => {
     const orientation = useOrientation();
     const direction = orientation === "landscape" ? "horizontal" : "vertical";
     const [mounted, setMounted] = useState(false);
@@ -21,7 +27,7 @@ const ResizableGrid = ({ children }: { children: ReactNode }) => {
 
     return (
         <ResizablePanelGroup direction={direction}>
-            <SideBarPanel />
+            <SideBarPanel sidebar={sidebar} />
             <ResizableHandle className="border-surface-20 landscape:border-r portrait:border-b" />
             <ResizablePanel defaultSize={95} className="h-full overflow-hidden">
                 {children}

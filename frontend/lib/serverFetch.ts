@@ -8,7 +8,7 @@ export async function serverFetch(url: string, options?: RequestInit) {
         .map((cookie) => `${cookie.name}=${cookie.value}`)
         .join("; ");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_LOCAL}${url}`, {
+    const res = await fetch(`${process.env.API_LOCAL}${url}`, {
         ...options,
         headers: {
             ...options?.headers,
