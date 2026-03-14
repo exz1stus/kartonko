@@ -105,6 +105,7 @@ const ImageSearch: React.FC<Props> = ({
                             onTagsUpdate={(t: string[]) => setTags(t)}
                             removeTag={removeTag}
                             onFocus={() => setInsertingMode(InsertingMode.TAG)}
+                            onBlur={() => setInsertingMode(InsertingMode.NONE)}
                         />
                     </div>
                 </div>

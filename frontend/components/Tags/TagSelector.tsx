@@ -12,6 +12,7 @@ import TagSpan from "./TagSpan";
 import { cn } from "@/lib/utils";
 import { addNewTag } from "@/lib/tag.client";
 import { toast } from "sonner";
+import { sanitizeName } from "@/lib/sanitizeName";
 interface Props {
     tags: string[];
     removeTag: (tag: string) => void;
@@ -166,6 +167,11 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             }
         };
 
+        const onFieldChange = (value: string) => {
+            const sanitized = sanitizeName(value);
+            setQuery(sanitized);
+        };
+
         return (
             <div
                 onClick={() => inputRef.current?.focus()}
@@ -184,7 +190,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                         className="z-1 relative bg-transparent border-none outline-none w-full text-lg"
                         ref={inputRef}
                         value={query}
-                        onChange={(e) => setQuery(e.target.value)}
+                        onChange={(e) => onFieldChange(e.target.value)}
                         onFocus={() => {
                             setActive(true);
                             onFocus?.();
