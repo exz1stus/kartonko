@@ -47,7 +47,7 @@ const DragDropZone = ({ children, onFilesDropped }: DragDropZoneProps) => {
 
             {dragOver && (
                 <div className="absolute inset-0 flex justify-center items-center pointer-events-none">
-                    <span className="font-semibold text-lg">Drop images here</span>
+                    <span className="font-semibold text-lg">Drop images</span>
                 </div>
             )}
         </div>
