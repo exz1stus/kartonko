@@ -14,12 +14,15 @@ const AuthGuard = ({ moderator, children }: Props) => {
     useEffect(() => {
         if (loading) return;
         if (!user) {
-            router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            router.replace(
+                `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+            );
         }
     }, [user, loading, router]);
 
     if (!user) return <div>Loading...</div>;
-    if(moderator && user.privileage !== "Moderator") return <div>Forbidden</div>;
+    if (moderator && user.privileage !== "Moderator")
+        return <div>Forbidden</div>;
     return <>{children}</>;
 };
 
