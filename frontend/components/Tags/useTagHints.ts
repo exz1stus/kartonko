@@ -42,7 +42,6 @@ const useTagHints = ({
                 }
                 return [];
             } catch (error) {
-                console.log("Error fetching tag hint", error);
                 return [];
             }
         },

@@ -16,11 +16,9 @@ export async function getImageMetadataByIdServer(
     id: number,
 ): Promise<ImageMetadata | null> {
     const res = await serverFetch(`/image/id/${id}`);
-    console.log(res);
     if (res.status !== 200) {
         return null;
     }
     const image: ImageMetadata = await res.json();
-    console.log(image);
     return image;
 }

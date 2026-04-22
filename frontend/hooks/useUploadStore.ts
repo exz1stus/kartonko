@@ -10,7 +10,6 @@ interface UploadStore {
 }
 
 const useUploadStore = create<UploadStore>((set) => {
-    console.log("STORE CREATED");
     return {
         files: [],
         setFiles: (files) => set({ files }),
