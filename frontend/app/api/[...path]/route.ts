@@ -16,7 +16,7 @@ async function proxyRequest(req: NextRequest, params: { path: string[] }) {
 
     if (req.method !== "GET" && req.method !== "HEAD") {
         options.body = req.body;
-        options.duplex = "half";
+        (options as any).duplex = "half";
     }
 
     const res = await fetch(backendUrl, options);
