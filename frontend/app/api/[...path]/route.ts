@@ -2,24 +2,31 @@ import { NextRequest } from "next/server";
 
 async function proxyRequest(req: NextRequest, params: { path: string[] }) {
     const { path } = params;
-    const backendUrl =
-        process.env.API_LOCAL + "/" + path.join("/") + req.nextUrl.search;
+    const backendUrl = `${process.env.API_LOCAL}/${path.join("/")}${req.nextUrl.search}`;
 
-    const res = await fetch(backendUrl, {
+    // 1. Clone headers and remove problematic ones
+    const headers = new Headers(req.headers);
+    headers.delete("host"); // Let the client handle the new host
+    headers.delete("connection"); // Do not forward connection state
+
+    const options: RequestInit = {
         method: req.method,
-        headers: {
-            ...Object.fromEntries(req.headers),
-        },
-        body:
-            req.method !== "GET" && req.method !== "HEAD"
-                ? await req.text()
-                : undefined,
-        credentials: "include",
-    });
+        headers: headers,
+    };
+
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        options.body = req.body;
+        options.duplex = "half";
+    }
+
+    const res = await fetch(backendUrl, options);
+
+    const responseHeaders = new Headers(res.headers);
+    responseHeaders.delete("content-encoding");
 
     return new Response(res.body, {
         status: res.status,
-        headers: res.headers,
+        headers: responseHeaders,
     });
 }
 
