@@ -44,7 +44,6 @@ const Gallery: React.FC<Props> = ({
             if (!response.ok) throw new Error("Failed to fetch images");
 
             const imageData: ImageMetadata[] = await response.json();
-            console.log(`fetching cursor ${cursor} limit ${requestSize}`);
             return imageData;
         },
         [],

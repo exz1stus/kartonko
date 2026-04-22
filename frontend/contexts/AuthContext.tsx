@@ -74,7 +74,7 @@ const useProvideAuth = () => {
             }
 
             const user = await res.json();
-            if (user?.username && user?.picture_url) {
+            if (user?.username) {
                 setUser(user);
             } else {
                 setUser(null);

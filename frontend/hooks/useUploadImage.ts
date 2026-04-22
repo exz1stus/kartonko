@@ -1,6 +1,6 @@
 "use client";
-import useAuthFetch from "@/hooks/useAuthorizedFetch";
 import { useState } from "react";
+import { apiFetch } from "@/lib/apiFetch";
 
 export interface ApiResponse {
     error?: string;
@@ -15,7 +15,6 @@ interface ImageUploadRequest {
 }
 
 const useUploadImage = () => {
-    const authFetch = useAuthFetch();
     const [loading, setLoading] = useState(false);
 
     const uploadImage = async (
@@ -28,9 +27,10 @@ const useUploadImage = () => {
         formData.append("metadata", JSON.stringify(imageMetadata));
         formData.append("file", file);
 
-        const response = await authFetch(`${API_ORIGIN}/upload`, {
+        const response = await apiFetch(`/upload`, {
             method: "POST",
             body: formData,
+            credentials: "include",
         });
 
         setLoading(false);
