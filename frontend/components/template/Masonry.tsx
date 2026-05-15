@@ -73,6 +73,9 @@ const Masonry: React.FC<Props> = ({
         return () => observer.disconnect();
     }, [childrenArray, colWidth, maxCols]);
 
+    const maxWidthStyle =
+        maxCols > 0 ? `${maxCols * colWidth + (maxCols - 1)}px` : "100%";
+
     return (
         <div
             ref={containerRef}
@@ -81,7 +84,7 @@ const Masonry: React.FC<Props> = ({
                 className,
             )}
             style={{
-                maxWidth: maxCols > 0 ? `${maxCols * colWidth}px` : "100%",
+                maxWidth: maxWidthStyle,
             }}
         >
             {columns.map((column, i) => (
@@ -89,7 +92,7 @@ const Masonry: React.FC<Props> = ({
                     key={i}
                     className={`flex flex-col gap-5 lg:max-w-[25vw]`}
                     style={{
-                        width: `${100 / columns.length}%`,
+                        width: `${colWidth}px`,
                     }}
                 >
                     {column.items.map((item) => (
