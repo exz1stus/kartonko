@@ -42,7 +42,7 @@ func (api *api) initRoutes() {
 	r.GET("/image/raw/:name", api.GetRawImageByName)
 	r.Static("/image/thumb", env.GetEnvString("THUMBNAILS_PATH"))
 
-	r.GET("/images", api.GetImagesByQuery)
+	r.GET("/image", api.GetImagesByQuery)
 	r.GET("/log", api.GetAuditLogEntries)
 	r.GET("/tags", api.GetTags)
 
@@ -57,8 +57,13 @@ func (api *api) initRoutes() {
 	authGroup.Use(api.AuthMiddleware())
 	{
 		authGroup.GET("/me", api.GetMe)
+
 		authGroup.POST("/upload", api.PostImage)
+		authGroup.POST("/upload/batch", api.PostImagesBatch)
+
 		authGroup.POST("/tag", api.PostTag)
+
+		authGroup.DELETE("/image", api.DeleteImagesByQuery)
 		authGroup.DELETE("/image/:name", api.DeleteImageByName)
 	}
 

@@ -16,7 +16,12 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-var SupportedFormats = []string{".jpeg", ".jpg", ".png", ".gif"}
+type ImageError struct {
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}
+
+var SupportedFormats = []string{"jpeg", "jpg", "png", "gif"}
 
 func MIMETypeToFormat(mimeType string) (string, error) {
 	parts := strings.SplitN(mimeType, "/", 2)

@@ -1,36 +1,78 @@
 "use client";
 import AuthGuard from "@/components/AuthGuard";
-import DragDropZone from "@/components/PostImage/DragDropZone";
-import PostImageForm from "@/components/PostImage/PostImageForm";
+import DragDropZone from "@/components/UploadImage/DragDropZone";
+import UploadImageForm from "@/components/UploadImage/UploadImageForm";
 import FancySpan from "@/components/template/FancySpan";
-import useUploadStore from "@/hooks/useUploadStore";
-import { UploadIcon } from "lucide-react";
+import useUploadStore, { UploadItem } from "@/hooks/useUploadStore";
+import {
+    ArrowBigDown,
+    ArrowBigLeft,
+    ArrowDownLeftFromSquare,
+    ArrowLeft,
+    ArrowRight,
+    Images,
+    UploadIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import useUpload from "@/hooks/useUpload";
+import {
+    ImageBatchUploadRequest,
+    ImageUploadRequest,
+    useUploadImage,
+} from "@/hooks/useUploadImage";
+import { toast } from "sonner";
+import CaptchaButton from "@/components/UploadImage/CaptchaButton";
 
 const UploadPage = () => {
-    const images = useUploadStore((state) => state.files);
-    const addFiles = useUploadStore((state) => state.addFiles);
-    const removeFileAt = useUploadStore((state) => state.removeFileAt);
+    const {
+        removeFileAt,
+        clearStore,
+        updateMetadata,
+        items: storeImages,
+    } = useUploadStore((state) => state);
+
+    const objectUrlCache = useRef<Map<File, string>>(new Map());
 
     const [imageIndex, setImageIndex] = useState(0);
     const [imageUrl, setImageUrl] = useState("");
+    // const [previousName, setPreviousName] = useState("");
 
-    const prevLengthRef = useRef(images.length);
+    const prevLengthRef = useRef(storeImages.length);
+
+    const { uploadImage, uploadImageBatch, loading } = useUploadImage();
+    const [captchaToken, setCaptchaToken] = useState<string | null>();
 
     const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+        e.preventDefault();
         setImageIndex((prev) => {
             const next = prev + Math.sign(e.deltaY);
-            return Math.min(Math.max(next, 0), images.length - 1);
+            return Math.min(Math.max(next, 0), storeImages.length - 1);
+        });
+    };
+
+    const selectNextImage = () => {
+        setImageIndex((prev) => {
+            const next = prev + 1;
+            return Math.min(Math.max(next, 0), storeImages.length - 1);
+        });
+    };
+
+    const selectPreviousImage = () => {
+        setImageIndex((prev) => {
+            const next = prev - 1;
+            return Math.min(Math.max(next, 0), storeImages.length - 1);
         });
     };
 
     const { handleUploadFiles } = useUpload();
+    const onSubmitCurrentImage = () => {
+        removeCurrentImage();
+    };
 
     const removeCurrentImage = () => {
-        if (images.length === 0) return;
-        if (imageIndex > 0 && images.length - 1 === imageIndex) {
+        if (storeImages.length === 0) return;
+        if (imageIndex > 0 && storeImages.length - 1 === imageIndex) {
             setImageIndex((prev) => prev - 1);
         }
 
@@ -39,35 +81,49 @@ const UploadPage = () => {
 
     const selectImageAtIndex = useCallback(
         (index: number) => {
-            const image = images?.[index];
+            const image = storeImages?.[index];
 
             if (!image) {
                 setImageUrl("");
                 return;
             }
 
-            const url = URL.createObjectURL(image);
+            if (objectUrlCache.current.has(image.file)) {
+                setImageUrl(objectUrlCache.current.get(image.file)!);
+                return;
+            }
+
+            const url = URL.createObjectURL(image.file);
+            objectUrlCache.current.set(image.file, url);
             setImageUrl(url);
         },
-        [images],
+        [storeImages],
     );
 
     useEffect(() => {
-        const prevLength = prevLengthRef.current;
-        prevLengthRef.current = images.length;
-
-        if (images.length === 0) return;
-
-        if (images.length > prevLength) {
-            setImageIndex(images.length - 1);
-        } else {
-            setImageIndex((prev) => Math.min(prev, images.length - 1));
-        }
-    }, [images]);
+        return () => {
+            objectUrlCache.current.forEach((url) => URL.revokeObjectURL(url));
+            objectUrlCache.current.clear();
+        };
+    }, []);
 
     useEffect(() => {
-        selectImageAtIndex(imageIndex);
-    }, [images, imageIndex]);
+        const prevLength = prevLengthRef.current;
+        prevLengthRef.current = storeImages.length;
+
+        if (storeImages.length === 0) return;
+
+        if (storeImages.length > prevLength) {
+            setImageIndex(storeImages.length - 1);
+        } else {
+            setImageIndex((prev) => Math.min(prev, storeImages.length - 1));
+        }
+    }, [storeImages]);
+
+    useEffect(() => {
+        const cleanup = selectImageAtIndex(imageIndex);
+        return () => cleanup?.();
+    }, [storeImages, imageIndex, selectImageAtIndex]);
 
     useEffect(() => {
         const onEscape = (e: KeyboardEvent) => {
@@ -98,8 +154,106 @@ const UploadPage = () => {
         </label>
     );
 
+    const onFormChange = useCallback(
+        (updates: Partial<Omit<UploadItem, "file">>) => {
+            updateMetadata(imageIndex, updates);
+        },
+        [updateMetadata, imageIndex],
+    );
+
+    const submitBatch = async (data: ImageUploadRequest[], files: File[]) => {
+        if (loading) return;
+
+        toast.promise(uploadImageBatch(data, files, captchaToken ?? ""), {
+            loading: `Uploading batch of ${files.length} images...`,
+            success: () => {
+                clearStore();
+                setCaptchaToken(null);
+                return "All files uploaded successfully!";
+            },
+            error: (error) => error.message || "Batch upload failed",
+        });
+    };
+
+    const submitImage = async (data: ImageUploadRequest, file: File) => {
+        if (loading) return;
+
+        toast.promise<boolean>(uploadImage(data, file, captchaToken ?? ""), {
+            loading: "Loading...",
+            success: () => {
+                onSubmitCurrentImage();
+                return `image has been uploaded`;
+            },
+            error: (error) => error.message,
+        });
+    };
+
+    const onUpload = async () => {
+        if (storeImages.length === 0) return;
+        if (storeImages.length === 1) {
+            const currentImage = storeImages[imageIndex];
+            const data = {
+                name: currentImage.name,
+                tags: currentImage.tags,
+            };
+
+            await submitImage(data, currentImage.file);
+            return;
+        }
+
+        const batchMetadata: ImageUploadRequest[] = storeImages.map((item) => ({
+            name: item.name,
+            tags: item.tags,
+        }));
+
+        const request: ImageBatchUploadRequest = {
+            data: batchMetadata,
+            common_tags: [],
+        };
+        const files = storeImages.map((item) => item.file);
+
+        await submitBatch(request, files);
+    };
+
+    const nextButton = (
+        <ArrowRight
+            onClick={selectNextImage}
+            className="p-2 border border-surface-20 hover:border-surface-30 rounded-2xl w-10 h-10 transition cursor-pointer glass"
+        />
+    );
+    const backButton = (
+        <ArrowLeft
+            onClick={selectPreviousImage}
+            className="p-2 border border-surface-20 hover:border-surface-30 rounded-2xl w-10 h-10 transition cursor-pointer glass"
+        />
+    );
+
+    const formButtons =
+        imageIndex === storeImages.length - 1 ? (
+            <>
+                {storeImages.length > 1 && backButton}
+                <CaptchaButton
+                    className={
+                        loading ? "animate-pulse bg-surface-20" : "bg-none"
+                    }
+                    onClick={onUpload}
+                    disabled={loading}
+                    onVerifySuccess={setCaptchaToken}
+                >
+                    {loading
+                        ? "Uploading..."
+                        : `Upload${storeImages.length > 1 ? " " + storeImages.length + " images" : ""}`}
+                </CaptchaButton>
+            </>
+        ) : (
+            <>
+                {imageIndex > 0 && backButton}
+                {nextButton}
+            </>
+        );
+
     const content =
-        images.length > 0 ? (
+        storeImages.length > 0 ? (
             <div className="flex justify-center items-start p-4 lg:p-10 w-full h-full overflow-hidden">
                 <div
                     className="flex lg:flex-row flex-col bg-surface-0/95 border border-surface-20 rounded-2xl w-full h-full max-h-full overflow-hidden glass"
@@ -110,11 +264,11 @@ const UploadPage = () => {
                             <div className="relative flex justify-center items-center bg-black/20 w-full lg:w-[60%] h-[40vh] lg:h-full overflow-hidden shrink-0">
                                 <Image
                                     src={imageUrl}
-                                    alt={images[imageIndex]?.name}
+                                    alt={storeImages[imageIndex]?.name}
                                     className="rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none w-full h-full object-contain"
                                     draggable={false}
-                                    width={800}
-                                    height={800}
+                                    width={1000}
+                                    height={1000}
                                     unoptimized
                                 />
                             </div>
@@ -123,14 +277,17 @@ const UploadPage = () => {
                                 <div className="flex flex-wrap justify-between items-center gap-2">
                                     <div className="inline-flex items-center gap-2">
                                         {browseImages}
-                                        <span className="tabular-nums text-gray-500 text-sm shrink-0">
-                                            {imageIndex + 1}/{images.length}
-                                        </span>
+                                        {storeImages.length > 1 && (
+                                            <span className="text-gray-500 text-sm shrink-0">
+                                                {imageIndex + 1}/
+                                                {storeImages.length}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className="flex items-center gap-2 min-w-0">
                                         <FancySpan
-                                            word={images[imageIndex]?.name}
+                                            word={storeImages[imageIndex]?.name}
                                         />
                                     </div>
 
@@ -143,12 +300,14 @@ const UploadPage = () => {
                                     </button>
                                 </div>
 
-                                {/* Form */}
-                                <PostImageForm
-                                    key={images[imageIndex].name}
-                                    file={images[imageIndex]}
-                                    onSubmit={removeCurrentImage}
+                                <UploadImageForm
+                                    key={imageIndex}
+                                    item={storeImages[imageIndex]}
+                                    onChange={onFormChange}
                                 />
+                                <div className="flex justify-center items-center gap-5 w-full">
+                                    {formButtons}
+                                </div>
                             </div>
                         </>
                     ) : (

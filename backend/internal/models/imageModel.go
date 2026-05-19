@@ -37,32 +37,37 @@ func EmptyQuery() ImageQuery {
 	}
 }
 
-func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]Image, error) {
-	var images []Image
-	result := model.db.Preload("Tags").Model(&Image{}).Order("images.id desc")
-
+func (model *ImageModel) applyFilters(db *gorm.DB, query ImageQuery) *gorm.DB {
 	if query.NameContains != "" {
-		result = result.Where("filename LIKE ?", "%"+query.NameContains+"%").Find(&images)
+		db = db.Where("filename LIKE ?", "%"+query.NameContains+"%")
 	}
 
 	if len(query.WithTags) > 0 {
-		result = result.
-			Joins("JOIN image_tags ON image_tags.image_id = images.id").
+		db = db.Joins("JOIN image_tags ON image_tags.image_id = images.id").
 			Joins("JOIN tags ON tags.id = image_tags.tag_id").
 			Where("tags.name IN ?", query.WithTags).
 			Group("images.id").
-			Having("COUNT(DISTINCT tags.id) = ?", len(query.WithTags)).
-			Find(&images)
+			Having("COUNT(DISTINCT tags.id) = ?", len(query.WithTags))
 	}
 
 	if query.User != nil {
-		result = result.Where("user_id = ?", query.User.ID)
+		db = db.Where("user_id = ?", query.User.ID)
 	}
 
-	result = result.Limit(limit).Offset(cursor).Find(&images)
+	return db
+}
 
-	if result.Error != nil {
-		return nil, result.Error
+func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]Image, error) {
+	var images []Image
+	db := model.db.Preload("Tags").Model(&Image{}).Order("images.id desc")
+
+	db = model.applyFilters(db, query)
+
+	db = db.Limit(limit).Offset(cursor).Find(&images)
+
+	err := db.Error
+	if err != nil {
+		return nil, err
 	}
 
 	return images, nil
@@ -180,6 +185,36 @@ func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {
 	result := model.db.Model(&Image{}).Preload("Tags").Order("id desc").Limit(limit).Offset(cursor).Find(&images)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to retrieve images: %w", result.Error)
+	}
+
+	return images, nil
+}
+
+func (model *ImageModel) DeleteImagesByQuery(query ImageQuery, userID uint) ([]Image, error) {
+	var images []Image
+	db := model.db.Preload("Tags").Model(&Image{}).Order("images.id desc")
+
+	db = model.applyFilters(db, query)
+
+	if err := db.Find(&images).Error; err != nil {
+		return nil, fmt.Errorf("failed to find images for deletion: %w", err)
+	}
+
+	if len(images) == 0 {
+		return nil, nil
+	}
+
+	for _, img := range images {
+		if !model.UserCanEdit(&img, userID) {
+			return nil, fmt.Errorf(
+				"permission denied: user %d cannot delete image '%s' (ID: %d)",
+				userID, img.Filename, img.ID,
+			)
+		}
+	}
+
+	if err := model.db.Delete(&images).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete images: %w", err)
 	}
 
 	return images, nil

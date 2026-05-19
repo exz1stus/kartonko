@@ -28,7 +28,7 @@ const ImageCard: React.FC<Props> = ({ image, className, style }) => {
     return (
         <div
             ref={selfRef}
-            className={className + " opacity-0 "}
+            className={className}
             style={style}
             onClick={onClick}
         >

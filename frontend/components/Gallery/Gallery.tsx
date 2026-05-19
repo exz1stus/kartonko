@@ -4,7 +4,7 @@ import ImageCard from "@/components/Gallery/ImageCard";
 import { SearchQuery, ImageSearch, isQueryEmpty } from "./ImageSearch";
 import { useDebounce } from "use-debounce";
 import Scrollbar from "@/components/template/Scrollbar";
-import DragDropZone from "@/components/PostImage/DragDropZone";
+import DragDropZone from "@/components/UploadImage/DragDropZone";
 import { useHover } from "@/contexts/HoverContex";
 import Masonry, { MasonryItem } from "@/components/template/Masonry";
 import ImageMetadata from "@/lib/image";
@@ -39,7 +39,7 @@ const Gallery: React.FC<Props> = ({
         ): Promise<ImageMetadata[]> => {
             const queryString = constructQueryString(searchQuery);
             const response = await apiFetch(
-                `/images?${queryString}cursor=${cursor}&limit=${requestSize}`,
+                `/image?${queryString}cursor=${cursor}&limit=${requestSize}`,
             );
             if (!response.ok) throw new Error("Failed to fetch images");
 

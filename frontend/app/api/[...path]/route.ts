@@ -4,10 +4,9 @@ async function proxyRequest(req: NextRequest, params: { path: string[] }) {
     const { path } = params;
     const backendUrl = `${process.env.API_LOCAL}/${path.join("/")}${req.nextUrl.search}`;
 
-    // 1. Clone headers and remove problematic ones
     const headers = new Headers(req.headers);
-    headers.delete("host"); // Let the client handle the new host
-    headers.delete("connection"); // Do not forward connection state
+    headers.delete("host");
+    headers.delete("connection");
 
     const options: RequestInit = {
         method: req.method,

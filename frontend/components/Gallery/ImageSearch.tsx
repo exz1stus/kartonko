@@ -1,10 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import useNameSelector from "@/hooks/useNameSelector";
 import TagSelector, { TagSelectorRef } from "@/components/Tags/TagSelector";
 import { useHover } from "@/contexts/HoverContex";
 import useTags from "@/components/Tags/useTags";
 import { SearchQuery } from "@/lib/query";
+import NameField from "../NameField";
 
 export function isQueryEmpty(query: SearchQuery) {
     return query.nameContains === "" && query.withTags?.length === 0;
@@ -42,12 +42,9 @@ const ImageSearch: React.FC<Props> = ({
     const hovered = isHovered();
 
     const tagSelectorRef = React.useRef<TagSelectorRef>(null);
-    const nameSelectorRef = React.useRef<HTMLInputElement>(null);
 
     const { tags, setTags, removeTag } = useTags(initialQuery?.withTags);
-    const { onNameKeyDown, onNameChange, name } = useNameSelector(
-        initialQuery?.nameContains,
-    );
+    const [name, setName] = useState(initialQuery?.nameContains ?? "");
 
     const userID = initialQuery?.userID;
 
@@ -58,6 +55,13 @@ const ImageSearch: React.FC<Props> = ({
             userID,
         });
     }, [name, tags, userID]);
+
+    const onNameKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Esc") {
+            e.preventDefault();
+            setName("");
+        }
+    };
 
     return (
         <div ref={ref} className={className}>
@@ -73,16 +77,13 @@ const ImageSearch: React.FC<Props> = ({
                     >
                         name
                     </span>
-                    <input
-                        ref={nameSelectorRef}
+                    <NameField
                         className="z-1 relative bg-transparent border-none outline-none w-full text-3xl"
                         value={name}
-                        onChange={(e) => onNameChange(e.target.value)}
+                        onChangeSanitized={(value: string) => setName(value)}
                         onKeyDown={(e) => onNameKeyDown(e)}
                         onFocus={() => setInsertingMode(InsertingMode.NAME)}
                         onBlur={() => setInsertingMode(InsertingMode.NONE)}
-                        autoComplete="off"
-                        spellCheck={false}
                         placeholder={name.length === 0 ? "Search name" : ""}
                     />
                     <span className="inline-block h-10" />

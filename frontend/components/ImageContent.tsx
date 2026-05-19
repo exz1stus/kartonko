@@ -12,15 +12,10 @@ interface Props {
     image: ImageMetadata;
 }
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
-
 const ImageContent: React.FC<Props> = async ({ image }) => {
+    const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
     const user = await getLoggedUserServer();
     const imageOwner = await getUserByIdServer(image.user_id);
-    const editImage = user &&
-        (isModerator(user) || user.id === image.user_id) && (
-            <EditImage image={image} />
-        );
 
     const { filename } = image;
 
@@ -63,7 +58,14 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                     <TimeField time={image.uploaded_at} />
                 </div>
                 {tags}
-                {editImage}
+                {user && (
+                    <EditImage
+                        image={image}
+                        hasPermission={
+                            isModerator(user) || user.id === image.user_id
+                        }
+                    />
+                )}
             </div>
         </div>
     );
