@@ -10,13 +10,18 @@ import useTagHints from "./useTagHints";
 import { useDialog } from "@/contexts/AlertDialogContext";
 import TagSpan from "./TagSpan";
 import { cn } from "@/lib/utils";
-import { addNewTag } from "@/lib/tag.client";
 import { toast } from "sonner";
 import { sanitizeName } from "@/lib/sanitizeName";
+import useSanitizedField from "@/hooks/useSanitizedField";
 interface Props {
     tags: string[];
     removeTag: (tag: string) => void;
     onTagsUpdate: (tags: string[]) => void;
+
+    newTags: string[];
+    addNewTag: (tag: string) => void;
+    removeNewTag: (tag: string) => void;
+
     onFocus?: () => void;
     onBlur?: () => void;
 }
@@ -26,12 +31,30 @@ export interface TagSelectorRef {
 }
 
 const TagSelector = forwardRef<TagSelectorRef, Props>(
-    ({ tags, removeTag, onTagsUpdate, onFocus, onBlur }, ref) => {
+    (
+        {
+            tags,
+            removeTag,
+            newTags,
+            addNewTag,
+            removeNewTag,
+            onTagsUpdate,
+            onFocus,
+            onBlur,
+        },
+        ref,
+    ) => {
         const [query, setQuery] = useState<string>("");
         const [active, setActive] = useState<boolean>(false);
-        const [showNewTagChip, setShowNewTagChip] = useState<boolean>(false);
         const inputRef = React.useRef<HTMLInputElement>(null);
         const placeholder = "Add a tag...";
+
+        const [queryNew, setQueryNew] = useState<boolean>(false);
+
+        const { sanitized, onSanitize } = useSanitizedField(
+            sanitizeName,
+            setQuery,
+        );
 
         const disableAutocomplete = useRef<boolean>(false);
 
@@ -54,7 +77,8 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
         };
 
         const {
-            hint,
+            hints,
+            currentHint,
             difference,
             autoComplete,
             saveTag,
@@ -89,37 +113,19 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
 
         useEffect(() => {
             if (noHintTimerRef.current) clearTimeout(noHintTimerRef.current);
-            if (query.trim().length > 0 && hint === "") {
+            if (query.trim().length > 0 && currentHint === "") {
                 noHintTimerRef.current = setTimeout(() => {
-                    setShowNewTagChip(true);
+                    setQueryNew(true);
                 }, NO_HINT_DELAY_MS);
             } else {
-                setShowNewTagChip(false);
+                setQueryNew(false);
             }
 
             return () => {
                 if (noHintTimerRef.current)
                     clearTimeout(noHintTimerRef.current);
             };
-        }, [query, hint]);
-
-        const showNewTagDialog = async () => {
-            const result = await dialog(`Add tag ${query}?`, {
-                confirmText: "Yes",
-                cancelText: "No",
-            });
-
-            if (!result) return;
-            toast.promise(addNewTag(query), {
-                loading: "Loading...",
-                success: () => {
-                    onTagsUpdate(tags.concat(query));
-                    setQuery("");
-                    return `tag has been added`;
-                },
-                error: (error) => error.message,
-            });
-        };
+        }, [query, currentHint]);
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (!active) return;
@@ -140,11 +146,12 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             switch (e.key) {
                 case comma:
                 case complete:
-                    if (hint !== "") {
+                    if (currentHint !== "") {
                         saveTag();
                         setQuery("");
-                    } else if (showNewTagChip) {
-                        showNewTagDialog();
+                    } else if (queryNew) {
+                        addNewTag(query);
+                        setQuery("");
                     }
                     break;
                 case remove:
@@ -167,11 +174,6 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             }
         };
 
-        const onFieldChange = (value: string) => {
-            const sanitized = sanitizeName(value);
-            setQuery(sanitized);
-        };
-
         return (
             <div
                 onClick={() => inputRef.current?.focus()}
@@ -187,15 +189,18 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                 />
                 <div className="relative flex-1 min-w-10">
                     <input
-                        className="z-1 relative bg-transparent border-none outline-none w-full text-lg"
+                        className={cn(
+                            "z-1 relative bg-transparent border-none outline-none w-full text-lg transition-colors",
+                            { "font-italic": !sanitized },
+                        )}
                         ref={inputRef}
                         value={query}
-                        onChange={(e) => onFieldChange(e.target.value)}
+                        onChange={(e) => onSanitize(e.target.value)}
                         onFocus={() => {
                             setActive(true);
                             onFocus?.();
                         }}
-                        onBlur={() => {
+                        onBlur={(e) => {
                             setActive(false);
                             onBlur?.();
                         }}
@@ -216,16 +221,37 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                         <span className="text-white/25 whitespace-pre pointer-events-none">
                             {difference}
                         </span>
-                        <span
-                            className={"px-2 whitespace-pre cursor-pointer"}
-                            onClick={() => {
-                                if (showNewTagChip) showNewTagDialog();
-                            }}
-                        >
-                            {showNewTagChip && "+"}
-                        </span>
                     </div>
                 </div>
+                {(hints.length > 0 || queryNew) && (
+                    <div className="top-full right-0 left-0 z-50 absolute bg-neutral-900 shadow-lg mt-1 border border-neutral-800 rounded-md max-h-60 overflow-y-auto">
+                        <ul className="py-1 text-neutral-200 text-sm">
+                            {hints.map((hintItem: string, index: number) => (
+                                <li
+                                    key={hintItem}
+                                    onClick={() => {
+                                        addNewTag(query);
+                                        setQuery("");
+                                    }}
+                                    className={cn(
+                                        "hover:bg-neutral-800 px-4 py-2 transition-colors cursor-pointer",
+                                    )}
+                                >
+                                    {hintItem}
+                                </li>
+                            ))}
+
+                            {queryNew && (
+                                <li
+                                    onClick={autoComplete}
+                                    className="hover:bg-neutral-800 px-4 py-2 border-neutral-800 border-t font-medium text-primary-400 cursor-pointer"
+                                >
+                                    + Add new tag: &quot;{query}&quot;
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                )}
             </div>
         );
     },

@@ -2,7 +2,7 @@ import verifyTurnstile from "@/lib/captcha.server";
 import { serverFetch } from "@/lib/serverFetch";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: NextRequest, options: RequestInit) {
+export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const token = formData.get("cf-turnstile-response")?.toString();
     formData.delete("cf-turnstile-response");

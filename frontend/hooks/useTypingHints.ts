@@ -12,8 +12,8 @@ export const useTypingHints = (
 
     const [debouncedQuery] = useDebounce(query, 200);
 
-    const hint = selectedIndex >= 0 ? hints[selectedIndex] : "";
-    const difference = hint ? hint.slice(query.length) : "";
+    const currentHint = selectedIndex >= 0 ? hints[selectedIndex] : "";
+    const difference = currentHint ? currentHint.slice(query.length) : "";
 
     const selectNext = () => {
         if (selectedIndex === -1) return;
@@ -43,8 +43,8 @@ export const useTypingHints = (
     useEffect(() => {
         if (debouncedQuery.length <= 0) return;
         if (
-            hint.startsWith(debouncedQuery) &&
-            debouncedQuery.length < hint.length
+            currentHint.startsWith(debouncedQuery) &&
+            debouncedQuery.length < currentHint.length
         )
             return;
         let cancelled = false;
@@ -67,16 +67,16 @@ export const useTypingHints = (
     }, [debouncedQuery, fetchHints]);
 
     useEffect(() => {
-        if (hint.startsWith(query) && query.length > 0) return;
+        if (currentHint.startsWith(query) && query.length > 0) return;
 
         hideHint();
     }, [query]);
 
     useEffect(() => {
         if (hints.length == 1 && query == hints[0]) onQueryMatchedHint?.();
-    }, [hint, query, onQueryMatchedHint]);
+    }, [currentHint, query, onQueryMatchedHint]);
 
-    return { hint, difference, selectNext, selectPrevious };
+    return { hints, currentHint, difference, selectNext, selectPrevious };
 };
 
 export default useTypingHints;

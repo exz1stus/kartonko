@@ -4,15 +4,7 @@ import DragDropZone from "@/components/UploadImage/DragDropZone";
 import UploadImageForm from "@/components/UploadImage/UploadImageForm";
 import FancySpan from "@/components/template/FancySpan";
 import useUploadStore, { UploadItem } from "@/hooks/useUploadStore";
-import {
-    ArrowBigDown,
-    ArrowBigLeft,
-    ArrowDownLeftFromSquare,
-    ArrowLeft,
-    ArrowRight,
-    Images,
-    UploadIcon,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import useUpload from "@/hooks/useUpload";
