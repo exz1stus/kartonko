@@ -58,25 +58,26 @@ const useTagHints = ({
     };
 
     const saveTag = async () => {
-        if (hint.length <= 0 || tags.some((tag) => tag === hint)) {
+        if (
+            currentHint.length <= 0 ||
+            tags.some((tag) => tag === currentHint)
+        ) {
             noUse();
             return;
         }
 
         setQuery("");
         await new Promise((resolve) => setTimeout(resolve, 0));
-        let tagsQuery = tags.concat(hint);
+        let tagsQuery = tags.concat(currentHint);
         onTagsUpdate?.(tagsQuery);
     };
 
-    const { hint, difference, selectNext, selectPrevious } = useTypingHints(
-        query,
-        fetchTagHint,
-        onQueryMatchedHint,
-    );
+    const { hints, currentHint, difference, selectNext, selectPrevious } =
+        useTypingHints(query, fetchTagHint, onQueryMatchedHint);
 
     return {
-        hint,
+        hints,
+        currentHint,
         difference,
         autoComplete,
         saveTag,

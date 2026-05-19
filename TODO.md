@@ -1,5 +1,9 @@
 X Delete image query
 
+tags input hints
+FORBID TO ADD AUTO TAGS
+Show autotags automatically
+
 Upload image progress bar
 
 !!rework log loading
@@ -29,7 +33,6 @@ LOG GROUPING
 ADD log image status, too much request on loading
 
 PROFILE PAGE
-FORBID TO ADD AUTO TAGS
 ERROR HANDLING, TOASTER
 TAGS OVERLAY
 SEARCH WITH FILTERS

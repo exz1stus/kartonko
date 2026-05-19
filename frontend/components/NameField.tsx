@@ -1,9 +1,8 @@
 import { sanitizeName } from "@/lib/sanitizeName";
 import React, { useState } from "react";
-import { useDebouncedCallback } from "use-debounce";
 import { Ref } from "react";
 import { cn } from "@/lib/utils";
-import { TruckElectric } from "lucide-react";
+import useSanitizedField from "@/hooks/useSanitizedField";
 
 interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
     placeholder?: string;
@@ -20,36 +19,11 @@ const NameField = ({
     ...props
 }: Props) => {
     const [name, setName] = useState("");
-    const [sanitized, setSanitized] = useState<boolean>(true);
-
-    const applySanitization = useDebouncedCallback((sanitizedName: string) => {
-        setName(sanitizedName);
-        setSanitized(true);
-        onChangeSanitized?.(sanitizedName);
-    }, 500);
-
-    const onFieldChange = (value: string) => {
-        setName(value);
-
-        if (value.trim().length === 0) {
-            applySanitization.cancel();
-            setSanitized(true);
-            onChangeSanitized?.("");
-            return;
-        }
-
-        const sanitizedName = sanitizeName(value);
-
-        if (sanitizedName !== value) {
-            setSanitized(false);
-            applySanitization(sanitizedName);
-            return;
-        }
-
-        applySanitization.cancel();
-        setSanitized(true);
-        onChangeSanitized?.(sanitizedName);
-    };
+    const { sanitized, onSanitize } = useSanitizedField(
+        sanitizeName,
+        setName,
+        onChangeSanitized,
+    );
 
     return (
         <input
@@ -63,7 +37,7 @@ const NameField = ({
             value={name}
             autoComplete="off"
             spellCheck={false}
-            onChange={(e) => onFieldChange(e.target.value)}
+            onChange={(e) => onSanitize(e.target.value)}
         />
     );
 };
