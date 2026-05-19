@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 interface Props {
     image: ImageMetadata;
+    hasPermission: boolean;
     onDelete?: () => void;
 }
 
@@ -16,7 +17,7 @@ interface ApiResponse {
     message?: string;
 }
 
-const EditImage = ({ image, onDelete }: Props) => {
+const EditImage = ({ image, hasPermission, onDelete }: Props) => {
     const router = useRouter();
     const fetchDelete = useCallback(async () => {
         const res = await apiFetch(`/image/${image.filename}`, {
@@ -42,6 +43,8 @@ const EditImage = ({ image, onDelete }: Props) => {
             error: (error) => error.message,
         });
     }, [fetchDelete, onDelete, router]);
+
+    if (!hasPermission) return null;
 
     return (
         <div className="flex flex-row items-center gap-2">

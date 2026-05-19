@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.5.1",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-use-effect-event": "^0.0.2",
     "@tailwindcss/vite": "^4.1.12",

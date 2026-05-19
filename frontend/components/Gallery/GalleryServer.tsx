@@ -24,7 +24,7 @@ const GalleryServer = async ({
     ) => {
         const queryString = constructQueryString(initialQuery);
         const response = await serverFetch(
-            `/images?${queryString}&limit=${intialFetchSize}`,
+            `/image?${queryString}&limit=${intialFetchSize}`,
             {
                 cache: "no-store",
             },

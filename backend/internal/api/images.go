@@ -3,11 +3,13 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"server/internal/env"
 	"server/internal/models"
 	"server/pkg/image"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +31,7 @@ const TimeFormat = time.RFC3339
 func ConstructImageResponse(img *models.Image) ImageResponse {
 	tags := models.TagsToStrings(img.Tags)
 
-return ImageResponse{
+	return ImageResponse{
 		ID:       img.ID,
 		Filename: img.Filename,
 		Tags:     tags,
@@ -95,45 +97,6 @@ func (api *api) GetImageByID(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (api *api) DeleteImageByName(c *gin.Context) {
-	req := c.Param("name")
-
-	user, err := api.GetUserFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	img, err := api.models.Images.GetImageByName(req)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
-		return
-	}
-
-	if err = api.models.Images.DeleteImage(img, user.ID); err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + err.Error()})
-		return
-	}
-
-	uploadPath := env.GetEnvString("UPLOADS_PATH")
-	if err := image.DeleteImagesWithName(req, uploadPath); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
-		return
-	}
-
-	thumbPath := env.GetEnvString("THUMBNAILS_PATH")
-	if err := image.DeleteImagesWithName(req, thumbPath); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image thumbnail: " + err.Error()})
-		return
-	}
-
-	if err = api.models.Log.AddImageDeleted(img, user); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + err.Error()})
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "image deleted"})
-}
-
 // GetRawImageByName godoc
 // @Summary Returns image file by its unique name
 // @Tags Image
@@ -175,47 +138,9 @@ func (api *api) GetImagesByQuery(c *gin.Context) {
 		return
 	}
 
-	nameContains := c.Query("name")
-	tagsString := c.Query("tags")
-	fromUsername := c.Query("username")
-	fromUserID := c.Query("user_id")
-	var tags []string
-	var query models.ImageQuery = models.EmptyQuery()
-	if nameContains != "" {
-		query.NameContains = nameContains
-	}
-	if tagsString != "" {
-		err = json.Unmarshal([]byte(tagsString), &tags)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-			return
-		}
-		query.WithTags = tags
-	}
-	if fromUsername != "" {
-		uploader, err := api.models.Users.GetUserByUsername(fromUsername)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-			return
-		}
-		query.User = uploader
-	}
-	if fromUserID != "" {
-		userID, err := strconv.ParseUint(fromUserID, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-			return
-		}
+	query, err := api.parseQueryFromContext(c)
 
-		uploader, err := api.models.Users.GetUserById(userID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-			return
-		}
-		query.User = uploader
-	}
-
-	images, err := api.models.Images.SearchImages(query, cursor, limit)
+	images, err := api.models.Images.SearchImages(*query, cursor, limit)
 	response := make([]ImageResponse, len(images))
 	for i, img := range images {
 		response[i] = ConstructImageResponse(&img)
@@ -227,6 +152,97 @@ func (api *api) GetImagesByQuery(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (api *api) DeleteImageByName(c *gin.Context) {
+	name := c.Param("name")
+	name = strings.ToLower(name)
+
+	user, err := api.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	img, err := api.models.Images.GetImageByName(name)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
+		return
+	}
+
+	if err = api.models.Images.DeleteImage(img, user.ID); err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + err.Error()})
+		return
+	}
+
+	uploadPath := env.GetEnvString("UPLOADS_PATH")
+	if err := image.DeleteImagesWithName(img.Filename, uploadPath); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
+		return
+	}
+
+	thumbPath := env.GetEnvString("THUMBNAILS_PATH")
+	if err := image.DeleteImagesWithName(img.Filename, thumbPath); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image thumbnail: " + err.Error()})
+		return
+	}
+
+	if err = api.models.Log.AddImageDeleted(img, user); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "image deleted"})
+}
+
+func (api *api) DeleteImagesByQuery(c *gin.Context) {
+	query, err := api.parseQueryFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("failed parsing query: %v", err)})
+		return
+	}
+
+	user, err := api.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	deletedImages, err := api.models.Images.DeleteImagesByQuery(*query, user.ID)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + err.Error()})
+		return
+	}
+
+	response := make([]ImageResponse, len(deletedImages))
+	for i, img := range deletedImages {
+		response[i] = ConstructImageResponse(&img)
+	}
+
+	for _, img := range deletedImages {
+		uploadPath := env.GetEnvString("UPLOADS_PATH")
+		if err := image.DeleteImagesWithName(img.Filename, uploadPath); err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
+			return
+		}
+
+		thumbPath := env.GetEnvString("THUMBNAILS_PATH")
+		if err := image.DeleteImagesWithName(img.Filename, thumbPath); err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image thumbnail: " + err.Error()})
+			return
+		}
+
+		if err = api.models.Log.AddImageDeleted(&img, user); err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + err.Error()})
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+type ImageMetadata struct {
+	Name string   `json:"name"`
+	Tags []string `json:"tags"`
 }
 
 // PostImage godoc
@@ -241,82 +257,228 @@ func (api *api) GetImagesByQuery(c *gin.Context) {
 // @Failure 500 {object} ErrorResponse
 // @Router /upload [post]
 func (api *api) PostImage(c *gin.Context) {
-	type ImageRequest struct {
-		Name string   `json:"name"`
-		Tags []string `json:"tags"`
-	}
+	formData := c.PostForm("metadata")
 
-	imageData := c.PostForm("metadata")
-
-	var request ImageRequest
-	if err := json.Unmarshal([]byte(imageData), &request); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %s", err.Error())})
+	var metadata ImageMetadata
+	if err := json.Unmarshal([]byte(formData), &metadata); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %v", err)})
 		return
 	}
 
-	if len(request.Name) == 0 {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "empty name provided"})
-		return
-	}
-
-	file, err := c.FormFile("file")
+	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "no file received"})
 		return
 	}
 
+	if err := isImageRequestValid(&metadata, fileHeader); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("%v", err)})
+	}
+
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "failed to get user: " + err.Error()})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %v", err)})
 		return
 	}
 
-	imgFormat, err := image.MIMETypeToFormat(file.Header.Get("Content-Type"))
-
-	// if err != nil || !image.IsFormatSupported(imgFormat) {
-	// 	c.JSON(http.StatusBadRequest, ErrorResponse{Error: "unsoported image format: " + err.Error()})
-	// 	return
-	// }
-	//TODO fix . + format
-
-	imgWidth, imgHeight, err := image.GetDimensions(file)
+	img, err := api.ImageUploadPipeline(c, &metadata, fileHeader, user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error getting image dimensions: %s", err.Error())})
-		return
-	}
-
-	img := api.models.Images.ConstructImage(request.Name, request.Tags, imgFormat, imgWidth, imgHeight, user.ID)
-
-	hash, err := image.HashFile(file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error hashing the image: %s", err.Error())})
-		return
-	}
-	img.Hash = hash
-
-	if err := api.models.Images.AddImage(img); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
-		return
-	}
-
-	file.Filename = img.Filename + "." + img.Format
-	uploadDst := env.GetEnvString("UPLOADS_PATH") + "/" + file.Filename
-	if err := c.SaveUploadedFile(file, uploadDst); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error saving the image: %s", err.Error())})
-		return
-	}
-
-	thumbDst := env.GetEnvString("THUMBNAILS_PATH") + "/" + file.Filename
-	if err := image.GenerateThumbnail(uploadDst, thumbDst); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("error generating thumbnail: %s", err.Error())})
-		return
-	}
-
-	if err := api.models.Log.AddImageCreated(img, user); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to log image creation: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("%v", err)})
 		return
 	}
 
 	response := ConstructImageResponse(img)
 	c.JSON(http.StatusOK, response)
+}
+
+type ImageMetadataBatchRequest struct {
+	Data       []ImageMetadata `json:"data"`
+	CommonTags []string        `json:"common_tags"`
+}
+
+type ImageBatchResponse struct {
+	Successes []ImageResponse    `json:"successes"`
+	Failures  []image.ImageError `json:"failures"`
+}
+
+func (api *api) PostImagesBatch(c *gin.Context) {
+	formData := c.PostForm("metadata")
+
+	var batch ImageMetadataBatchRequest
+	if err := json.Unmarshal([]byte(formData), &batch); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %s", err.Error())})
+		return
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid form data: %v", err.Error())})
+	}
+
+	files := form.File["files"]
+	if files == nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("no files provided in form")})
+	}
+
+	user, err := api.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %v", err)})
+		return
+	}
+
+	response := &ImageBatchResponse{}
+
+	for i, metadata := range batch.Data {
+		if i >= len(files) {
+			response.Failures = append(response.Failures, image.ImageError{
+				Name:  metadata.Name,
+				Error: "No file provided for this metadata",
+			})
+			continue
+		}
+
+		if err := isImageRequestValid(&metadata, files[i]); err != nil {
+			response.Failures = append(response.Failures, image.ImageError{
+				Name: metadata.Name, Error: err.Error(),
+			})
+			continue
+		}
+
+		img, err := api.ImageUploadPipeline(c, &metadata, files[i], user)
+
+		if err != nil {
+			response.Failures = append(response.Failures, image.ImageError{
+				Name: metadata.Name, Error: err.Error(),
+			})
+			continue
+		}
+
+		response.Successes = append(response.Successes, ConstructImageResponse(img))
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func isImageRequestValid(metadata *ImageMetadata, fileHeader *multipart.FileHeader) error {
+	if len(metadata.Name) == 0 {
+		return fmt.Errorf("empty name provided")
+	}
+
+	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
+
+	if err != nil {
+		return fmt.Errorf("image format parsing error: %v", err)
+	}
+
+	//TODO fix . + format
+	if err != nil || !image.IsFormatSupported(imgFormat) {
+		return fmt.Errorf("unsoported image format: %s", imgFormat)
+	}
+
+	return nil
+}
+
+func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fileHeader *multipart.FileHeader, user *models.User) (*models.Image, error) {
+	imgWidth, imgHeight, err := image.GetDimensions(fileHeader)
+	if err != nil {
+		return nil, fmt.Errorf("error getting image dimensions: %v", err)
+	}
+
+	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
+
+	if err != nil {
+		return nil, fmt.Errorf("image format parsing error: %v", err)
+	}
+
+	img := api.models.Images.ConstructImage(metadata.Name, metadata.Tags, imgFormat, imgWidth, imgHeight, user.ID)
+
+	hash, err := image.HashFile(fileHeader)
+	if err != nil {
+		return nil, fmt.Errorf("error hashing the image: %v", err)
+	}
+	img.Hash = hash
+
+	if err := api.models.Images.AddImage(img); err != nil {
+		return nil, fmt.Errorf("error saving the image to database: %v", err)
+	}
+
+	fileHeader.Filename = img.Filename + "." + img.Format
+	uploadDst := env.GetEnvString("UPLOADS_PATH") + "/" + fileHeader.Filename
+	if err := c.SaveUploadedFile(fileHeader, uploadDst); err != nil {
+		return nil, fmt.Errorf("error saving the image file: %v", err)
+	}
+
+	thumbDst := env.GetEnvString("THUMBNAILS_PATH") + "/" + fileHeader.Filename
+	if err := image.GenerateThumbnail(uploadDst, thumbDst); err != nil {
+		return nil, fmt.Errorf("error generating thumbnail: %v", err)
+	}
+
+	if err := api.models.Log.AddImageCreated(img, user); err != nil {
+		return nil, fmt.Errorf("failed to log image creation: %v", err)
+	}
+
+	return img, nil
+}
+
+func (api *api) ImageDeletePipeline(c *gin.Context, img *models.Image, user *models.User) error {
+	uploadPath := env.GetEnvString("UPLOADS_PATH")
+	if err := image.DeleteImagesWithName(img.Filename, uploadPath); err != nil {
+		return fmt.Errorf("failed deleting image: %v", err)
+
+	}
+
+	thumbPath := env.GetEnvString("THUMBNAILS_PATH")
+	if err := image.DeleteImagesWithName(img.Filename, thumbPath); err != nil {
+		return fmt.Errorf("failed deleting image thumbnail: %v", err)
+	}
+
+	if err := api.models.Log.AddImageDeleted(img, user); err != nil {
+		return fmt.Errorf("failed adding log entry: %v", err)
+	}
+
+	return nil
+}
+
+func (api *api) parseQueryFromContext(c *gin.Context) (*models.ImageQuery, error) {
+	query := models.EmptyQuery()
+
+	nameContains := c.Query("name")
+	tagsString := c.Query("tags")
+	fromUsername := c.Query("username")
+	fromUserID := c.Query("user_id")
+
+	var err error
+	var tags []string
+
+	if nameContains != "" {
+		query.NameContains = nameContains
+	}
+	if tagsString != "" {
+		err = json.Unmarshal([]byte(tagsString), &tags)
+		if err != nil {
+			return nil, err
+		}
+		query.WithTags = tags
+	}
+	if fromUsername != "" {
+		uploader, err := api.models.Users.GetUserByUsername(fromUsername)
+		if err != nil {
+			return nil, err
+		}
+		query.User = uploader
+	}
+	if fromUserID != "" {
+		userID, err := strconv.ParseUint(fromUserID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		uploader, err := api.models.Users.GetUserById(userID)
+		if err != nil {
+			return nil, err
+		}
+		query.User = uploader
+	}
+
+	return &query, nil
 }
