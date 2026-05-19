@@ -65,20 +65,20 @@ const ImageSearch: React.FC<Props> = ({
 
     return (
         <div ref={ref} className={className}>
-            <div className="gap-1 grid grid-rows-2">
+            <div className="items-center gap-x-4 gap-y-3 grid grid-cols-[auto_1fr]">
+                <span
+                    className={`px-3 py-1 text-sm font-medium border rounded-full transition-colors hover:cursor-pointer select-none text-center
+                ${
+                    insertingMode === InsertingMode.NAME
+                        ? "bg-surface-0/50 border-primary-0 text-primary-0"
+                        : "border-surface-200 text-surface-600"
+                }`}
+                >
+                    name
+                </span>
                 <div className="flex items-center gap-2">
-                    <span
-                        className={`px-2 border rounded-2xl hover:cursor-pointer 
-                        ${
-                            insertingMode === InsertingMode.NAME
-                                ? "bg-surface-0/50 border-primary-0"
-                                : "border-transparent"
-                        }`}
-                    >
-                        name
-                    </span>
                     <NameField
-                        className="z-1 relative bg-transparent border-none outline-none w-full text-3xl"
+                        className="z-1 relative bg-transparent border-none outline-none w-full text-lg"
                         value={name}
                         onChangeSanitized={(value: string) => setName(value)}
                         onKeyDown={(e) => onNameKeyDown(e)}
@@ -88,27 +88,25 @@ const ImageSearch: React.FC<Props> = ({
                     />
                     <span className="inline-block h-10" />
                 </div>
-                <div>
-                    <div className="flex">
-                        <span
-                            className={`px-2 text-2xl border inline-flex items-center rounded-2xl hover:cursor-pointer 
+                <span
+                    className={`px-3 py-1 text-xl border rounded-full transition-colors hover:cursor-pointer select-none text-center
                             ${
                                 insertingMode === InsertingMode.TAG
                                     ? "bg-surface-0/50 border-primary-0"
                                     : "border-transparent"
                             }`}
-                        >
-                            #
-                        </span>
-                        <TagSelector
-                            ref={tagSelectorRef}
-                            tags={tags}
-                            onTagsUpdate={(t: string[]) => setTags(t)}
-                            removeTag={removeTag}
-                            onFocus={() => setInsertingMode(InsertingMode.TAG)}
-                            onBlur={() => setInsertingMode(InsertingMode.NONE)}
-                        />
-                    </div>
+                >
+                    #
+                </span>
+                <div className="flex">
+                    <TagSelector
+                        ref={tagSelectorRef}
+                        tags={tags}
+                        onTagsUpdate={(t: string[]) => setTags(t)}
+                        removeTag={removeTag}
+                        onFocus={() => setInsertingMode(InsertingMode.TAG)}
+                        onBlur={() => setInsertingMode(InsertingMode.NONE)}
+                    />
                 </div>
             </div>
         </div>
