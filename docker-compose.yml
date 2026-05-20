@@ -4,8 +4,6 @@ services:
             context: ./backend
             dockerfile: Dockerfile
         container_name: backend
-        networks:
-            - app-network
         env_file:
             - .env
         volumes:
@@ -19,6 +17,8 @@ services:
             timeout: 3s
             retries: 5
             start_period: 5s
+        networks:
+            - app-network
         restart: unless-stopped
 
     frontend:
@@ -49,6 +49,7 @@ services:
             backend:
                 condition: service_healthy
         networks:
+            - public
             - app-network
     nginx:
         image: nginx:latest
