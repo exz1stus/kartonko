@@ -113,8 +113,7 @@ const UploadPage = () => {
     }, [storeImages]);
 
     useEffect(() => {
-        const cleanup = selectImageAtIndex(imageIndex);
-        return () => cleanup?.();
+        selectImageAtIndex(imageIndex);
     }, [storeImages, imageIndex, selectImageAtIndex]);
 
     useEffect(() => {
