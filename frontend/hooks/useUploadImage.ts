@@ -54,7 +54,7 @@ const useUploadImage = () => {
     };
 
     const uploadImageBatch = async (
-        batchMetadata: ImageUploadRequest[],
+        batchMetadata: ImageBatchUploadRequest,
         files: File[],
         captchaToken: string,
     ): Promise<boolean> => {
