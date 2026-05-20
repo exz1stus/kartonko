@@ -15,13 +15,6 @@ type TagModel struct {
 	db *gorm.DB
 }
 
-func (model *TagModel) RegisterAutoTags() error {
-	model.AddTag("jpeg")
-	model.AddTag("gif")
-	model.AddTag("png")
-	return nil
-}
-
 func (model *TagModel) SearchTags(query string, limit int) ([]Tag, error) {
 	var tags []Tag
 	result := model.db.Model(&Tag{}).Where("name LIKE ?", query+"%").Limit(limit).Find(&tags)
