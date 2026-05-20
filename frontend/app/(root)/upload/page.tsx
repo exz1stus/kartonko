@@ -152,7 +152,10 @@ const UploadPage = () => {
         [updateMetadata, imageIndex],
     );
 
-    const submitBatch = async (data: ImageUploadRequest[], files: File[]) => {
+    const submitBatch = async (
+        data: ImageBatchUploadRequest,
+        files: File[],
+    ) => {
         if (loading) return;
 
         toast.promise(uploadImageBatch(data, files, captchaToken ?? ""), {
