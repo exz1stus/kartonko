@@ -8,7 +8,7 @@ import useUploadStore, {
 } from "@/hooks/useUploadStore";
 
 interface UploadImageFormProps {
-    item: UploadItem;
+    item?: UploadItem;
     onChange?: (updates: Partial<Omit<UploadItem, "file">>) => void;
 }
 
@@ -16,9 +16,9 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({
     item,
     onChange,
 }) => {
+    if (!item) return null;
     const intialFilename = item.name;
     const extension = item.file.name.split(".").pop();
-
     return (
         <form className="space-y-6">
             <div className="flex sm:flex-row flex-col sm:items-center gap-2 sm:gap-4">

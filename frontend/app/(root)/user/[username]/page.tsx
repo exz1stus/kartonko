@@ -73,7 +73,7 @@ const UserPage = async ({
                         />
                     </div>
                 </div>
-                <div className="flex-5 w-full">
+                <div className="w-full min-w-0">
                     <GalleryServer
                         initialFetchSize={50}
                         initialQuery={{ userID: user.id }}

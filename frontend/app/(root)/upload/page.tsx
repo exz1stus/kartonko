@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import CaptchaButton from "@/components/UploadImage/CaptchaButton";
 import { useShallow } from "zustand/react/shallow";
+import ImageCarousel from "@/components/UploadImage/ImageCarousel";
 
 const UploadPage = () => {
     const {
@@ -38,6 +39,7 @@ const UploadPage = () => {
 
     const { uploadImage, uploadImageBatch, loading } = useUploadImage();
     const [captchaToken, setCaptchaToken] = useState<string | null>();
+    const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
     const globalNewTags = useUploadStore(useShallow(selectGlobalNewTags));
 
@@ -68,14 +70,26 @@ const UploadPage = () => {
         removeCurrentImage();
     };
 
-    const removeCurrentImage = () => {
+    const removeCurrentImage = useCallback(() => {
         if (storeImages.length === 0) return;
         if (imageIndex > 0 && storeImages.length - 1 === imageIndex) {
             setImageIndex((prev) => prev - 1);
         }
 
         removeFileAt(imageIndex);
-    };
+    }, [imageIndex, removeFileAt, storeImages.length]);
+
+    const removeImageAtIndex = useCallback(
+        (index: number) => {
+            if (storeImages.length === 0) return;
+            if (imageIndex === index) {
+                removeCurrentImage();
+                return;
+            }
+            removeFileAt(index);
+        },
+        [storeImages.length, imageIndex, removeFileAt, removeCurrentImage],
+    );
 
     const selectImageAtIndex = useCallback(
         (index: number) => {
@@ -123,17 +137,33 @@ const UploadPage = () => {
     }, [storeImages, imageIndex, selectImageAtIndex]);
 
     useEffect(() => {
-        const onEscape = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                removeCurrentImage();
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (
+                e.target instanceof HTMLInputElement ||
+                e.target instanceof HTMLTextAreaElement
+            ) {
+                return;
+            }
+            if (e.key === "Delete") {
+                if (selectedIndices.length === 0) return;
+
+                const sortedIndices = [...selectedIndices].sort(
+                    (a, b) => b - a,
+                );
+
+                sortedIndices.forEach((index) => {
+                    removeImageAtIndex(index);
+                });
+
+                setSelectedIndices([]);
             }
         };
 
-        document.addEventListener("keydown", onEscape);
+        document.addEventListener("keydown", onKeyDown);
         return () => {
-            document.removeEventListener("keydown", onEscape);
+            document.removeEventListener("keydown", onKeyDown);
         };
-    }, [removeCurrentImage]);
+    }, [selectedIndices, removeImageAtIndex]);
 
     const browseImages = (
         <label className="inline-flex items-center gap-2 px-2 py-1 border border-surface-20 hover:border-surface-30 rounded-3xl cursor-pointer glass">
@@ -221,13 +251,13 @@ const UploadPage = () => {
     const nextButton = (
         <ArrowRight
             onClick={selectNextImage}
-            className="p-2 border border-surface-20 hover:border-surface-30 rounded-2xl w-10 h-10 transition cursor-pointer glass"
+            className="p-2 border border-surface-20 hover:border-surface-30 rounded-2xl min-w-10 min-h-10 transition cursor-pointer glass"
         />
     );
     const backButton = (
         <ArrowLeft
             onClick={selectPreviousImage}
-            className="p-2 border border-surface-20 hover:border-surface-30 rounded-2xl w-10 h-10 transition cursor-pointer glass"
+            className="p-2 border border-surface-20 hover:border-surface-30 rounded-2xl min-w-10 min-h-10 transition cursor-pointer glass"
         />
     );
 
@@ -247,9 +277,9 @@ const UploadPage = () => {
             <>
                 {storeImages.length > 1 && backButton}
                 <CaptchaButton
-                    className={
-                        loading ? "animate-pulse bg-surface-20" : "bg-none"
-                    }
+                    className={`max-w-[70%]
+                        ${loading ? "animate-pulse bg-surface-20" : "bg-none"}
+                    `}
                     onClick={onUpload}
                     disabled={loading}
                     onVerifySuccess={setCaptchaToken}
@@ -264,13 +294,22 @@ const UploadPage = () => {
             </>
         );
 
+    const getFileUrl = useCallback((file: File) => {
+        if (objectUrlCache.current.has(file)) {
+            return objectUrlCache.current.get(file)!;
+        }
+        const url = URL.createObjectURL(file);
+        objectUrlCache.current.set(file, url);
+        return url;
+    }, []);
+
     const content =
         storeImages.length > 0 ? (
             <div className="flex justify-center items-start p-4 lg:p-10 w-full h-full overflow-hidden">
                 <div className="flex lg:flex-row flex-col bg-surface-0/95 border border-surface-20 rounded-2xl w-full h-full max-h-full overflow-hidden glass">
                     {imageUrl ? (
                         <>
-                            <div className="relative flex justify-center items-center bg-black/20 w-full lg:w-[60%] h-[40vh] lg:h-full overflow-hidden shrink-0">
+                            <div className="relative flex flex-1 justify-center items-center bg-black/20 w-full lg:w-[60%] min-w-0 h-[20vh] lg:h-full min-h-0 overflow-hidden shrink-0">
                                 <Image
                                     src={imageUrl}
                                     alt={storeImages[imageIndex]?.name}
@@ -283,7 +322,7 @@ const UploadPage = () => {
                                 />
                             </div>
 
-                            <div className="flex flex-col gap-6 p-5 lg:p-8 w-full lg:w-[40%] min-h-0 overflow-y-auto">
+                            <div className="flex flex-col gap-6 p-5 lg:p-8 border-l w-full lg:w-[40%] min-h-0 overflow-y-auto">
                                 <div className="flex flex-wrap justify-between items-center gap-2">
                                     <div className="inline-flex items-center gap-2">
                                         {browseImages}
@@ -295,7 +334,7 @@ const UploadPage = () => {
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
                                         <FancySpan
                                             word={storeImages[imageIndex]?.name}
                                         />
@@ -315,10 +354,18 @@ const UploadPage = () => {
                                     item={storeImages[imageIndex]}
                                     onChange={onFormChange}
                                 />
-                                <div className="flex justify-center items-center gap-5 w-full">
+                                <div className="flex justify-center items-center gap-4 mt-auto pt-6 border-surface-20 border-t w-full">
                                     {formButtons}
                                 </div>
                             </div>
+                            <ImageCarousel
+                                images={storeImages}
+                                currentIndex={imageIndex}
+                                onIndexChange={setImageIndex}
+                                selectedIndices={selectedIndices}
+                                setSelectedIndices={setSelectedIndices}
+                                getFileUrl={getFileUrl}
+                            />
                         </>
                     ) : (
                         <div className="flex justify-center items-center w-full h-full text-gray-400 text-3xl text-center">

@@ -2,11 +2,11 @@ import React from "react";
 import ec from "clsx";
 
 interface Props {
-    word: string;
+    word?: string;
     className?: string;
 }
 
-const FancySpan = ({ word, className }: Props) => {
+const FancySpan = ({ word = "", className }: Props) => {
     return (
         <p className={ec(className)}>
             {word.split("").map((letter, index) => (
