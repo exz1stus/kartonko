@@ -4,8 +4,8 @@ import React from "react";
 import TagSpan from "./Tags/TagSpan";
 import UserElement from "./UserElement";
 import TimeField from "./TimeField";
-import { getLoggedUserServer, getUserByIdServer } from "@/lib/user.server";
-import { isModerator } from "@/lib/user";
+import { getLoggedUserServer, getUserByIdServer } from "@/lib/user/user.server";
+import { isModerator } from "@/lib/user/user";
 import EditImage from "./EditImage";
 
 interface Props {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDebounce } from "use-debounce";
 
 export const useTypingHints = (
@@ -14,6 +14,7 @@ export const useTypingHints = (
 
     const currentHint = selectedIndex >= 0 ? hints[selectedIndex] : "";
     const difference = currentHint ? currentHint.slice(query.length) : "";
+    const requestIdRef = useRef<number>(0);
 
     const selectNext = () => {
         if (selectedIndex === -1) return;
@@ -35,36 +36,51 @@ export const useTypingHints = (
         setSelectedIndex((prev) => prev - 1);
     };
 
-    const hideHint = () => {
-        setHints([]);
-        setSelectedIndex(-1);
+    const selectAtIndex = (index: number) => {
+        if (index >= 0 && index < hints.length) {
+            setSelectedIndex(index);
+        }
     };
 
-    useEffect(() => {
-        if (debouncedQuery.length <= 0) return;
-        if (
-            currentHint.startsWith(debouncedQuery) &&
-            debouncedQuery.length < currentHint.length
-        )
-            return;
-        let cancelled = false;
+    const hideHint = useCallback(() => {
+        setHints([]);
+        setSelectedIndex(-1);
+    }, []);
 
-        const fetchHintsAsync = async () => {
-            const hints = await fetchHints(debouncedQuery);
-            if (cancelled) return;
-            if (hints.length === 0) {
-                hideHint();
-                return;
+    const executeFetch = useCallback(
+        async (targetQuery: string) => {
+            const currentRequestId = ++requestIdRef.current;
+
+            try {
+                let fetchedHints = await fetchHints(targetQuery);
+                if (currentRequestId !== requestIdRef.current) return;
+
+                if (fetchedHints.length === 0) {
+                    hideHint();
+                    return;
+                }
+                setSelectedIndex(0);
+                setHints(fetchedHints);
+            } catch (error) {
+                if (currentRequestId === requestIdRef.current) {
+                    hideHint();
+                }
             }
-            setSelectedIndex(0);
-            setHints(hints);
-        };
+        },
+        [fetchHints, hideHint],
+    );
 
-        fetchHintsAsync();
+    const refresh = useCallback(async () => {
+        await executeFetch(query);
+    }, [executeFetch, query]);
+
+    useEffect(() => {
+        executeFetch(debouncedQuery);
+
         return () => {
-            cancelled = true;
+            requestIdRef.current++;
         };
-    }, [debouncedQuery, fetchHints]);
+    }, [debouncedQuery, executeFetch]);
 
     useEffect(() => {
         if (currentHint.startsWith(query) && query.length > 0) return;
@@ -74,9 +90,17 @@ export const useTypingHints = (
 
     useEffect(() => {
         if (hints.length == 1 && query == hints[0]) onQueryMatchedHint?.();
-    }, [currentHint, query, onQueryMatchedHint]);
+    }, [currentHint, query, onQueryMatchedHint, hints]);
 
-    return { hints, currentHint, difference, selectNext, selectPrevious };
+    return {
+        hints,
+        currentHint,
+        difference,
+        selectNext,
+        selectPrevious,
+        selectAtIndex,
+        refresh,
+    };
 };
 
 export default useTypingHints;

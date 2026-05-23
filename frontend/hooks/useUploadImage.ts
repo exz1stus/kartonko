@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { apiFetch } from "@/lib/apiFetch";
 
 export interface ApiResponse {
@@ -10,6 +10,7 @@ export interface ApiResponse {
 interface ImageUploadRequest {
     name: string;
     tags: string[];
+    newTags: string[];
 }
 
 interface ImageBatchUploadRequest {

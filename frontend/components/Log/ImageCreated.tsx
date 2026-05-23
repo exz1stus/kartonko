@@ -1,6 +1,6 @@
 "use client";
 import ImageMetadata from "@/lib/image";
-import { getImageMetadataById } from "@/lib/image.client";
+import { getImageMetadataById } from "@/lib/image/image.client";
 import { LogEntryData, ParseLogData, ImageEntryData } from "@/lib/log";
 import Link from "next/link";
 import { useEffect, useEffectEvent, useState } from "react";

@@ -1,5 +1,5 @@
-import ImageMetadata from "./image";
-import { serverFetch } from "./serverFetch";
+import ImageMetadata from "../image";
+import { serverFetch } from "../serverFetch";
 
 export async function getImageMetadataByNameServer(
     name: string,

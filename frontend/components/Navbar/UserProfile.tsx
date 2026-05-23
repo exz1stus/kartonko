@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { UserModal } from "./UserModal";
 import UserPicture from "./UserPicture";
-import { UserData } from "@/lib/user";
+import { UserData } from "@/lib/user/user";
 
 interface Props {
     user: UserData;

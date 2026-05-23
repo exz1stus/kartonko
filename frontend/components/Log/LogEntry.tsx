@@ -2,8 +2,8 @@
 import { LogEntryData } from "@/lib/log";
 import UserElement from "../UserElement";
 import TimeField from "../TimeField";
-import { UserData } from "@/lib/user";
-import { getUserById } from "@/lib/user.client";
+import { UserData } from "@/lib/user/user";
+import { getUserById } from "@/lib/user/user.client";
 import { useCallback, useEffect, useEffectEvent, useState } from "react";
 
 import ImageCreated from "./ImageCreated";

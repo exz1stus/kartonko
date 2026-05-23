@@ -4,9 +4,10 @@ import useUploadStore from "./useUploadStore";
 import isAllowed from "@/lib/allowedFormats";
 import { toast } from "sonner";
 import { hashFile } from "@/lib/image";
-import { existsOnServer } from "@/lib/image.client";
+import { existsOnServer } from "@/lib/image/image.client";
 import ProgressBarToast from "@/components/ProgressBarToast";
 import pLimit from "p-limit";
+import { sanitizeName } from "@/lib/sanitizeName";
 
 const useUpload = () => {
     const { hasFile, addFiles } = useUploadStore((state) => state);
@@ -14,7 +15,28 @@ const useUpload = () => {
     const router = useRouter();
     const pathname = usePathname();
 
-    const sanitizeFormats = (files: File[]) =>
+    const sanitizeNames = (files: File[]): File[] => {
+        return files.map((file) => {
+            const lastDotIndex = file.name.lastIndexOf(".");
+
+            let baseName = file.name;
+            let extension = "";
+
+            if (lastDotIndex > 0) {
+                baseName = file.name.substring(0, lastDotIndex);
+                extension = file.name.substring(lastDotIndex);
+            }
+            const cleanBaseName = sanitizeName(baseName);
+            const cleanName = `${cleanBaseName}${extension}`;
+            if (cleanName === file.name) return file;
+            return new File([file], cleanName, {
+                type: file.type,
+                lastModified: file.lastModified,
+            });
+        });
+    };
+
+    const sanitizeFormats = (files: File[]): File[] =>
         files.filter((file) => {
             const format = file.type.split("/")[1];
             if (!isAllowed(format))
@@ -55,7 +77,7 @@ const useUpload = () => {
     };
 
     const handleUploadFiles = async (files: File[]) => {
-        const sanitized = sanitizeFormats(files);
+        const sanitized = sanitizeNames(sanitizeFormats(files));
         const unique = filterDuplicates(sanitized);
         if (unique.length === 0) return;
 

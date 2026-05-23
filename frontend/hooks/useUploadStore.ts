@@ -5,6 +5,7 @@ export interface UploadItem {
     file: File;
     name: string;
     tags: string[];
+    newTags: string[];
 }
 
 interface UploadStore {
@@ -20,6 +21,13 @@ interface UploadStore {
     removeFileAt: (index: number) => void;
     clearStore: () => void;
 }
+
+export const selectGlobalNewTags = (state: {
+    items: UploadItem[];
+}): string[] => {
+    const allTags = state.items.flatMap((item) => item.newTags);
+    return Array.from(new Set(allTags));
+};
 
 const useUploadStore = create<UploadStore>((set, get) => ({
     items: [],
@@ -43,6 +51,7 @@ const useUploadStore = create<UploadStore>((set, get) => ({
                     file,
                     name: baseName,
                     tags: [],
+                    newTags: [],
                 };
             });
             return { items: [...state.items, ...newItems] };

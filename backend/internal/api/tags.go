@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -32,13 +33,18 @@ func (api *api) GetTags(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": tags})
 }
 
+type CreateTagRequest struct {
+	Name string `json:"name"`
+}
+
 func (api *api) PostTag(c *gin.Context) {
-	req := c.Query("name")
-	if req == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name is required"})
+	var req CreateTagRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
-	tag, err := api.models.Tags.AddTag(req)
+
+	tag, err := api.models.Tags.AddTag(req.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -53,4 +59,37 @@ func (api *api) PostTag(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"tag": tag})
+}
+
+type BatchTagsRequest struct {
+	Names []string `json:"names" binding:"required,min=1"`
+}
+
+func (api *api) PostTagsBatch(c *gin.Context) {
+	var req BatchTagsRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body or empty names list"})
+		return
+	}
+
+	user, err := api.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	tags, err := api.models.Tags.AddTagsBatch(req.Names)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	for _, tag := range tags {
+		if err = api.models.Log.AddTagCreated(&tag, user); err != nil {
+			log.Printf("Failed to log tag creation for %s: %v", tag.Name, err)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"tags": tags})
 }

@@ -4,7 +4,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { UserData } from "@/lib/user";
+import { UserData } from "@/lib/user/user";
 
 interface Props {
     user: UserData;

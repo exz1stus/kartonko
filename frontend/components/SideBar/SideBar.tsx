@@ -1,5 +1,5 @@
 import Dropdown from "@/components/template/Dropdown";
-import { getLoggedUserServer } from "@/lib/user.server";
+import { getLoggedUserServer } from "@/lib/user/user.server";
 import Link from "next/link";
 
 const SideBar: React.FC = async () => {

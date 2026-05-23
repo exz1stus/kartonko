@@ -1,4 +1,4 @@
-import { UserData } from "@/lib/user";
+import { UserData } from "@/lib/user/user";
 import { serverFetch } from "@/lib/serverFetch";
 
 export async function getUserByIdServer(id: number): Promise<UserData | null> {

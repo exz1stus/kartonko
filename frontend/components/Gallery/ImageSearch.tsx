@@ -67,7 +67,7 @@ const ImageSearch: React.FC<Props> = ({
         <div ref={ref} className={className}>
             <div className="items-center gap-x-4 gap-y-3 grid grid-cols-[auto_1fr]">
                 <span
-                    className={`px-3 py-1 text-sm font-medium border rounded-full transition-colors hover:cursor-pointer select-none text-center
+                    className={`px-3 py-1 text-sm font-medium border rounded-full transition-colors select-none text-center
                 ${
                     insertingMode === InsertingMode.NAME
                         ? "bg-surface-0/50 border-primary-0 text-primary-0"
@@ -89,11 +89,11 @@ const ImageSearch: React.FC<Props> = ({
                     <span className="inline-block h-10" />
                 </div>
                 <span
-                    className={`px-3 py-1 text-xl border rounded-full transition-colors hover:cursor-pointer select-none text-center
+                    className={`px-3 py-1 text-sm font-medium border rounded-full transition-colors select-none text-center
                             ${
                                 insertingMode === InsertingMode.TAG
                                     ? "bg-surface-0/50 border-primary-0"
-                                    : "border-transparent"
+                                    : "border-surface-200 text-surface-600"
                             }`}
                 >
                     #
@@ -101,6 +101,7 @@ const ImageSearch: React.FC<Props> = ({
                 <div className="flex">
                     <TagSelector
                         ref={tagSelectorRef}
+                        placeholder={"Start typing tags"}
                         tags={tags}
                         onTagsUpdate={(t: string[]) => setTags(t)}
                         removeTag={removeTag}
