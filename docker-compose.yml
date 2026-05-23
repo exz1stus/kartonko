@@ -29,6 +29,7 @@ services:
                 NEXT_PUBLIC_API_ORIGIN: ${NEXT_PUBLIC_API_ORIGIN}
                 NEXT_PUBLIC_FRONTEND_URI: ${NEXT_PUBLIC_FRONTEND_URI}
                 NEXT_PUBLIC_API_LOCAL: ${NEXT_PUBLIC_API_LOCAL}
+                NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
         container_name: frontend
         env_file:
             - .env
