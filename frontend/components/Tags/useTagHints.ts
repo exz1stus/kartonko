@@ -1,14 +1,14 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { noUse } from "@/app/AudioEffects";
 import useTypingHints from "@/hooks/useTypingHints";
 import { apiFetch } from "@/lib/apiFetch";
 
 interface Props {
     tags: string[];
+    newTags?: string[];
     query: string;
     setQuery: (query: string) => void;
-    onTagsUpdate: (tags: string[]) => void;
     onQueryMatchedHint?: () => void;
 }
 
@@ -16,13 +16,7 @@ interface TagHintResponse {
     tags: { name: string }[];
 }
 
-const useTagHints = ({
-    tags,
-    query,
-    setQuery,
-    onTagsUpdate,
-    onQueryMatchedHint,
-}: Props) => {
+const useTagHints = ({ tags, query, setQuery, onQueryMatchedHint }: Props) => {
     const FETCH_HINTS_LIMIT = 10;
 
     const fetchTagHint = useCallback(
@@ -33,11 +27,11 @@ const useTagHints = ({
                 );
                 if (response.ok) {
                     const responseJson: TagHintResponse = await response.json();
-                    const parsedTags = responseJson.tags;
+                    let parsedTags = responseJson.tags.map((tag) => tag.name);
                     if (parsedTags.length === 0) return [];
-                    const hints = parsedTags
-                        .map((tag) => tag.name)
-                        .filter((tag) => !tags.some((t) => t === tag));
+                    const hints = parsedTags.filter(
+                        (tag) => !tags.some((t) => t === tag),
+                    );
                     return hints;
                 }
                 return [];
@@ -57,32 +51,25 @@ const useTagHints = ({
         setQuery(query.concat(difference));
     };
 
-    const saveTag = async () => {
-        if (
-            currentHint.length <= 0 ||
-            tags.some((tag) => tag === currentHint)
-        ) {
-            noUse();
-            return;
-        }
-
-        setQuery("");
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        let tagsQuery = tags.concat(currentHint);
-        onTagsUpdate?.(tagsQuery);
-    };
-
-    const { hints, currentHint, difference, selectNext, selectPrevious } =
-        useTypingHints(query, fetchTagHint, onQueryMatchedHint);
+    const {
+        hints,
+        currentHint,
+        difference,
+        selectNext,
+        selectPrevious,
+        selectAtIndex,
+        refresh,
+    } = useTypingHints(query, fetchTagHint, onQueryMatchedHint);
 
     return {
         hints,
         currentHint,
         difference,
         autoComplete,
-        saveTag,
+        selectAtIndex,
         selectNext,
         selectPrevious,
+        refresh,
     };
 };
 export default useTagHints;

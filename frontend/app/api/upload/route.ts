@@ -1,5 +1,6 @@
 import verifyTurnstile from "@/lib/captcha.server";
 import { serverFetch } from "@/lib/serverFetch";
+import { addNewTagsBatchServer } from "@/lib/tag/tag.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -22,6 +23,32 @@ export async function POST(req: NextRequest) {
 
     if (!valid) {
         return NextResponse.json({ error: "Captcha failed" }, { status: 403 });
+    }
+
+    const metadataString = formData.get("metadata")?.toString();
+    if (metadataString) {
+        try {
+            const metadata = JSON.parse(metadataString);
+            const newTags = metadata.newTags;
+
+            if (Array.isArray(newTags) && newTags.length > 0) {
+                await addNewTagsBatchServer(newTags);
+            }
+
+            const currentTags = Array.isArray(metadata.tags)
+                ? metadata.tags
+                : [];
+            metadata.tags = [...currentTags, ...newTags];
+
+            delete metadata.newTags;
+
+            formData.set("metadata", JSON.stringify(metadata));
+        } catch (err) {
+            return NextResponse.json(
+                { error: "Invalid metadata or failed to process new tags" },
+                { status: 400 },
+            );
+        }
     }
 
     const res = await serverFetch("/upload", {

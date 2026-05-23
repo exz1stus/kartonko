@@ -1,4 +1,4 @@
-import { UserData } from "@/lib/user";
+import { UserData } from "@/lib/user/user";
 import { apiFetch } from "@/lib/apiFetch";
 
 const userCache = new Map<number, Promise<UserData | null>>(); //TODO add limit

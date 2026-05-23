@@ -1,4 +1,4 @@
-import { isModerator, UserData } from "@/lib/user";
+import { isModerator, UserData } from "@/lib/user/user";
 import UserPicture from "@/components/Navbar/UserPicture";
 import Link from "next/link";
 

@@ -3,7 +3,10 @@ import AuthGuard from "@/components/AuthGuard";
 import DragDropZone from "@/components/UploadImage/DragDropZone";
 import UploadImageForm from "@/components/UploadImage/UploadImageForm";
 import FancySpan from "@/components/template/FancySpan";
-import useUploadStore, { UploadItem } from "@/hooks/useUploadStore";
+import useUploadStore, {
+    selectGlobalNewTags,
+    UploadItem,
+} from "@/hooks/useUploadStore";
 import { ArrowLeft, ArrowRight, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -15,6 +18,7 @@ import {
 } from "@/hooks/useUploadImage";
 import { toast } from "sonner";
 import CaptchaButton from "@/components/UploadImage/CaptchaButton";
+import { useShallow } from "zustand/react/shallow";
 
 const UploadPage = () => {
     const {
@@ -34,6 +38,8 @@ const UploadPage = () => {
 
     const { uploadImage, uploadImageBatch, loading } = useUploadImage();
     const [captchaToken, setCaptchaToken] = useState<string | null>();
+
+    const globalNewTags = useUploadStore(useShallow(selectGlobalNewTags));
 
     const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -184,11 +190,13 @@ const UploadPage = () => {
 
     const onUpload = async () => {
         if (storeImages.length === 0) return;
+
         if (storeImages.length === 1) {
             const currentImage = storeImages[imageIndex];
             const data = {
                 name: currentImage.name,
                 tags: currentImage.tags,
+                newTags: currentImage.newTags,
             };
 
             await submitImage(data, currentImage.file);
@@ -198,6 +206,7 @@ const UploadPage = () => {
         const batchMetadata: ImageUploadRequest[] = storeImages.map((item) => ({
             name: item.name,
             tags: item.tags,
+            newTags: item.newTags,
         }));
 
         const request: ImageBatchUploadRequest = {
@@ -222,6 +231,17 @@ const UploadPage = () => {
         />
     );
 
+    const multipleImagesText =
+        storeImages.length > 1 ? ` ${storeImages.length} images` : "";
+    const addNewTagsText =
+        globalNewTags && globalNewTags.length > 0
+            ? ` and create ${globalNewTags.length} new tags`
+            : "";
+    const uploadBtnText =
+        multipleImagesText || addNewTagsText
+            ? `${multipleImagesText}${addNewTagsText}`
+            : " Image";
+
     const formButtons =
         imageIndex === storeImages.length - 1 ? (
             <>
@@ -234,9 +254,7 @@ const UploadPage = () => {
                     disabled={loading}
                     onVerifySuccess={setCaptchaToken}
                 >
-                    {loading
-                        ? "Uploading..."
-                        : `Upload${storeImages.length > 1 ? " " + storeImages.length + " images" : ""}`}
+                    {loading ? "Uploading..." : `Upload ${uploadBtnText}`}
                 </CaptchaButton>
             </>
         ) : (
@@ -249,10 +267,7 @@ const UploadPage = () => {
     const content =
         storeImages.length > 0 ? (
             <div className="flex justify-center items-start p-4 lg:p-10 w-full h-full overflow-hidden">
-                <div
-                    className="flex lg:flex-row flex-col bg-surface-0/95 border border-surface-20 rounded-2xl w-full h-full max-h-full overflow-hidden glass"
-                    onWheel={handleWheel}
-                >
+                <div className="flex lg:flex-row flex-col bg-surface-0/95 border border-surface-20 rounded-2xl w-full h-full max-h-full overflow-hidden glass">
                     {imageUrl ? (
                         <>
                             <div className="relative flex justify-center items-center bg-black/20 w-full lg:w-[60%] h-[40vh] lg:h-full overflow-hidden shrink-0">
@@ -263,6 +278,7 @@ const UploadPage = () => {
                                     draggable={false}
                                     width={1000}
                                     height={1000}
+                                    onWheel={handleWheel}
                                     unoptimized
                                 />
                             </div>

@@ -1,4 +1,4 @@
-import { UserData } from "@/lib/user";
+import { UserData } from "@/lib/user/user";
 
 interface Props {
     user: UserData;
@@ -6,11 +6,16 @@ interface Props {
 
 const UserPicture = ({ user }: Props) => {
     const url: string =
-        user?.picture_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        user?.picture_url ||
+        "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
     return (
         <div className="rounded-full w-10 h-10 cursor-pointer">
-            <img src={url} className="rounded-full w-full h-full" alt="User picture" />
+            <img
+                src={url}
+                className="rounded-full w-full h-full"
+                alt="User picture"
+            />
         </div>
     );
 };

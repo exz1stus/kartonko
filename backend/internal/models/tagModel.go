@@ -38,6 +38,18 @@ func (model *TagModel) AddTag(tag string) (*Tag, error) {
 	return newTag, nil
 }
 
+func (model *TagModel) AddTagsBatch(names []string) ([]Tag, error) {
+	var tags []Tag
+	for _, name := range names {
+		tags = append(tags, Tag{Name: name})
+	}
+
+	if err := model.db.Create(&tags).Error; err != nil {
+		return nil, err
+	}
+	return tags, nil
+}
+
 func (model *TagModel) CheckTags(tags []Tag) error {
 	if len(tags) == 0 || len(tags) == 1 && tags[0].Name == "" {
 		return nil

@@ -1,11 +1,11 @@
-import { isModerator, UserData } from "@/lib/user";
+import { isModerator, UserData } from "@/lib/user/user";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import GalleryServer from "@/components/Gallery/GalleryServer";
 import TimeField from "@/components/TimeField";
 import { serverFetch } from "@/lib/serverFetch";
 import EditUser from "@/components/EditUser";
-import { getLoggedUserServer } from "@/lib/user.server";
+import { getLoggedUserServer } from "@/lib/user/user.server";
 
 const UserPage = async ({
     params,

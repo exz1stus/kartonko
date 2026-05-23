@@ -9,7 +9,7 @@ import {
     createContext,
     useContext,
 } from "react";
-import { UserData } from "@/lib/user";
+import { UserData } from "@/lib/user/user";
 import { apiFetch } from "@/lib/apiFetch";
 
 interface AuthContextType {

@@ -62,6 +62,7 @@ func (api *api) initRoutes() {
 		authGroup.POST("/upload/batch", api.PostImagesBatch)
 
 		authGroup.POST("/tag", api.PostTag)
+		authGroup.POST("/tags/batch", api.PostTagsBatch)
 
 		authGroup.DELETE("/image", api.DeleteImagesByQuery)
 		authGroup.DELETE("/image/:name", api.DeleteImageByName)
