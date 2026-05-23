@@ -358,14 +358,16 @@ const UploadPage = () => {
                                     {formButtons}
                                 </div>
                             </div>
-                            <ImageCarousel
-                                images={storeImages}
-                                currentIndex={imageIndex}
-                                onIndexChange={setImageIndex}
-                                selectedIndices={selectedIndices}
-                                setSelectedIndices={setSelectedIndices}
-                                getFileUrl={getFileUrl}
-                            />
+                            {storeImages.length > 1 && (
+                                <ImageCarousel
+                                    images={storeImages}
+                                    currentIndex={imageIndex}
+                                    onIndexChange={setImageIndex}
+                                    selectedIndices={selectedIndices}
+                                    setSelectedIndices={setSelectedIndices}
+                                    getFileUrl={getFileUrl}
+                                />
+                            )}
                         </>
                     ) : (
                         <div className="flex justify-center items-center w-full h-full text-gray-400 text-3xl text-center">
