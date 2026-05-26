@@ -8,7 +8,7 @@ const SideBar: React.FC = async () => {
     const authed =
         user !== null ? (
             <>
-                <Link href="/me">Profile</Link>
+                <Link href={`/user/${user?.username}`}>Profile</Link>
                 <Link href="/upload">Upload</Link>
             </>
         ) : null;
