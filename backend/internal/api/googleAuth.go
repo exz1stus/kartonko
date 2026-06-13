@@ -2,23 +2,37 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"server/internal/env"
-
-	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
-var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  fmt.Sprintf("%s/auth/google/callback", env.GetEnvString("API_ORIGIN")),
-	ClientID:     env.GetEnvString("GOOGLE_CLIENT_ID"),
-	ClientSecret: env.GetEnvString("GOOGLE_CLIENT_SECRET"),
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
-	Endpoint:     google.Endpoint,
+func googleRedirectURL() string {
+	base := strings.TrimRight(env.GetEnvString("API_ORIGIN"), "/")
+	return base + "/auth/google/callback"
 }
+
+func newGoogleOauthConfig() *oauth2.Config {
+	cfg := &oauth2.Config{
+		RedirectURL:  googleRedirectURL(),
+		ClientID:     env.GetEnvString("GOOGLE_CLIENT_ID"),
+		ClientSecret: env.GetEnvString("GOOGLE_CLIENT_SECRET"),
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
+	log.Printf("google oauth initialized: redirect_uri=%q", cfg.RedirectURL)
+	return cfg
+}
+
+var googleOauthConfig = newGoogleOauthConfig()
 
 func (rh *api) GetGoogleLogin(c *gin.Context) {
 	redirect := c.Query("redirect")
@@ -41,6 +55,7 @@ func (rh *api) GetGoogleCallback(c *gin.Context) {
 
 	token, err := googleOauthConfig.Exchange(c.Request.Context(), code)
 	if err != nil {
+		log.Printf("google token exchange failed: %v (redirect_uri=%q)", err, googleOauthConfig.RedirectURL)
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to exchange codes"})
 		return
 	}
