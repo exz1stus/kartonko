@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import useUploadStore, { UploadItem } from "@/hooks/useUploadStore";
 import TagSelector from "../Tags/TagSelector";
 import Scrollbar from "../template/Scrollbar";
+import { cn } from "@/lib/utils";
 
 interface Props {
     images: UploadItem[];
@@ -171,6 +172,15 @@ const ImageCarousel = ({
         }
     };
 
+    const handleCheckboxMouseDown = (index: number, e: React.MouseEvent) => {
+        const selected = selectedIndices.includes(index);
+        if (selected) {
+            setSelectedIndices((prev) => prev.filter((i) => i !== index));
+        } else {
+            setSelectedIndices((prev) => Array.from(new Set([...prev, index])));
+        }
+    };
+
     useEffect(() => {
         const handleMouseUp = () => {
             setIsDragging(false);
@@ -181,7 +191,12 @@ const ImageCarousel = ({
     }, []);
 
     return (
-        <div className="flex flex-col gap-4 p-4 border-t lg:border-t-0 lg:border-l w-full lg:w-[20%] min-h-0 select-none shrink-0">
+        <div
+            className={cn(
+                "flex flex-col gap-4 p-4 border-t w-full min-h-0 select-none shrink-0",
+                "lg:border-t-0 lg:border-l lg:w-[20%]",
+            )}
+        >
             <div className="flex flex-col gap-1">
                 <span className="text-gray-400 text-xs">
                     {selectedIndices.length} selected for batch tags
@@ -195,6 +210,7 @@ const ImageCarousel = ({
                         <span>Add Common Tags</span>
                     </div>
                     <TagSelector
+                        className="px-3 py-2"
                         tags={tags}
                         newTags={newTags}
                         removeTag={(tag: string) => {
@@ -251,7 +267,7 @@ const ImageCarousel = ({
                             <div
                                 onMouseDown={(e) => {
                                     e.stopPropagation();
-                                    handleMouseDown(idx, e);
+                                    handleCheckboxMouseDown(idx, e);
                                 }}
                                 className={`absolute top-1 left-1 w-5 h-5 rounded-md flex items-center justify-center backdrop-blur-sm transition-all ${
                                     isSelected
@@ -269,16 +285,16 @@ const ImageCarousel = ({
                                 />
                             </div>
 
-                            <div className="right-1 bottom-1 absolute bg-black/60 px-1 rounded text-[10px] text-secondary pointer-events-none">
+                            <div className="right-1 bottom-1 absolute bg-black/60 px-1 rounded text-[10px] pointer-events-none">
                                 {idx + 1}
                             </div>
 
-                            <div className="hidden bottom-1 left-0.5 absolute lg:flex bg-black/60 px-1 rounded max-w-[70%] text-[10px] text-secondary truncate pointer-events-none">
+                            <div className="hidden bottom-1 left-0.5 absolute lg:flex bg-black/60 px-1 rounded max-w-[70%] text-[10px] truncate pointer-events-none">
                                 {img.name}
                             </div>
 
                             {tagsCount > 0 && (
-                                <div className="hidden top-1 right-1 absolute lg:flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded text-[10px] text-secondary whitespace-nowrap pointer-events-none">
+                                <div className="hidden top-1 right-1 absolute lg:flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap pointer-events-none">
                                     <Tags size={12} />
                                     <span>{tagsCount}</span>
                                 </div>

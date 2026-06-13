@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"server/internal/env"
 	"server/internal/models"
+	"server/internal/storage"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -20,13 +21,15 @@ type Response gin.H
 type api struct {
 	router    *gin.Engine
 	models    *models.Models
+	storage   storage.Storage
 	jwtSecret string
 }
 
 func MustInitApi() *api {
-	models := models.MustInitStorageSqlite()
+	models := models.MustInitDB()
+	storage := storage.MustInitGarageClient()
 	models.Users.SetUserPrivilage(1, 1)
-	api := &api{models: models, jwtSecret: env.GetEnvString("JWT_SECRET")}
+	api := &api{models: models, storage: storage, jwtSecret: env.GetEnvString("JWT_SECRET")}
 	api.initRoutes()
 
 	return api

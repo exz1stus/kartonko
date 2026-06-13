@@ -1,23 +1,22 @@
 X Delete image query
-
-tags input hints
-FORBID TO ADD AUTO TAGS
-Show autotags automatically
-
-Upload image progress bar
-
-!!rework log loading
+X tags input hints
+X Upload image progress bar
 
 API SECURITY
 
-    - frontend captcha on upload
-    - limit request for unallowed api tokens
+Rewrite tgbot to use webhooks
+Fixed Nginx config
+Api token for frontend and telegram
 
 UPLOADING update webhook
 
 URL UPLOADING
 
-image UPDATE method
+Upload Form to use grid
+
+image UPDATE method - Photopea integration
+
+!!rework log loading
 
 reverse image search, find image origins, suggest replacing image with better resolution
 

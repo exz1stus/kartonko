@@ -1,16 +1,13 @@
 package image
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	"io"
-	"mime/multipart"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/disintegration/imaging"
@@ -23,6 +20,8 @@ type ImageError struct {
 
 var SupportedFormats = []string{"jpeg", "jpg", "png", "gif"}
 
+const THUMBNAILS_FORMAT = imaging.JPEG
+
 func MIMETypeToFormat(mimeType string) (string, error) {
 	parts := strings.SplitN(mimeType, "/", 2)
 	if len(parts) != 2 {
@@ -32,19 +31,34 @@ func MIMETypeToFormat(mimeType string) (string, error) {
 	return parts[1], nil
 }
 
-func GetDimensions(file *multipart.FileHeader) (uint, uint, error) {
-	f, err := file.Open()
-	if err != nil {
-		return 0, 0, err
+func imagingExtToString(ext imaging.Format) string {
+	switch ext {
+	case imaging.JPEG:
+		return "jpg"
+	case imaging.GIF:
+		return "gif"
+	case imaging.PNG:
+		return "png"
+	default:
+		return ""
 	}
-	defer f.Close()
+}
 
-	cfg, _, err := image.DecodeConfig(f)
-	if err != nil {
-		return 0, 0, err
-	}
+func ObjectKey(prefix string, hash string, ext string) string {
+	return prefix + "/" + hash + "." + ext
+}
 
-	return uint(cfg.Width), uint(cfg.Height), nil
+func ImageKey(hash string, ext string) string {
+	return ObjectKey("image", hash, ext)
+}
+
+func ThumbnailKey(hash string) string {
+	return ObjectKey("thumb", hash, imagingExtToString(THUMBNAILS_FORMAT))
+}
+
+func GetDimensionsBytes(data []byte) (uint, uint, error) {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+	return uint(cfg.Width), uint(cfg.Height), err
 }
 
 func IsFormatSupported(format string) bool {
@@ -56,99 +70,27 @@ func IsFormatSupported(format string) bool {
 	return false
 }
 
-func HashFile(file *multipart.FileHeader) (string, error) {
-	src, err := file.Open()
-	if err != nil {
-		return "", err
-	}
-	defer src.Close()
-
-	hasher := sha256.New()
-	if _, err := io.ReadAll(io.TeeReader(src, hasher)); err != nil {
-		return "", err
-	}
-	hash := fmt.Sprintf("%x", hasher.Sum(nil))
-
-	return hash, nil
+func HashBytes(data []byte) string {
+	sum := sha256.Sum256(data)
+	return fmt.Sprintf("%x", sum)
 }
 
-func CopyFile(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return err
-	}
-
-	return out.Sync()
-}
-
-func GenerateThumbnail(srcPath, dstPath string) error {
-	img, err := imaging.Open(srcPath, imaging.AutoOrientation(true))
-	if err != nil {
-		return err
-	}
-
-	dstDir := filepath.Dir(dstPath)
-	if _, err := os.Stat(dstDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
-			return err
-		}
-	}
-
-	ext := filepath.Ext(dstPath)
-	thumb := imaging.Fit(img, 320, 320, imaging.Lanczos)
-
+func GenerateThumbnail(data []byte, ext string) ([]byte, error) {
 	if ext == ".gif" {
-		return CopyFile(srcPath, dstPath)
+		return data, nil
 	}
-
-	opts := imaging.JPEGQuality(75)
-
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	thumb := imaging.Fit(img, 320, 320, imaging.Lanczos)
+	var buf bytes.Buffer
+	var opts imaging.EncodeOption = imaging.JPEGQuality(75)
 	if ext == ".png" {
 		opts = imaging.PNGCompressionLevel(75)
 	}
-
-	return imaging.Save(
-		thumb,
-		dstPath,
-		opts,
-	)
-}
-
-func DeleteImage(path string) error {
-	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("Failed deleting image %s: %w", path, err)
+	if err := imaging.Encode(&buf, thumb, THUMBNAILS_FORMAT, opts); err != nil {
+		return nil, err
 	}
-
-	return nil
-}
-
-func DeleteImagesWithName(name string, path string) error {
-	files, err := filepath.Glob(filepath.Join(path, name+"*"))
-	if err != nil {
-		return err
-	}
-
-	if len(files) == 0 {
-		return fmt.Errorf("image %s not found in path %s", name, path)
-	}
-
-	for _, file := range files {
-		if err := os.Remove(file); err != nil {
-			return fmt.Errorf("Failed deleting image %s: %w", file, err)
-		}
-	}
-
-	return nil
+	return buf.Bytes(), nil
 }

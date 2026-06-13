@@ -44,7 +44,7 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({
                 </label>
                 <TagSelector
                     className={
-                        "flex flex-wrap gap-1 border rounded-t-md w-full bg-neutral-900"
+                        "flex flex-wrap gap-1 border rounded-t-md w-full bg-neutral-900 px-3 py-2"
                     }
                     tags={item.tags}
                     removeTag={(tag: string) => {

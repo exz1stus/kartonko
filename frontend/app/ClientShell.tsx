@@ -6,6 +6,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { AlertDialogProvider } from "@/contexts/AlertDialogContext";
 import SideBar from "@/components/SideBar/SideBar";
+import Footer from "@/components/Footer";
 
 const ClientShell = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -15,14 +16,16 @@ const ClientShell = ({ children }: { children: React.ReactNode }) => {
                     <AlertDialogProvider>
                         <body
                             className="grid grid-rows-[auto_1fr] bg-image bg-surface-10 h-screen overflow-hidden"
-                            style={{
-                                backgroundImage: `url(${process.env.NEXT_PUBLIC_API_ORIGIN}/image/raw/bg)`,
-                            }}
+                            //TODO: Add bg image
+                            // style={{
+                            //     backgroundImage: `url(${process.env.NEXT_PUBLIC_API_ORIGIN}/image/raw/bg)`,
+                            // }}
                         >
                             <NavBar />
                             <ResizableGrid sidebar={<SideBar />}>
                                 {children}
                             </ResizableGrid>
+                            <Footer />
                             <Toaster />
                         </body>
                     </AlertDialogProvider>

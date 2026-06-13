@@ -17,7 +17,7 @@ const Scrollbar: React.FC<Props> = ({ children, className, ref }) => {
                 scrollbar-hover:scrollbar-thumb-primary-0
                 active:scrollbar-thumb-primary-0
                 scrollbar-track-transparent
-                ${className ?? ""}
+                ${className}
             `}
         >
             {children}

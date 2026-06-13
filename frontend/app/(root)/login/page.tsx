@@ -1,4 +1,5 @@
 "use client";
+import Loading from "@/components/Loading";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -17,7 +18,7 @@ export default function LoginPage() {
     }, [user, loading, login]);
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <Loading />;
     }
 
     if (user) {

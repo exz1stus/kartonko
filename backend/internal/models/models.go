@@ -1,11 +1,11 @@
 package models
 
 import (
-	"server/internal/env"
+	"os"
 
 	"fmt"
 
-	"github.com/glebarez/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -21,14 +21,22 @@ type Models struct {
 func Migrate(db *gorm.DB) {
 }
 
-func MustInitStorageSqlite() *Models {
-	dbPath := env.GetEnvString("DB_PATH")
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+func MustInitDB() *Models {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("DB_PORT"),
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic(fmt.Sprintf("failed to connect database: %v", err.Error()))
+		panic(fmt.Sprintf("failed to connect to postgres: %w", err))
 	}
+
 	Migrate(db)
-	err = db.AutoMigrate(&Image{}, &Tag{}, &User{}, &AuditEntry{}, &EntryType{})
+	err = db.AutoMigrate(&ImageMetadata{}, &Tag{}, &User{}, &AuditEntry{}, &EntryType{})
 	if err != nil {
 		panic(fmt.Sprintf("failed to auto migrate database: %v", err.Error()))
 	}

@@ -1,16 +1,21 @@
 "use client";
+import AuthGuard from "@/components/AuthGuard";
+import Loading from "@/components/Loading";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function MePage() {
-    const { user, login, loading } = useAuth();
+    const { user, loading } = useAuth();
     const router = useRouter();
     useEffect(() => {
-        if (loading) return;
-        if (!user) login();
+        if (loading || !user) return;
         else router.replace(`/user/${user?.username}`);
-    }, [user, loading, login]);
+    }, [user, loading, router]);
 
-    return <div>Loading...</div>;
+    return (
+        <AuthGuard>
+            <Loading />
+        </AuthGuard>
+    );
 }

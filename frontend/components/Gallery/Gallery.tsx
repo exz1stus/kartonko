@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import ImageCard from "@/components/Gallery/ImageCard";
 import { SearchQuery, ImageSearch, isQueryEmpty } from "./ImageSearch";
 import { useDebounce } from "use-debounce";
@@ -12,7 +12,8 @@ import useUpload from "@/hooks/useUpload";
 import { apiFetch } from "@/lib/apiFetch";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import { constructQueryString } from "@/lib/query";
-import { LucideLoader } from "lucide-react";
+import Loading from "../Loading";
+import { ImageIcon } from "lucide-react";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -25,7 +26,7 @@ const Gallery: React.FC<Props> = ({
     initReachedEnd,
     initialQuery,
 }) => {
-    const galleryHover = useHover<HTMLDivElement>();
+    const galleryRef = useRef<HTMLDivElement>(null);
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery);
     const [debouncedQuery] = useDebounce(searchQuery, 200);
 
@@ -66,10 +67,21 @@ const Gallery: React.FC<Props> = ({
         item: <ImageCard image={image} />,
     }));
 
+    const footer = (
+        <div className="flex gap-3 w-full">
+            <ImageIcon />
+            Images: {items.length}
+        </div>
+    );
+
     const content = (
-        <div ref={galleryHover.ref}>
-            <div className="flex justify-center">
-                <Masonry className="p-4" items={masonryItems} colWidth={200} />
+        <div ref={galleryRef}>
+            <div className="flex justify-center grow">
+                <Masonry
+                    className="p-4"
+                    items={masonryItems}
+                    colWidthPx={200}
+                />
             </div>
             {!reachedEnd && <div ref={sentinelRef} />}
             <div
@@ -77,10 +89,10 @@ const Gallery: React.FC<Props> = ({
                     reachedEnd && !loading && masonryItems.length > 0
                         ? "border-t"
                         : ""
-                } flex justify-center p-4`}
+                } flex  justify-center p-4`}
             >
-                {loading && <LucideLoader />}
-                {reachedEnd && <div>End of images</div>}
+                {loading && <Loading />}
+                {reachedEnd && footer}
             </div>
         </div>
     );

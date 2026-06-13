@@ -1,11 +1,12 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
-	"server/internal/env"
 	"server/internal/models"
 	"server/pkg/image"
 	"strconv"
@@ -28,7 +29,7 @@ type ImageResponse struct {
 
 const TimeFormat = time.RFC3339
 
-func ConstructImageResponse(img *models.Image) ImageResponse {
+func ConstructImageResponse(img *models.ImageMetadata) ImageResponse {
 	tags := models.TagsToStrings(img.Tags)
 
 	return ImageResponse{
@@ -106,15 +107,55 @@ func (api *api) GetImageByID(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /image/raw/{name} [get]
 func (api *api) GetRawImageByName(c *gin.Context) {
-	req := c.Param("name")
-	img, err := api.models.Images.GetImageByName(req)
+	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
+		return image.ImageKey(img.Hash, img.Format), "image/" + img.Format
+	})
+}
+
+// GetRawThumbnailByName godoc
+// @Summary Returns the thumbnail for an image by its unique name
+// @Tags Image
+// @Produce  application/octet-stream
+// @Param   name path string true "name"
+// @Failure 200 {object} map[string]interface{}
+// @Failure 404 {object} ErrorResponse
+// @Router /image/thumb/{name} [get]
+func (api *api) GetRawThumbnailByName(c *gin.Context) {
+	api.streamObject(c, func(_ *models.ImageMetadata) (string, string) {
+		// Format is unused; the thumbnail is always JPEG. The key derivation
+		// would normally need the format, but ThumbnailKey ignores it.
+		return image.ThumbnailKey(""), "image/jpeg"
+	})
+}
+
+// streamObject resolves an image by name and streams the object at the key
+// returned by keyFn through the response writer. It is storage-agnostic: the
+// key derivation is delegated to the caller, and bytes flow straight from
+// storage to the client with no intermediate buffering.
+func (api *api) streamObject(c *gin.Context, keyFn func(*models.ImageMetadata) (string, string)) {
+	name := c.Param("name")
+	img, err := api.models.Images.GetImageByName(name)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	c.Header("Content-Type", "image/"+img.Format)
-	c.File(env.GetEnvString("UPLOADS_PATH") + "/" + img.Filename + "." + img.Format)
+	key, defaultContentType := keyFn(img)
+	body, err := api.storage.Download(c, key)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		return
+	}
+	defer body.Close()
+
+	contentType := defaultContentType
+	if info, err := api.storage.Stat(c, key); err == nil && info.ContentType != "" {
+		contentType = info.ContentType
+	}
+	c.Header("Content-Type", contentType)
+	if _, err := io.Copy(c.Writer, body); err != nil {
+		// client likely disconnected; nothing else to do
+	}
 }
 
 // GetImagesByQuery godoc
@@ -175,15 +216,8 @@ func (api *api) DeleteImageByName(c *gin.Context) {
 		return
 	}
 
-	uploadPath := env.GetEnvString("UPLOADS_PATH")
-	if err := image.DeleteImagesWithName(img.Filename, uploadPath); err != nil {
+	if err := api.ImageDeletePipeline(c, img); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
-		return
-	}
-
-	thumbPath := env.GetEnvString("THUMBNAILS_PATH")
-	if err := image.DeleteImagesWithName(img.Filename, thumbPath); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image thumbnail: " + err.Error()})
 		return
 	}
 
@@ -220,15 +254,8 @@ func (api *api) DeleteImagesByQuery(c *gin.Context) {
 	}
 
 	for _, img := range deletedImages {
-		uploadPath := env.GetEnvString("UPLOADS_PATH")
-		if err := image.DeleteImagesWithName(img.Filename, uploadPath); err != nil {
+		if err := api.ImageDeletePipeline(c, &img); err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
-			return
-		}
-
-		thumbPath := env.GetEnvString("THUMBNAILS_PATH")
-		if err := image.DeleteImagesWithName(img.Filename, thumbPath); err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image thumbnail: " + err.Error()})
 			return
 		}
 
@@ -378,39 +405,51 @@ func isImageRequestValid(metadata *ImageMetadata, fileHeader *multipart.FileHead
 	return nil
 }
 
-func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fileHeader *multipart.FileHeader, user *models.User) (*models.Image, error) {
-	imgWidth, imgHeight, err := image.GetDimensions(fileHeader)
+// ImageUploadPipeline reads the upload once into memory, derives the hash from
+// the bytes, persists metadata in the DB, and finally streams both the
+// original and the thumbnail to storage. Bucket keys are derived from the
+// image hash so duplicates of the same content are deduplicated by the storage layer.
+func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fileHeader *multipart.FileHeader, user *models.User) (*models.ImageMetadata, error) {
+	f, err := fileHeader.Open()
 	if err != nil {
-		return nil, fmt.Errorf("error getting image dimensions: %v", err)
+		return nil, fmt.Errorf("error opening uploaded file: %v", err)
+	}
+	defer f.Close()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("error reading uploaded file: %v", err)
 	}
 
 	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
-
 	if err != nil {
 		return nil, fmt.Errorf("image format parsing error: %v", err)
 	}
 
-	img := api.models.Images.ConstructImage(metadata.Name, metadata.Tags, imgFormat, imgWidth, imgHeight, user.ID)
-
-	hash, err := image.HashFile(fileHeader)
+	imgWidth, imgHeight, err := image.GetDimensionsBytes(data)
 	if err != nil {
-		return nil, fmt.Errorf("error hashing the image: %v", err)
+		return nil, fmt.Errorf("error getting image dimensions: %v", err)
 	}
-	img.Hash = hash
+
+	img := api.models.Images.ConstructImage(metadata.Name, metadata.Tags, imgFormat, imgWidth, imgHeight, user.ID)
+	img.Hash = image.HashBytes(data)
 
 	if err := api.models.Images.AddImage(img); err != nil {
 		return nil, fmt.Errorf("error saving the image to database: %v", err)
 	}
 
-	fileHeader.Filename = img.Filename + "." + img.Format
-	uploadDst := env.GetEnvString("UPLOADS_PATH") + "/" + fileHeader.Filename
-	if err := c.SaveUploadedFile(fileHeader, uploadDst); err != nil {
-		return nil, fmt.Errorf("error saving the image file: %v", err)
+	imageKey := image.ImageKey(img.Hash, img.Format)
+	if err := api.storage.Upload(c, imageKey, bytes.NewReader(data), "image/"+img.Format); err != nil {
+		return nil, fmt.Errorf("error uploading image: %v", err)
 	}
 
-	thumbDst := env.GetEnvString("THUMBNAILS_PATH") + "/" + fileHeader.Filename
-	if err := image.GenerateThumbnail(uploadDst, thumbDst); err != nil {
+	thumb, err := image.GenerateThumbnail(data, "."+img.Format)
+	if err != nil {
 		return nil, fmt.Errorf("error generating thumbnail: %v", err)
+	}
+	thumbKey := image.ThumbnailKey(img.Hash)
+	if err := api.storage.Upload(c, thumbKey, bytes.NewReader(thumb), "image/jpeg"); err != nil {
+		return nil, fmt.Errorf("error uploading thumbnail: %v", err)
 	}
 
 	if err := api.models.Log.AddImageCreated(img, user); err != nil {
@@ -420,20 +459,20 @@ func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fil
 	return img, nil
 }
 
-func (api *api) ImageDeletePipeline(c *gin.Context, img *models.Image, user *models.User) error {
-	uploadPath := env.GetEnvString("UPLOADS_PATH")
-	if err := image.DeleteImagesWithName(img.Filename, uploadPath); err != nil {
+// ImageDeletePipeline removes the original and thumbnail objects from storage
+// using keys derived from the image hash. The DB row is expected to have been
+// removed by the caller.
+func (api *api) ImageDeletePipeline(c *gin.Context, img *models.ImageMetadata) error {
+	if img == nil {
+		return fmt.Errorf("image is nil")
+	}
+
+	if err := api.storage.Delete(c, image.ImageKey(img.Hash, img.Format)); err != nil {
 		return fmt.Errorf("failed deleting image: %v", err)
-
 	}
 
-	thumbPath := env.GetEnvString("THUMBNAILS_PATH")
-	if err := image.DeleteImagesWithName(img.Filename, thumbPath); err != nil {
+	if err := api.storage.Delete(c, image.ThumbnailKey(img.Hash)); err != nil {
 		return fmt.Errorf("failed deleting image thumbnail: %v", err)
-	}
-
-	if err := api.models.Log.AddImageDeleted(img, user); err != nil {
-		return fmt.Errorf("failed adding log entry: %v", err)
 	}
 
 	return nil
