@@ -7,10 +7,10 @@ services:
         env_file:
             - .env
         depends_on:
-        postgresql:
-            condition: service_healthy
-        redis:
-            condition: service_healthy
+            garage:
+                condition: service_healthy
+            postgresql:
+                condition: service_healthy
         volumes:
             - ./data/thumbs:/app/thumbs
             - ./data/images:/app/images
@@ -84,7 +84,12 @@ services:
             - garagedata:/var/lib/garage/data
         networks:
             - app-network
-
+        healthcheck:
+            test: ["CMD", "/garage", "-c", "/etc/garage.toml", "status"]
+            start_period: 5s
+            interval: 5s
+            timeout: 5s
+            retries: 5
     nginx:
         image: nginx:latest
         container_name: nginx
