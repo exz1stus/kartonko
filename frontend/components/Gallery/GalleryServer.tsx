@@ -1,3 +1,4 @@
+"use server";
 import ImageMetadata from "@/lib/image";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";

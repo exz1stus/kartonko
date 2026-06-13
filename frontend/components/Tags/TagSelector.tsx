@@ -217,10 +217,12 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                 <div
                     onClick={() => inputRef.current?.focus()}
                     className={cn(
-                        "inline-flex flex-wrap items-center gap-2 px-3 py-2 w-full text-lg",
+                        "border-invisible inline-flex flex-wrap items-center gap-2 border w-full text-lg",
                         className,
-                        active && "bg-neutral-900 border",
-                        !showList ? "rounded-md" : " rounded-t-md",
+                        active && "bg-neutral-900 ",
+                        !showList
+                            ? "rounded-md border-surface-10"
+                            : " rounded-t-md",
                     )}
                 >
                     <TagSpan

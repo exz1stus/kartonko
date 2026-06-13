@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
-import { Turnstile } from "@marsidev/react-turnstile";
-import React, { useState } from "react";
+import { Turnstile, TurnstileInstance } from "@marsidev/react-turnstile";
+import React, { useRef, useState } from "react";
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     onVerifySuccess: (token: string) => void;
@@ -17,17 +17,24 @@ const CaptchaButton = ({
     ...props
 }: Props) => {
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const turnstileRef = useRef<TurnstileInstance>(null);
+
+    const handleReset = () => {
+        setCaptchaToken(null);
+        turnstileRef.current?.reset();
+    };
     return (
         <div className="flex flex-col items-center gap-4">
             <Turnstile
+                ref={turnstileRef}
                 className={`${captchaToken && "hidden"} flex justify-center`}
                 siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
                 onSuccess={(token) => {
                     setCaptchaToken(token);
                     onVerifySuccess(token);
                 }}
-                onExpire={() => setCaptchaToken(null)}
-                onError={() => setCaptchaToken(null)}
+                onExpire={handleReset}
+                onError={handleReset}
             />
             {captchaToken && (
                 <button

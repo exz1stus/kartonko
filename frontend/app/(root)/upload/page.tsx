@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import CaptchaButton from "@/components/UploadImage/CaptchaButton";
 import { useShallow } from "zustand/react/shallow";
 import ImageCarousel from "@/components/UploadImage/ImageCarousel";
+import { cn } from "@/lib/utils";
 
 const UploadPage = () => {
     const {
@@ -44,7 +45,6 @@ const UploadPage = () => {
     const globalNewTags = useUploadStore(useShallow(selectGlobalNewTags));
 
     const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-        e.preventDefault();
         setImageIndex((prev) => {
             const next = prev + Math.sign(e.deltaY);
             return Math.min(Math.max(next, 0), storeImages.length - 1);
@@ -309,7 +309,12 @@ const UploadPage = () => {
                 <div className="flex lg:flex-row flex-col bg-surface-0/95 border border-surface-20 rounded-2xl w-full h-full max-h-full overflow-hidden glass">
                     {imageUrl ? (
                         <>
-                            <div className="relative flex flex-1 justify-center items-center bg-black/20 w-full lg:w-[60%] min-w-0 h-[20vh] lg:h-full min-h-0 overflow-hidden shrink-0">
+                            <div
+                                className={cn(
+                                    "relative flex flex-1 justify-center items-center bg-black/20 w-full min-w-0 h-[20vh] min-h-0 overflow-hidden shrink-0",
+                                    "lg:w-[60%] lg:h-full",
+                                )}
+                            >
                                 <Image
                                     src={imageUrl}
                                     alt={storeImages[imageIndex]?.name}

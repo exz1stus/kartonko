@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Image struct {
+type ImageMetadata struct {
 	gorm.Model
 	Hash     string `json:"hash" gorm:"not null"`
 	Filename string `json:"filename" gorm:"not null"`
@@ -43,10 +43,10 @@ func (model *ImageModel) applyFilters(db *gorm.DB, query ImageQuery) *gorm.DB {
 	}
 
 	if len(query.WithTags) > 0 {
-		db = db.Joins("JOIN image_tags ON image_tags.image_id = images.id").
+		db = db.Joins("JOIN image_tags ON image_tags.image_id = image_metadata.id").
 			Joins("JOIN tags ON tags.id = image_tags.tag_id").
 			Where("tags.name IN ?", query.WithTags).
-			Group("images.id").
+			Group("image_metadata.id").
 			Having("COUNT(DISTINCT tags.id) = ?", len(query.WithTags))
 	}
 
@@ -57,9 +57,9 @@ func (model *ImageModel) applyFilters(db *gorm.DB, query ImageQuery) *gorm.DB {
 	return db
 }
 
-func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]Image, error) {
-	var images []Image
-	db := model.db.Preload("Tags").Model(&Image{}).Order("images.id desc")
+func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]ImageMetadata, error) {
+	var images []ImageMetadata
+	db := model.db.Preload("Tags").Model(&ImageMetadata{}).Order("image_metadata.id desc")
 
 	db = model.applyFilters(db, query)
 
@@ -73,9 +73,10 @@ func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) (
 	return images, nil
 }
 
-func (model *ImageModel) ConstructImage(name string, tagsNames []string, format string, width uint, height uint, userID uint) *Image {
+// TODO: Rename to ConstructImageMetadata
+func (model *ImageModel) ConstructImage(name string, tagsNames []string, format string, width uint, height uint, userID uint) *ImageMetadata {
 	tags := ConstructTagsByNames(tagsNames)
-	image := &Image{
+	image := &ImageMetadata{
 		Filename: name,
 		Tags:     tags,
 		Format:   format,
@@ -87,7 +88,7 @@ func (model *ImageModel) ConstructImage(name string, tagsNames []string, format 
 	return image
 }
 
-func (model *ImageModel) AddImage(image *Image) error {
+func (model *ImageModel) AddImage(image *ImageMetadata) error {
 
 	if model.containsImageHash(image.Hash) {
 		return fmt.Errorf("image with hash %s already exists", image.Hash)
@@ -116,8 +117,8 @@ func (model *ImageModel) AddImage(image *Image) error {
 	return nil
 }
 
-func (model *ImageModel) GetImageByHash(hash string) (*Image, error) {
-	var img Image
+func (model *ImageModel) GetImageByHash(hash string) (*ImageMetadata, error) {
+	var img ImageMetadata
 	result := model.db.Preload("Tags").Where("hash = ?", hash).First(&img)
 
 	if result.Error != nil {
@@ -131,8 +132,8 @@ func (model *ImageModel) GetImageByHash(hash string) (*Image, error) {
 	return &img, nil
 }
 
-func (model *ImageModel) GetImageByID(id uint64) (*Image, error) {
-	var img Image
+func (model *ImageModel) GetImageByID(id uint64) (*ImageMetadata, error) {
+	var img ImageMetadata
 	result := model.db.Preload("Tags").Where("id = ?", id).First(&img)
 
 	if result.Error != nil {
@@ -146,8 +147,8 @@ func (model *ImageModel) GetImageByID(id uint64) (*Image, error) {
 	return &img, nil
 }
 
-func (model *ImageModel) GetImageByName(name string) (*Image, error) {
-	var img Image
+func (model *ImageModel) GetImageByName(name string) (*ImageMetadata, error) {
+	var img ImageMetadata
 	result := model.db.Preload("Tags").Where("filename = ?", name).First(&img)
 
 	if result.Error != nil {
@@ -161,9 +162,9 @@ func (model *ImageModel) GetImageByName(name string) (*Image, error) {
 	return &img, nil
 }
 
-func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {
-	var images []Image
-	result := model.db.Model(&Image{}).Preload("Tags").Order("id desc").Limit(limit).Offset(cursor).Find(&images)
+func (model *ImageModel) GetImages(cursor int, limit int) ([]ImageMetadata, error) {
+	var images []ImageMetadata
+	result := model.db.Model(&ImageMetadata{}).Preload("Tags").Order("id desc").Limit(limit).Offset(cursor).Find(&images)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to retrieve images: %w", result.Error)
 	}
@@ -171,9 +172,9 @@ func (model *ImageModel) GetImages(cursor int, limit int) ([]Image, error) {
 	return images, nil
 }
 
-func (model *ImageModel) DeleteImagesByQuery(query ImageQuery, userID uint) ([]Image, error) {
-	var images []Image
-	db := model.db.Preload("Tags").Model(&Image{}).Order("images.id desc")
+func (model *ImageModel) DeleteImagesByQuery(query ImageQuery, userID uint) ([]ImageMetadata, error) {
+	var images []ImageMetadata
+	db := model.db.Preload("Tags").Model(&ImageMetadata{}).Order("image_metadata.id desc")
 
 	db = model.applyFilters(db, query)
 
@@ -201,7 +202,7 @@ func (model *ImageModel) DeleteImagesByQuery(query ImageQuery, userID uint) ([]I
 	return images, nil
 }
 
-func (model *ImageModel) UserCanEdit(image *Image, userID uint) bool {
+func (model *ImageModel) UserCanEdit(image *ImageMetadata, userID uint) bool {
 	if image.UserID == userID {
 		return true
 	}
@@ -219,7 +220,7 @@ func (model *ImageModel) UserCanEdit(image *Image, userID uint) bool {
 	return true
 }
 
-func (model *ImageModel) DeleteImage(image *Image, userID uint) error {
+func (model *ImageModel) DeleteImage(image *ImageMetadata, userID uint) error {
 	if image == nil {
 		return fmt.Errorf("image is nil")
 	}
@@ -241,12 +242,12 @@ func (model *ImageModel) DeleteImage(image *Image, userID uint) error {
 
 func (model *ImageModel) containsImageHash(hash string) bool {
 	var count int64
-	model.db.Model(&Image{}).Where("hash = ?", hash).Count(&count)
+	model.db.Model(&ImageMetadata{}).Where("hash = ?", hash).Count(&count)
 	return count > 0
 }
 
 func (model *ImageModel) imageNameExists(name string) bool {
 	var count int64
-	model.db.Model(&Image{}).Where("filename = ?", name).Count(&count)
+	model.db.Model(&ImageMetadata{}).Where("filename = ?", name).Count(&count)
 	return count > 0
 }

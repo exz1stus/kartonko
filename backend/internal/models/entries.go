@@ -26,6 +26,6 @@ type AuditEntry struct {
 
 type ImageAddedEntry struct{}
 type ImageEditedEntry struct {
-	Old Image `json:"old"`
-	New Image `json:"new"`
+	Old ImageMetadata `json:"old"`
+	New ImageMetadata `json:"new"`
 }

@@ -5,13 +5,7 @@ import AuthGuard from "@/components/AuthGuard";
 import Scrollbar from "@/components/template/Scrollbar";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import { apiFetch } from "@/lib/apiFetch";
-import {
-    Loader,
-    Loader2,
-    Loader2Icon,
-    LoaderCircle,
-    LoaderPinwheel,
-} from "lucide-react";
+import { Loader } from "lucide-react";
 
 interface SearchLogEntriesQuery {}
 

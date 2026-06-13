@@ -12,7 +12,7 @@ interface Props {
     items: MasonryItem[];
     className?: string;
     maxCols?: number;
-    colWidth?: number;
+    colWidthPx?: number;
 }
 
 interface Column {
@@ -24,7 +24,7 @@ const Masonry: React.FC<Props> = ({
     items,
     className,
     maxCols = 0,
-    colWidth = 200,
+    colWidthPx = 200,
 }: Props) => {
     const [columns, setColumns] = useState<Column[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -61,7 +61,7 @@ const Masonry: React.FC<Props> = ({
         const observer = new ResizeObserver((entries) => {
             const width = entries[0].contentRect.width;
             if (!width) return;
-            const cols = Math.floor(width / colWidth);
+            const cols = Math.floor(width / colWidthPx);
             const clamped = maxCols === 0 ? cols : Math.min(cols, maxCols);
             const finalCount = Math.min(
                 Math.max(1, clamped),
@@ -72,16 +72,16 @@ const Masonry: React.FC<Props> = ({
 
         if (containerRef.current) observer.observe(containerRef.current);
         return () => observer.disconnect();
-    }, [childrenArray, colWidth, maxCols]);
+    }, [childrenArray, colWidthPx, maxCols]);
 
     const maxWidthStyle =
-        maxCols > 0 ? `${maxCols * colWidth + (maxCols - 1)}px` : "100%";
+        maxCols > 0 ? `${(maxCols + 1) * colWidthPx}px` : "100%";
 
     return (
         <div
             ref={containerRef}
             className={ec(
-                "flex-row justify-center flex gap-4 w-full",
+                "flex-row justify-center flex gap-4 w-full h-full",
                 className,
             )}
             style={{
@@ -93,7 +93,7 @@ const Masonry: React.FC<Props> = ({
                     key={i}
                     className={`flex flex-col gap-5 lg:max-w-[25vw]`}
                     style={{
-                        width: `${colWidth}px`,
+                        width: `${colWidthPx}px`,
                     }}
                 >
                     {column.items.map((item) => (

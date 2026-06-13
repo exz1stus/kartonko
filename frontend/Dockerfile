@@ -1,12 +1,8 @@
-# Install dependencies only for building
 FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm install
-
-ARG NEXT_PUBLIC_API_ORIGIN
-ENV NEXT_PUBLIC_API_ORIGIN=$NEXT_PUBLIC_API_ORIGIN
 
 # Copy all source files and build
 COPY . .
@@ -23,7 +19,6 @@ ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 RUN npm run build
 
-# Production image
 FROM node:20-alpine AS runner
 WORKDIR /app
 

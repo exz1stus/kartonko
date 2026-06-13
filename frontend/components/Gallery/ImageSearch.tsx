@@ -1,10 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TagSelector, { TagSelectorRef } from "@/components/Tags/TagSelector";
 import { useHover } from "@/contexts/HoverContex";
-import useTags from "@/components/Tags/useTags";
 import { SearchQuery } from "@/lib/query";
 import NameField from "../NameField";
+import { useDebouncedCallback } from "use-debounce";
 
 export function isQueryEmpty(query: SearchQuery) {
     return query.nameContains === "" && query.withTags?.length === 0;
@@ -37,27 +37,34 @@ const ImageSearch: React.FC<Props> = ({
     const [insertingMode, setInsertingMode] = useState<InsertingMode>(
         InsertingMode.NONE,
     );
-    const { ref, isHovered } = useHover<HTMLDivElement>();
-
-    const hovered = isHovered();
-
+    const ref = useRef<HTMLDivElement>(null);
     const tagSelectorRef = React.useRef<TagSelectorRef>(null);
 
-    const { tags, setTags, removeTag } = useTags(initialQuery?.withTags);
+    const [tags, setTags] = useState<string[]>(initialQuery?.withTags || []);
     const [name, setName] = useState(initialQuery?.nameContains ?? "");
 
     const userID = initialQuery?.userID;
 
+    const removeTag = (tag: string) => {
+        setTags(tags.filter((t) => t !== tag));
+    };
+
+    const debouncedQuery = useDebouncedCallback(
+        () =>
+            onQueryChange({
+                nameContains: name,
+                withTags: tags,
+                userID,
+            }),
+        200,
+    );
+
     useEffect(() => {
-        onQueryChange({
-            nameContains: name,
-            withTags: tags,
-            userID,
-        });
-    }, [name, tags, userID]);
+        debouncedQuery();
+    }, [debouncedQuery, name, tags, userID]);
 
     const onNameKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Esc") {
+        if (e.key === "Escape") {
             e.preventDefault();
             setName("");
         }
@@ -65,7 +72,7 @@ const ImageSearch: React.FC<Props> = ({
 
     return (
         <div ref={ref} className={className}>
-            <div className="items-center gap-x-4 gap-y-3 grid grid-cols-[auto_1fr]">
+            <div className="items-center gap-x-4 gap-y-1 grid grid-cols-[auto_1fr]">
                 <span
                     className={`px-3 py-1 text-sm font-medium border rounded-full transition-colors select-none text-center
                 ${
@@ -78,7 +85,7 @@ const ImageSearch: React.FC<Props> = ({
                 </span>
                 <div className="flex items-center gap-2">
                     <NameField
-                        className="z-1 relative bg-transparent border-none outline-none w-full text-lg"
+                        className="z-1 relative bg-transparent px-3 py-1 border-none outline-none w-full text-lg"
                         value={name}
                         onChangeSanitized={(value: string) => setName(value)}
                         onKeyDown={(e) => onNameKeyDown(e)}
@@ -107,6 +114,7 @@ const ImageSearch: React.FC<Props> = ({
                         removeTag={removeTag}
                         onFocus={() => setInsertingMode(InsertingMode.TAG)}
                         onBlur={() => setInsertingMode(InsertingMode.NONE)}
+                        className="px-3 py-1"
                     />
                 </div>
             </div>

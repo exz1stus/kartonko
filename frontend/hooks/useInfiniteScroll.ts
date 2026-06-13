@@ -70,6 +70,13 @@ export default function useInfiniteScroll<TQuery, TItem>({
         [fetchFn],
     );
 
+    // Sentinel — place <div ref={sentinelRef} /> at the bottom of your list,
+    // inside the scrollable container. That's all you need.
+    const { ref: sentinelRef, inView } = useInView({
+        threshold: 0,
+        rootMargin: "400px",
+    });
+
     // Reset and re-fetch when query changes
     useEffect(() => {
         if (!isQueryEmpty(query)) hasQueryChangedFromInit.current = true;
@@ -93,13 +100,6 @@ export default function useInfiniteScroll<TQuery, TItem>({
         fetchItems(query, initRequestSize);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // Sentinel — place <div ref={sentinelRef} /> at the bottom of your list,
-    // inside the scrollable container. That's all you need.
-    const { ref: sentinelRef, inView } = useInView({
-        threshold: 0,
-        rootMargin: "400px",
-    });
 
     // Fires when sentinel enters view (user scrolled down, or content doesn't fill screen)
     useEffect(() => {
