@@ -121,10 +121,10 @@ func (api *api) GetRawImageByName(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Router /image/thumb/{name} [get]
 func (api *api) GetRawThumbnailByName(c *gin.Context) {
-	api.streamObject(c, func(_ *models.ImageMetadata) (string, string) {
+	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
 		// Format is unused; the thumbnail is always JPEG. The key derivation
 		// would normally need the format, but ThumbnailKey ignores it.
-		return image.ThumbnailKey(""), "image/jpeg"
+		return image.ThumbnailKey(img.Hash), "image/jp`eg"
 	})
 }
 

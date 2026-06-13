@@ -40,7 +40,7 @@ func (api *api) initRoutes() {
 	r.GET("/image/id/:id", api.GetImageByID)
 	r.GET("/image/hash/:hash", api.GetImageByHash)
 	r.GET("/image/raw/:name", api.GetRawImageByName)
-	r.Static("/image/thumb", env.GetEnvString("THUMBNAILS_PATH"))
+	r.GET("/image/thumb/:name", api.GetRawThumbnailByName)
 
 	r.GET("/image", api.GetImagesByQuery)
 	r.GET("/log", api.GetAuditLogEntries)
