@@ -10,7 +10,6 @@ services:
             - ./data/db:/app/db
             - ./data/thumbs:/app/thumbs
             - ./data/images:/app/images
-
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
             interval: 5s
@@ -54,6 +53,7 @@ services:
             - app-network
     nginx:
         image: nginx:latest
+        container_name: nginx
         ports:
             - "80:80"
             - "443:443"
@@ -62,9 +62,9 @@ services:
         networks:
             - public
             - app-network
+        restart: unless-stopped
 networks:
     public:
         driver: bridge
     app-network:
         driver: bridge
-        internal: true
