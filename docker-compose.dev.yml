@@ -4,6 +4,11 @@ services:
             context: ./backend
             dockerfile: Dockerfile.dev
         container_name: backend
+        depends_on:
+            garage:
+                condition: service_healthy
+            postgresql:
+                condition: service_healthy
         env_file:
             - .env
         volumes:
@@ -81,6 +86,12 @@ services:
             - garagedata:/var/lib/garage/data
         networks:
             - app-network
+        healthcheck:
+            test: ["CMD", "/garage", "-c", "/etc/garage.toml", "status"]
+            start_period: 5s
+            interval: 5s
+            timeout: 5s
+            retries: 5
 
     nginx:
         image: nginx:latest
