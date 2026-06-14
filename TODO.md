@@ -1,28 +1,36 @@
 X Delete image query
 X tags input hints
 X Upload image progress bar
+X Fixed Nginx config
+X Upload Form to use grid
+From filename to hash identification, optinal names
 
 API SECURITY
 
-Rewrite tgbot to use webhooks
-Fixed Nginx config
 Api token for frontend and telegram
+Remove limits for moderator users
 
-UPLOADING update webhook
+Rewrite tgbot to use webhooks
 
+Boards system
 URL UPLOADING
 
-Upload Form to use grid
+Fix captcha not reloading on error upload
 
 image UPDATE method - Photopea integration
 
 !!rework log loading
 
+UPLOADING update webhook
+
 reverse image search, find image origins, suggest replacing image with better resolution
+Saucenao
 
 CRAWLING from selected resources: telegram groups, discord active channels
 
 image surfing page, add image sources
+
+dynamic favicon and title
 
 BOGDAN SAVYTSKIY
 PERSPERTIVA WYLAZIAET

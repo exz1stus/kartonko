@@ -7,7 +7,7 @@ import Scrollbar from "@/components/template/Scrollbar";
 import DragDropZone from "@/components/UploadImage/DragDropZone";
 import { useHover } from "@/contexts/HoverContex";
 import Masonry, { MasonryItem } from "@/components/template/Masonry";
-import ImageMetadata from "@/lib/image";
+import ImageMetadata from "@/lib/image/image";
 import useUpload from "@/hooks/useUpload";
 import { apiFetch } from "@/lib/apiFetch";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";

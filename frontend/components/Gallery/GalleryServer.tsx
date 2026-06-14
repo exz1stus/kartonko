@@ -1,5 +1,5 @@
 "use server";
-import ImageMetadata from "@/lib/image";
+import ImageMetadata from "@/lib/image/image";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
 import { serverFetch } from "@/lib/serverFetch";

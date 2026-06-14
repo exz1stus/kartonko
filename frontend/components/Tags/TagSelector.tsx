@@ -24,6 +24,7 @@ interface Props {
     onNewTagsUpdate?: (tags: string[]) => void;
 
     className?: string;
+    inputStyle?: string;
     placeholder?: string;
     onFocus?: () => void;
     onBlur?: () => void;
@@ -46,6 +47,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             onBlur,
             placeholder = "Add a tag...",
             className,
+            inputStyle,
         },
         ref,
     ) => {
@@ -101,7 +103,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
 
         const tryRemove = () => {
             if (query.length !== 0) {
-                setQuery((prev) => prev.slice(0, prev.length - 1));
+                // setQuery((prev) => prev.slice(0, prev.length - 1));
                 return;
             }
 
@@ -164,8 +166,6 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
 
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (!active) return;
-            // const allowed = /^[a-z0-9\s]+$/i;
-            // if (!allowed.test(e.key)) return;
             const complete = "Tab";
             const comma = ",";
             const remove = "Backspace";
@@ -175,12 +175,12 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
 
             const keys = [complete, remove, previous, next, cancel, comma];
 
-            if (keys.includes(e.key)) e.preventDefault();
-            else disableAutocomplete.current = false;
+            if (!keys.includes(e.key)) disableAutocomplete.current = false;
 
             switch (e.key) {
                 case comma:
                 case complete:
+                    e.preventDefault();
                     if (currentHint !== "") {
                         saveTag();
                         setQuery("");
@@ -189,18 +189,28 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                     }
                     break;
                 case remove:
-                    if (e.ctrlKey || e.metaKey) {
-                        if (query.length === 0) removeLast();
-                        else setQuery("");
-                    } else tryRemove();
+                    if (query.length === 0) {
+                        e.preventDefault();
+                        if (e.ctrlKey || e.metaKey) {
+                            removeLast();
+                        } else {
+                            tryRemove();
+                        }
+                    } else if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        setQuery("");
+                    }
                     break;
                 case previous:
+                    e.preventDefault();
                     selectPrevious();
                     break;
                 case next:
+                    e.preventDefault();
                     selectNext();
                     break;
                 case cancel:
+                    e.preventDefault();
                     setQuery("");
                     break;
                 default:
@@ -213,12 +223,12 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             (hints.length > 0 || remainingGlobalTags.length > 0 || queryNew);
 
         return (
-            <div className="relative w-full">
+            <div className={cn("relative w-full", className)}>
                 <div
                     onClick={() => inputRef.current?.focus()}
                     className={cn(
                         "border-invisible inline-flex flex-wrap items-center gap-2 border w-full text-lg",
-                        className,
+                        inputStyle,
                         active && "bg-neutral-900 ",
                         !showList
                             ? "rounded-md border-surface-10"

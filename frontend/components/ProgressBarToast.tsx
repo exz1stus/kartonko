@@ -12,7 +12,6 @@ const ProgressBarToast = ({ value, currentName }: Props) => {
             <div className="flex font-medium text-xs">
                 <span className="max-w-45 truncate">{currentName}</span>
             </div>
-
             <Progress value={value} className="h-1" />
         </div>
     );
