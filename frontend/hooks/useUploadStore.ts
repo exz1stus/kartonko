@@ -29,6 +29,9 @@ export const selectGlobalNewTags = (state: {
     return Array.from(new Set(allTags));
 };
 
+export const getUploadSize = (state: { items: UploadItem[] }): number =>
+    state.items.reduce((total, item) => total + item.file.size, 0);
+
 const useUploadStore = create<UploadStore>((set, get) => ({
     items: [],
     hasFile: (file) => {
