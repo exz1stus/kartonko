@@ -1,4 +1,4 @@
-import ImageMetadata from "@/lib/image";
+import ImageMetadata from "@/lib/image/image";
 import ImageContent from "@/components/ImageContent";
 import { notFound } from "next/navigation";
 import { serverFetch } from "@/lib/serverFetch";

@@ -43,7 +43,7 @@ func (model *ImageModel) applyFilters(db *gorm.DB, query ImageQuery) *gorm.DB {
 	}
 
 	if len(query.WithTags) > 0 {
-		db = db.Joins("JOIN image_tags ON image_tags.image_id = image_metadata.id").
+		db = db.Joins("JOIN image_tags ON image_tags.image_metadata_id = image_metadata.id").
 			Joins("JOIN tags ON tags.id = image_tags.tag_id").
 			Where("tags.name IN ?", query.WithTags).
 			Group("image_metadata.id").
@@ -108,10 +108,14 @@ func (model *ImageModel) AddImage(image *ImageMetadata) error {
 		return fmt.Errorf("failed to retrieve tags: %w", err)
 	}
 
-	image.Tags = dbTags
+	image.Tags = nil
 
 	if err := model.db.Create(image).Error; err != nil {
 		return fmt.Errorf("failed to insert image: %w", err)
+	}
+
+	if err := model.db.Model(image).Association("Tags").Append(dbTags); err != nil {
+		return fmt.Errorf("failed to associate tags with image: %w", err)
 	}
 
 	return nil

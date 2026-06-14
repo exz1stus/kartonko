@@ -18,6 +18,7 @@ import (
 
 type ImageResponse struct {
 	ID       uint
+	Hash     string   `json:"hash"`
 	Filename string   `json:"filename"`
 	Tags     []string `json:"tags"`
 	Format   string   `json:"format"`
@@ -34,6 +35,7 @@ func ConstructImageResponse(img *models.ImageMetadata) ImageResponse {
 
 	return ImageResponse{
 		ID:       img.ID,
+		Hash:     img.Hash,
 		Filename: img.Filename,
 		Tags:     tags,
 		Format:   img.Format,

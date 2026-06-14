@@ -1,5 +1,5 @@
 "use client";
-import ImageMetadata from "@/lib/image";
+import ImageMetadata from "@/lib/image/image";
 import { getImageMetadataById } from "@/lib/image/image.client";
 import { LogEntryData, ParseLogData, ImageEntryData } from "@/lib/log";
 import Link from "next/link";

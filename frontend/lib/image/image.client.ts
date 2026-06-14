@@ -1,5 +1,5 @@
 import { apiFetch } from "../apiFetch";
-import ImageMetadata from "../image";
+import ImageMetadata from "./image";
 
 export async function getImageMetadataByName(
     name: string,

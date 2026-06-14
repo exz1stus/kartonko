@@ -13,9 +13,6 @@ services:
             - .env
         volumes:
             - ./backend:/app
-            - ./data/db:/app/db
-            - ./data/thumbs:/app/thumbs
-            - ./data/images:/app/images
         command: air -c .air.toml
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -100,13 +97,28 @@ services:
             - "80:80"
             - "3000:3000"
         volumes:
-            - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
+            - ./nginx.dev.conf:/etc/nginx/nginx.conf:roP
         networks:
             - public
             - app-network
         depends_on:
-            - backend
-            - frontend
+            frontend:
+                condition: service_healthy
+
+        # Dev
+
+    pgadmin:
+        image: dpage/pgadmin4
+        container_name: pgadmin_gui
+        environment:
+            PGADMIN_DEFAULT_EMAIL: admin@admin.com
+            PGADMIN_DEFAULT_PASSWORD: adminpassword
+        ports:
+            - "5050:80"
+        depends_on:
+            - postgresql
+        networks:
+            - app-network
 
 volumes:
     pgdata:

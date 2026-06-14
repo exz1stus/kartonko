@@ -1,5 +1,6 @@
 export default interface ImageMetadata {
     filename: string;
+    hash: string;
     tags: string[];
     width: number;
     height: number;

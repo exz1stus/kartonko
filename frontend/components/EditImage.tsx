@@ -1,5 +1,5 @@
 "use client";
-import ImageMetadata from "@/lib/image";
+import ImageMetadata from "@/lib/image/image";
 import { Delete, Trash, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { useCallback } from "react";
