@@ -1,4 +1,4 @@
-import ImageMetadata from "@/lib/image";
+import ImageMetadata from "@/lib/image/image";
 import Image from "next/image";
 import React from "react";
 import TagSpan from "./Tags/TagSpan";
@@ -46,6 +46,9 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                     <div className="flex flex-col gap-5 p-5 rounded-2xl min-w-0">
                         <span className="text-3xl">
                             {image.filename}.{image.format}
+                        </span>
+                        <span className="text-l text-secondary shrink-0">
+                            {image.hash}
                         </span>
                         <span className="text-l">
                             <span>Resolution: </span>
