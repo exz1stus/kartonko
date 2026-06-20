@@ -50,7 +50,7 @@ func (model *TagModel) AddTagsBatch(names []string) ([]Tag, error) {
 	return tags, nil
 }
 
-func (model *TagModel) CheckTags(tags []Tag) error {
+func (model *TagModel) checkForAllowedTags(db *gorm.DB, tags []Tag) error {
 	if len(tags) == 0 || len(tags) == 1 && tags[0].Name == "" {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (model *TagModel) CheckTags(tags []Tag) error {
 	}
 
 	var retrievedTags []Tag
-	result := model.db.Model(&Tag{}).Where("name IN ?", tagNames).Find(&retrievedTags)
+	result := db.Model(&Tag{}).Where("name IN ?", tagNames).Find(&retrievedTags)
 	if result.Error != nil {
 		return fmt.Errorf("failed to check tags in database: %v", result.Error)
 	}

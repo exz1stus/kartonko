@@ -98,7 +98,7 @@ type TagEntryData struct {
 	Name string `json:"name"`
 }
 
-func (model *AuditLog) AddImageCreated(image *ImageMetadata, user *User) error {
+func (model *AuditLog) AddImageCreated(db *gorm.DB, image *ImageMetadata, user *User) error {
 	data, err := json.Marshal(&ImageEntryData{Name: image.Filename})
 	if err != nil {
 		return fmt.Errorf("failed to marshal image log entry data: %w", err)
@@ -106,7 +106,7 @@ func (model *AuditLog) AddImageCreated(image *ImageMetadata, user *User) error {
 	return model.addEntry("image_created", user.Model.ID, image.ID, datatypes.JSON(data))
 }
 
-func (model *AuditLog) AddImageDeleted(image *ImageMetadata, user *User) error {
+func (model *AuditLog) AddImageDeleted(db *gorm.DB, image *ImageMetadata, user *User) error {
 	data, err := json.Marshal(&ImageEntryData{Name: image.Filename})
 	if err != nil {
 		return fmt.Errorf("failed to marshal image log entry data: %w", err)

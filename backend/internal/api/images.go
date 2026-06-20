@@ -17,7 +17,7 @@ import (
 )
 
 type ImageResponse struct {
-	ID       uint
+	ID       uint     `json:"id"`
 	Hash     string   `json:"hash"`
 	Filename string   `json:"filename"`
 	Tags     []string `json:"tags"`
@@ -175,23 +175,26 @@ func (api *api) streamObject(c *gin.Context, keyFn func(*models.ImageMetadata) (
 // @Router /images [get]
 func (api *api) GetImagesByQuery(c *gin.Context) {
 	cursor, limit, err := parseCursorLimit(c)
-
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	query, err := api.parseQueryFromContext(c)
-
-	images, err := api.models.Images.SearchImages(*query, cursor, limit)
-	response := make([]ImageResponse, len(images))
-	for i, img := range images {
-		response[i] = ConstructImageResponse(&img)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
 	}
 
+	images, err := api.models.Images.SearchImages(*query, cursor, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
+	}
+
+	response := make([]ImageResponse, len(images))
+	for i, img := range images {
+		response[i] = ConstructImageResponse(&img)
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -213,18 +216,37 @@ func (api *api) DeleteImageByName(c *gin.Context) {
 		return
 	}
 
-	if err = api.models.Images.DeleteImage(img, user.ID); err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + err.Error()})
+	tx := api.models.Images.Db.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("failed to start database transaction: %v", tx.Error)})
 		return
 	}
 
-	if err := api.ImageDeletePipeline(c, img); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
+	var txErr error
+	defer func() {
+		if txErr != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if txErr = api.models.Images.DeleteImage(tx, img, user.ID); txErr != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
 		return
 	}
 
-	if err = api.models.Log.AddImageDeleted(img, user); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + err.Error()})
+	if txErr = api.ImageDeletePipeline(c, img); txErr != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
+		return
+	}
+
+	if txErr = api.models.Log.AddImageDeleted(tx, img, user); txErr != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + txErr.Error()})
+		return
+	}
+
+	if txErr = tx.Commit().Error; txErr != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to commit transaction: " + txErr.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "image deleted"})
@@ -243,27 +265,47 @@ func (api *api) DeleteImagesByQuery(c *gin.Context) {
 		return
 	}
 
-	deletedImages, err := api.models.Images.DeleteImagesByQuery(*query, user.ID)
+	tx := api.models.Images.Db.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("failed to start database transaction: %v", tx.Error)})
+		return
+	}
 
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + err.Error()})
+	var txErr error
+	defer func() {
+		if txErr != nil {
+			tx.Rollback()
+		}
+	}()
+
+	deletedImages, txErr := api.models.Images.DeleteImagesByQuery(tx, *query, user.ID)
+	if txErr != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
+		return
+	}
+
+	for i := range deletedImages {
+		img := &deletedImages[i]
+
+		if txErr = api.ImageDeletePipeline(c, img); txErr != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
+			return
+		}
+
+		if txErr = api.models.Log.AddImageDeleted(tx, img, user); txErr != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + txErr.Error()})
+			return
+		}
+	}
+
+	if txErr = tx.Commit().Error; txErr != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("failed to commit transaction: %v", txErr)})
 		return
 	}
 
 	response := make([]ImageResponse, len(deletedImages))
 	for i, img := range deletedImages {
 		response[i] = ConstructImageResponse(&img)
-	}
-
-	for _, img := range deletedImages {
-		if err := api.ImageDeletePipeline(c, &img); err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + err.Error()})
-			return
-		}
-
-		if err = api.models.Log.AddImageDeleted(&img, user); err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + err.Error()})
-		}
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -302,6 +344,7 @@ func (api *api) PostImage(c *gin.Context) {
 
 	if err := isImageRequestValid(&metadata, fileHeader); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("%v", err)})
+		return
 	}
 
 	user, err := api.GetUserFromContext(c)
@@ -341,12 +384,14 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid form data: %v", err.Error())})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid form data: %v", err)})
+		return
 	}
 
 	files := form.File["files"]
 	if files == nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("no files provided in form")})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "no files provided in form"})
+		return
 	}
 
 	user, err := api.GetUserFromContext(c)
@@ -374,7 +419,6 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 		}
 
 		img, err := api.ImageUploadPipeline(c, &metadata, files[i], user)
-
 		if err != nil {
 			response.Failures = append(response.Failures, image.ImageError{
 				Name: metadata.Name, Error: err.Error(),
@@ -394,24 +438,21 @@ func isImageRequestValid(metadata *ImageMetadata, fileHeader *multipart.FileHead
 	}
 
 	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
-
 	if err != nil {
 		return fmt.Errorf("image format parsing error: %v", err)
 	}
 
-	//TODO fix . + format
-	if err != nil || !image.IsFormatSupported(imgFormat) {
-		return fmt.Errorf("unsoported image format: %s", imgFormat)
+	if !image.IsFormatSupported(imgFormat) {
+		return fmt.Errorf("unsupported image format: %s", imgFormat)
 	}
 
 	return nil
 }
 
-// ImageUploadPipeline reads the upload once into memory, derives the hash from
-// the bytes, persists metadata in the DB, and finally streams both the
-// original and the thumbnail to storage. Bucket keys are derived from the
-// image hash so duplicates of the same content are deduplicated by the storage layer.
-func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fileHeader *multipart.FileHeader, user *models.User) (*models.ImageMetadata, error) {
+// ImageUploadPipeline persists image bytes + metadata. It uses named
+// returns so the deferred rollback can see every error path without
+// any `:=` shadowing bugs.
+func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fileHeader *multipart.FileHeader, user *models.User) (img *models.ImageMetadata, err error) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return nil, fmt.Errorf("error opening uploaded file: %v", err)
@@ -433,37 +474,55 @@ func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fil
 		return nil, fmt.Errorf("error getting image dimensions: %v", err)
 	}
 
-	img := api.models.Images.ConstructImage(metadata.Name, metadata.Tags, imgFormat, imgWidth, imgHeight, user.ID)
+	img = api.models.Images.ConstructImageMetadata(metadata.Name, metadata.Tags, imgFormat, imgWidth, imgHeight, user.ID)
 	img.Hash = image.HashBytes(data)
 
-	if err := api.models.Images.AddImage(img); err != nil {
-		return nil, fmt.Errorf("error saving the image to database: %v", err)
+	tx := api.models.Images.Db.Begin()
+	if tx.Error != nil {
+		return nil, fmt.Errorf("failed to start database transaction: %v", tx.Error)
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err = api.models.Images.AddImage(tx, img); err != nil {
+		return nil, fmt.Errorf("error saving the image to database: %w", err)
+	}
+
+	if err = api.models.Log.AddImageCreated(tx, img, user); err != nil {
+		return nil, fmt.Errorf("failed to log image creation: %w", err)
 	}
 
 	imageKey := image.ImageKey(img.Hash, img.Format)
-	if err := api.storage.Upload(c, imageKey, bytes.NewReader(data), "image/"+img.Format); err != nil {
-		return nil, fmt.Errorf("error uploading image: %v", err)
+	if err = api.storage.Upload(c, imageKey, bytes.NewReader(data), "image/"+img.Format); err != nil {
+		return nil, fmt.Errorf("error uploading image: %w", err)
 	}
 
-	thumb, err := image.GenerateThumbnail(data, "."+img.Format)
+	var thumb []byte
+	thumb, err = image.GenerateThumbnail(data, "."+img.Format)
 	if err != nil {
-		return nil, fmt.Errorf("error generating thumbnail: %v", err)
-	}
-	thumbKey := image.ThumbnailKey(img.Hash)
-	if err := api.storage.Upload(c, thumbKey, bytes.NewReader(thumb), "image/jpeg"); err != nil {
-		return nil, fmt.Errorf("error uploading thumbnail: %v", err)
+		_ = api.storage.Delete(c, imageKey)
+		return nil, fmt.Errorf("error generating thumbnail: %w", err)
 	}
 
-	if err := api.models.Log.AddImageCreated(img, user); err != nil {
-		return nil, fmt.Errorf("failed to log image creation: %v", err)
+	thumbKey := image.ThumbnailKey(img.Hash)
+	if err = api.storage.Upload(c, thumbKey, bytes.NewReader(thumb), "image/jpeg"); err != nil {
+		_ = api.storage.Delete(c, imageKey)
+		return nil, fmt.Errorf("error uploading thumbnail: %w", err)
+	}
+
+	if err = tx.Commit().Error; err != nil {
+		_ = api.storage.Delete(c, imageKey)
+		_ = api.storage.Delete(c, thumbKey)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return img, nil
 }
 
-// ImageDeletePipeline removes the original and thumbnail objects from storage
-// using keys derived from the image hash. The DB row is expected to have been
-// removed by the caller.
 func (api *api) ImageDeletePipeline(c *gin.Context, img *models.ImageMetadata) error {
 	if img == nil {
 		return fmt.Errorf("image is nil")
