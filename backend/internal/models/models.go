@@ -49,7 +49,7 @@ func MustInitDB() *Models {
 		Users:  users,
 		Log:    log,
 		Tags:   tags,
-		Images: &ImageModel{Tags: tags, db: db},
+		Images: &ImageModel{Tags: tags, Db: db},
 	}
 
 	return models

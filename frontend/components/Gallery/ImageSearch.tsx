@@ -114,7 +114,6 @@ const ImageSearch: React.FC<Props> = ({
                         removeTag={removeTag}
                         onFocus={() => setInsertingMode(InsertingMode.TAG)}
                         onBlur={() => setInsertingMode(InsertingMode.NONE)}
-                        className="px-3 py-1"
                     />
                 </div>
             </div>

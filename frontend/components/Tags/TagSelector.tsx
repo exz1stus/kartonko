@@ -47,7 +47,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             onBlur,
             placeholder = "Add a tag...",
             className,
-            inputStyle,
+            inputStyle = "px-3 py-1",
         },
         ref,
     ) => {

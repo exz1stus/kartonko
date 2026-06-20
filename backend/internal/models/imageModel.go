@@ -9,7 +9,7 @@ import (
 type ImageMetadata struct {
 	gorm.Model
 	Hash     string `json:"hash" gorm:"not null"`
-	Filename string `json:"filename" gorm:"not null"`
+	Filename string `json:"filename"`
 	Tags     []Tag  `json:"tags"  gorm:"many2many:image_tags;constraint:OnDelete:CASCADE;"`
 	Format   string `json:"format" gorm:"not null"`
 	Width    uint   `json:"width" gorm:"not null"`
@@ -19,7 +19,7 @@ type ImageMetadata struct {
 }
 
 type ImageModel struct {
-	db   *gorm.DB
+	Db   *gorm.DB
 	Tags *TagModel
 }
 
@@ -59,7 +59,7 @@ func (model *ImageModel) applyFilters(db *gorm.DB, query ImageQuery) *gorm.DB {
 
 func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) ([]ImageMetadata, error) {
 	var images []ImageMetadata
-	db := model.db.Preload("Tags").Model(&ImageMetadata{}).Order("image_metadata.id desc")
+	db := model.Db.Preload("Tags").Model(&ImageMetadata{}).Order("image_metadata.id desc")
 
 	db = model.applyFilters(db, query)
 
@@ -73,8 +73,7 @@ func (model *ImageModel) SearchImages(query ImageQuery, cursor int, limit int) (
 	return images, nil
 }
 
-// TODO: Rename to ConstructImageMetadata
-func (model *ImageModel) ConstructImage(name string, tagsNames []string, format string, width uint, height uint, userID uint) *ImageMetadata {
+func (model *ImageModel) ConstructImageMetadata(name string, tagsNames []string, format string, width uint, height uint, userID uint) *ImageMetadata {
 	tags := ConstructTagsByNames(tagsNames)
 	image := &ImageMetadata{
 		Filename: name,
@@ -88,33 +87,32 @@ func (model *ImageModel) ConstructImage(name string, tagsNames []string, format 
 	return image
 }
 
-func (model *ImageModel) AddImage(image *ImageMetadata) error {
-
-	if model.containsImageHash(image.Hash) {
+func (model *ImageModel) AddImage(tx *gorm.DB, image *ImageMetadata) error {
+	if model.containsImageHash(tx, image.Hash) {
 		return fmt.Errorf("image with hash %s already exists", image.Hash)
 	}
 
-	if model.imageNameExists(image.Filename) {
+	if model.imageNameExists(tx, image.Filename) {
 		return fmt.Errorf("image with name %s already exists", image.Filename)
 	}
 
-	if err := model.Tags.CheckTags(image.Tags); err != nil {
+	if err := model.Tags.checkForAllowedTags(tx, image.Tags); err != nil {
 		return err
 	}
 
 	tagNames := TagsToStrings(image.Tags)
 	var dbTags []Tag
-	if err := model.db.Where("name IN ?", tagNames).Find(&dbTags).Error; err != nil {
+	if err := tx.Where("name IN ?", tagNames).Find(&dbTags).Error; err != nil {
 		return fmt.Errorf("failed to retrieve tags: %w", err)
 	}
 
 	image.Tags = nil
 
-	if err := model.db.Create(image).Error; err != nil {
+	if err := tx.Create(image).Error; err != nil {
 		return fmt.Errorf("failed to insert image: %w", err)
 	}
 
-	if err := model.db.Model(image).Association("Tags").Append(dbTags); err != nil {
+	if err := tx.Model(image).Association("Tags").Append(dbTags); err != nil {
 		return fmt.Errorf("failed to associate tags with image: %w", err)
 	}
 
@@ -123,7 +121,7 @@ func (model *ImageModel) AddImage(image *ImageMetadata) error {
 
 func (model *ImageModel) GetImageByHash(hash string) (*ImageMetadata, error) {
 	var img ImageMetadata
-	result := model.db.Preload("Tags").Where("hash = ?", hash).First(&img)
+	result := model.Db.Preload("Tags").Where("hash = ?", hash).First(&img)
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
@@ -138,7 +136,7 @@ func (model *ImageModel) GetImageByHash(hash string) (*ImageMetadata, error) {
 
 func (model *ImageModel) GetImageByID(id uint64) (*ImageMetadata, error) {
 	var img ImageMetadata
-	result := model.db.Preload("Tags").Where("id = ?", id).First(&img)
+	result := model.Db.Preload("Tags").Where("id = ?", id).First(&img)
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
@@ -153,7 +151,7 @@ func (model *ImageModel) GetImageByID(id uint64) (*ImageMetadata, error) {
 
 func (model *ImageModel) GetImageByName(name string) (*ImageMetadata, error) {
 	var img ImageMetadata
-	result := model.db.Preload("Tags").Where("filename = ?", name).First(&img)
+	result := model.Db.Preload("Tags").Where("filename = ?", name).First(&img)
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed retrieving image from the db: %w", result.Error)
@@ -168,7 +166,7 @@ func (model *ImageModel) GetImageByName(name string) (*ImageMetadata, error) {
 
 func (model *ImageModel) GetImages(cursor int, limit int) ([]ImageMetadata, error) {
 	var images []ImageMetadata
-	result := model.db.Model(&ImageMetadata{}).Preload("Tags").Order("id desc").Limit(limit).Offset(cursor).Find(&images)
+	result := model.Db.Model(&ImageMetadata{}).Preload("Tags").Order("id desc").Limit(limit).Offset(cursor).Find(&images)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to retrieve images: %w", result.Error)
 	}
@@ -176,13 +174,13 @@ func (model *ImageModel) GetImages(cursor int, limit int) ([]ImageMetadata, erro
 	return images, nil
 }
 
-func (model *ImageModel) DeleteImagesByQuery(query ImageQuery, userID uint) ([]ImageMetadata, error) {
+func (model *ImageModel) DeleteImagesByQuery(db *gorm.DB, query ImageQuery, userID uint) ([]ImageMetadata, error) {
 	var images []ImageMetadata
-	db := model.db.Preload("Tags").Model(&ImageMetadata{}).Order("image_metadata.id desc")
+	tx := db.Preload("Tags").Model(&ImageMetadata{}).Order("image_metadata.id desc")
 
-	db = model.applyFilters(db, query)
+	tx = model.applyFilters(tx, query)
 
-	if err := db.Find(&images).Error; err != nil {
+	if err := tx.Find(&images).Error; err != nil {
 		return nil, fmt.Errorf("failed to find images for deletion: %w", err)
 	}
 
@@ -191,7 +189,7 @@ func (model *ImageModel) DeleteImagesByQuery(query ImageQuery, userID uint) ([]I
 	}
 
 	for _, img := range images {
-		if !model.UserCanEdit(&img, userID) {
+		if !model.UserCanEdit(tx, &img, userID) {
 			return nil, fmt.Errorf(
 				"permission denied: user %d cannot delete image '%s' (ID: %d)",
 				userID, img.Filename, img.ID,
@@ -199,21 +197,21 @@ func (model *ImageModel) DeleteImagesByQuery(query ImageQuery, userID uint) ([]I
 		}
 	}
 
-	if err := model.db.Delete(&images).Error; err != nil {
+	if err := tx.Delete(&images).Error; err != nil {
 		return nil, fmt.Errorf("failed to delete images: %w", err)
 	}
 
 	return images, nil
 }
 
-func (model *ImageModel) UserCanEdit(image *ImageMetadata, userID uint) bool {
+func (model *ImageModel) UserCanEdit(db *gorm.DB, image *ImageMetadata, userID uint) bool {
 	if image.UserID == userID {
 		return true
 	}
 
 	var user User
 
-	err := model.db.
+	err := db.
 		Where("id = ? AND privileage = ?", userID, Moderator).
 		First(&user).Error
 
@@ -224,12 +222,12 @@ func (model *ImageModel) UserCanEdit(image *ImageMetadata, userID uint) bool {
 	return true
 }
 
-func (model *ImageModel) DeleteImage(image *ImageMetadata, userID uint) error {
+func (model *ImageModel) DeleteImage(db *gorm.DB, image *ImageMetadata, userID uint) error {
 	if image == nil {
 		return fmt.Errorf("image is nil")
 	}
 
-	if !model.UserCanEdit(image, userID) {
+	if !model.UserCanEdit(db, image, userID) {
 		return fmt.Errorf(
 			"cannot delete %s: user %d is not owner or moderator",
 			image.Filename,
@@ -237,21 +235,21 @@ func (model *ImageModel) DeleteImage(image *ImageMetadata, userID uint) error {
 		)
 	}
 
-	if err := model.db.Delete(&image).Error; err != nil {
+	if err := db.Delete(&image).Error; err != nil {
 		return fmt.Errorf("cannot delete %s: %w", image.Filename, err)
 	}
 
 	return nil
 }
 
-func (model *ImageModel) containsImageHash(hash string) bool {
+func (model *ImageModel) containsImageHash(db *gorm.DB, hash string) bool {
 	var count int64
-	model.db.Model(&ImageMetadata{}).Where("hash = ?", hash).Count(&count)
+	db.Model(&ImageMetadata{}).Where("hash = ?", hash).Count(&count)
 	return count > 0
 }
 
-func (model *ImageModel) imageNameExists(name string) bool {
+func (model *ImageModel) imageNameExists(db *gorm.DB, name string) bool {
 	var count int64
-	model.db.Model(&ImageMetadata{}).Where("filename = ?", name).Count(&count)
+	db.Model(&ImageMetadata{}).Where("filename = ?", name).Count(&count)
 	return count > 0
 }
