@@ -3,22 +3,28 @@ X tags input hints
 X Upload image progress bar
 X Fixed Nginx config
 X Upload Form to use grid
-Make DB transactions, prevent upload abort errors
+Cover Api with test
+DB transactions, prevent upload abort errors
 
 From filename to hash identification, optinal names
 
-    API SECURITY
-
 Api token for frontend and telegram
+
 Remove limits for moderator users
 
 Rewrite tgbot to use webhooks
+
 Save to kartonko on reaction
 
-Boards system
+Board system
+
 boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
 
 URL UPLOADING
+
+Single upload if hash matches route to image page
+
+Add Last seen on webhooks
 
 Fix captcha not reloading on error upload
 

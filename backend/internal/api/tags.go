@@ -44,7 +44,7 @@ func (api *api) PostTag(c *gin.Context) {
 		return
 	}
 
-	tag, err := api.models.Tags.AddTag(req.Name)
+	tag, err := api.models.Tags.CreateTag(req.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return

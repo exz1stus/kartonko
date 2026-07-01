@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"server/internal/env"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -32,12 +33,22 @@ func newGoogleOauthConfig() *oauth2.Config {
 	return cfg
 }
 
-var googleOauthConfig = newGoogleOauthConfig()
+var (
+	googleOauthConfig     *oauth2.Config
+	googleOauthConfigOnce sync.Once
+)
+
+func GetGoogleAuthConfig() *oauth2.Config {
+	googleOauthConfigOnce.Do(func() {
+		googleOauthConfig = newGoogleOauthConfig()
+	})
+	return googleOauthConfig
+}
 
 func (rh *api) GetGoogleLogin(c *gin.Context) {
 	redirect := c.Query("redirect")
 	state := redirect
-	url := googleOauthConfig.AuthCodeURL(state)
+	url := GetGoogleAuthConfig().AuthCodeURL(state)
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
@@ -53,14 +64,16 @@ func (rh *api) GetGoogleCallback(c *gin.Context) {
 	state := c.Query("state")
 	redirectURL := state
 
-	token, err := googleOauthConfig.Exchange(c.Request.Context(), code)
+	config := GetGoogleAuthConfig()
+
+	token, err := config.Exchange(c.Request.Context(), code)
 	if err != nil {
-		log.Printf("google token exchange failed: %v (redirect_uri=%q)", err, googleOauthConfig.RedirectURL)
+		log.Printf("google token exchange failed: %v (redirect_uri=%q)", err, config.RedirectURL)
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to exchange codes"})
 		return
 	}
 
-	client := googleOauthConfig.Client(c.Request.Context(), token)
+	client := config.Client(c.Request.Context(), token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch user info"})

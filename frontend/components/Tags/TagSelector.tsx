@@ -243,7 +243,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                     <div className="relative flex-1 min-w-10">
                         <input
                             className={cn(
-                                "z-1 relative bg-transparent border-none outline-none w-full text-lg transition-colors",
+                                "z-2 relative bg-transparent border-none outline-none w-full text-lg transition-colors",
                                 { "text-red-500": !sanitized },
                             )}
                             ref={inputRef}

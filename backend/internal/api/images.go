@@ -394,6 +394,10 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 		return
 	}
 
+	if len(batch.Data) != len(files) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("files: %d and metadata: %d quantities are different", len(files), len(batch.Data))})
+	}
+
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %v", err)})
@@ -427,6 +431,11 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 		}
 
 		response.Successes = append(response.Successes, ConstructImageResponse(img))
+	}
+
+	if len(response.Failures) > 0 {
+		c.JSON(http.StatusMultiStatus, response)
+		return
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -488,7 +497,7 @@ func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fil
 		}
 	}()
 
-	if err = api.models.Images.AddImage(tx, img); err != nil {
+	if err = api.models.Images.CreateImage(tx, img); err != nil {
 		return nil, fmt.Errorf("error saving the image to database: %w", err)
 	}
 

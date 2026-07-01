@@ -7,7 +7,7 @@ export default function Home() {
                 name="description"
                 content="Те, кому не нравятся слова ХУЙ и ПИЗДА, могут идти нахуй. Остальные пруцца!"
             />
-            <GalleryServer initialFetchSize={60} />
+            <GalleryServer initialFetchSize={100} />
         </>
     );
 }

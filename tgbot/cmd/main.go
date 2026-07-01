@@ -152,6 +152,5 @@ func main() {
 		if update.InlineQuery != nil {
 			handleInlineQuery(bot, update)
 		}
-
 	}
 }

@@ -15,10 +15,36 @@ type Models struct {
 	Users  *UserModel
 	Tags   *TagModel
 	Images *ImageModel
-	Log    *AuditLog
+	Log    *LogModel
 }
 
 func Migrate(db *gorm.DB) {
+}
+
+func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*Models, error) {
+	db, err := gorm.Open(dialector, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	Migrate(db)
+	err = db.AutoMigrate(&ImageMetadata{}, &Tag{}, &User{}, &AuditEntry{}, &EntryType{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
+	}
+
+	tags := &TagModel{db: db}
+	users := &UserModel{db: db}
+	log := &LogModel{db: db}
+	models := &Models{
+		db:     db,
+		Users:  users,
+		Log:    log,
+		Tags:   tags,
+		Images: &ImageModel{Tags: tags, Db: db},
+	}
+
+	return models, nil
 }
 
 func MustInitDB() *Models {
@@ -30,26 +56,10 @@ func MustInitDB() *Models {
 		os.Getenv("DB_PORT"),
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to postgres: %w", err))
-	}
+	models, err := InitGorm(postgres.Open(dsn), &gorm.Config{})
 
-	Migrate(db)
-	err = db.AutoMigrate(&ImageMetadata{}, &Tag{}, &User{}, &AuditEntry{}, &EntryType{})
 	if err != nil {
-		panic(fmt.Sprintf("failed to auto migrate database: %v", err.Error()))
-	}
-
-	tags := &TagModel{db: db}
-	users := &UserModel{db: db}
-	log := &AuditLog{db: db}
-	models := &Models{
-		db:     db,
-		Users:  users,
-		Log:    log,
-		Tags:   tags,
-		Images: &ImageModel{Tags: tags, Db: db},
+		panic(fmt.Sprint("Failed to initialize database: %w", err))
 	}
 
 	return models
