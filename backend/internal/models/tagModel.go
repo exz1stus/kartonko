@@ -25,7 +25,7 @@ func (model *TagModel) SearchTags(query string, limit int) ([]Tag, error) {
 	return tags, nil
 }
 
-func (model *TagModel) AddTag(tag string) (*Tag, error) {
+func (model *TagModel) CreateTag(tag string) (*Tag, error) {
 	if model.TagExists(tag) {
 		return nil, fmt.Errorf("tag %s already exists", tag)
 	}

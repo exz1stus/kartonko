@@ -28,6 +28,7 @@ type api struct {
 func MustInitApi() *api {
 	models := models.MustInitDB()
 	storage := storage.MustInitGarageClient()
+	//TODO: temporary for development, remove later
 	models.Users.SetUserPrivilage(1, 1)
 	api := &api{models: models, storage: storage, jwtSecret: env.GetEnvString("JWT_SECRET")}
 	api.initRoutes()

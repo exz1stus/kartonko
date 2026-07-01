@@ -9,11 +9,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type AuditLog struct {
+type LogModel struct {
 	db *gorm.DB
 }
 
-func (model *AuditLog) addEntryType(name string) error {
+func (model *LogModel) addEntryType(name string) error {
 	entryType := &EntryType{Name: name}
 	err := model.db.Model(&EntryType{}).Create(entryType).Error
 	if err != nil {
@@ -22,7 +22,7 @@ func (model *AuditLog) addEntryType(name string) error {
 	return nil
 }
 
-func (model *AuditLog) addEntry(entryTypeName string, userID uint, affectedObjID uint, data datatypes.JSON) error {
+func (model *LogModel) addEntry(entryTypeName string, userID uint, affectedObjID uint, data datatypes.JSON) error {
 	var entryType EntryType
 	err := model.db.Model(&EntryType{}).Where("name = ?", entryTypeName).First(&entryType).Error
 
@@ -63,7 +63,7 @@ type EntryResponse struct {
 	Data          datatypes.JSON `json:"data"`
 }
 
-func (model *AuditLog) GetEntries(cursor int, limit int) ([]EntryResponse, error) {
+func (model *LogModel) GetEntries(cursor int, limit int) ([]EntryResponse, error) {
 	var responses []EntryResponse
 
 	err := model.db.
@@ -98,7 +98,7 @@ type TagEntryData struct {
 	Name string `json:"name"`
 }
 
-func (model *AuditLog) AddImageCreated(db *gorm.DB, image *ImageMetadata, user *User) error {
+func (model *LogModel) AddImageCreated(db *gorm.DB, image *ImageMetadata, user *User) error {
 	data, err := json.Marshal(&ImageEntryData{Name: image.Filename})
 	if err != nil {
 		return fmt.Errorf("failed to marshal image log entry data: %w", err)
@@ -106,7 +106,7 @@ func (model *AuditLog) AddImageCreated(db *gorm.DB, image *ImageMetadata, user *
 	return model.addEntry("image_created", user.Model.ID, image.ID, datatypes.JSON(data))
 }
 
-func (model *AuditLog) AddImageDeleted(db *gorm.DB, image *ImageMetadata, user *User) error {
+func (model *LogModel) AddImageDeleted(db *gorm.DB, image *ImageMetadata, user *User) error {
 	data, err := json.Marshal(&ImageEntryData{Name: image.Filename})
 	if err != nil {
 		return fmt.Errorf("failed to marshal image log entry data: %w", err)
@@ -114,7 +114,7 @@ func (model *AuditLog) AddImageDeleted(db *gorm.DB, image *ImageMetadata, user *
 	return model.addEntry("image_deleted", user.Model.ID, image.ID, datatypes.JSON(data))
 }
 
-func (model *AuditLog) AddTagCreated(tag *Tag, user *User) error {
+func (model *LogModel) AddTagCreated(tag *Tag, user *User) error {
 	data, err := json.Marshal(&TagEntryData{Name: tag.Name})
 	if err != nil {
 		return fmt.Errorf("failed to marshal tag log entry data: %w", err)
@@ -122,7 +122,7 @@ func (model *AuditLog) AddTagCreated(tag *Tag, user *User) error {
 	return model.addEntry("tag_created", user.Model.ID, tag.ID, datatypes.JSON(data))
 }
 
-func (model *AuditLog) AddTagDeleted(tag *Tag, user *User) error {
+func (model *LogModel) AddTagDeleted(tag *Tag, user *User) error {
 	data, err := json.Marshal(&TagEntryData{Name: tag.Name})
 	if err != nil {
 		return fmt.Errorf("failed to marshal tag log entry data: %w", err)

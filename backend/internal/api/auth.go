@@ -5,11 +5,17 @@ import (
 	"net/http"
 	"server/internal/env"
 	"server/internal/models"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	jwtCookieMaxAge     time.Duration
+	jwtCookieMaxAgeOnce sync.Once
 )
 
 type authRequest struct {
@@ -23,35 +29,14 @@ type LoginResponse struct {
 }
 
 func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
-	tokenString, err := c.Cookie("jwt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get jwt token: %v", err)
+	userInter, exists := c.Get("user")
+	if !exists {
+		return nil, fmt.Errorf("user is not passed in context")
 	}
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.ErrSignatureInvalid
-		}
-		return []byte(env.GetEnvString("JWT_SECRET")), nil
-	})
-
-	if err != nil || !token.Valid {
-		return nil, fmt.Errorf("invalid token")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
+	user, ok := userInter.(*models.User)
 	if !ok {
-		return nil, fmt.Errorf("invalid token claims")
-	}
-
-	userId, ok := claims["userId"].(float64)
-	if !ok {
-		return nil, fmt.Errorf("invalid token claims")
-	}
-
-	user, err := rh.models.Users.GetUserById(uint64(userId))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %v", err)
+		return nil, fmt.Errorf("context user is not of type *models.User")
 	}
 
 	return user, nil
@@ -102,7 +87,12 @@ func (rh *api) PostLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-var JWT_COOKIE_MAX_AGE = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")) * time.Hour
+func GetJWTCookieMaxAge() time.Duration {
+	jwtCookieMaxAgeOnce.Do(func() {
+		jwtCookieMaxAge = time.Duration(env.GetEnvInt("JWT_COOKIE_MAX_AGE_HOURS")) * time.Hour
+	})
+	return jwtCookieMaxAge
+}
 
 // PostRegister godoc
 // @Summary Register a user
@@ -172,7 +162,7 @@ func (rh *api) PostLogout(c *gin.Context) {
 func GenerateJwtToken(userID uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": userID,
-		"exp":    time.Now().Add(JWT_COOKIE_MAX_AGE).Unix(),
+		"exp":    time.Now().Add(GetJWTCookieMaxAge()).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(env.GetEnvString("JWT_SECRET")))
@@ -188,7 +178,7 @@ func setTokenCookie(token string, writer *gin.ResponseWriter) {
 		Name:     "jwt",
 		Value:    token,
 		Path:     "/",
-		MaxAge:   int(JWT_COOKIE_MAX_AGE.Seconds()),
+		MaxAge:   int(GetJWTCookieMaxAge().Seconds()),
 		Domain:   env.GetEnvString("DOMAIN"),
 		Secure:   true,
 		HttpOnly: true,

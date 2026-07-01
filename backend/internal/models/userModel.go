@@ -143,33 +143,25 @@ func (model *UserModel) CreateUser(user *User) (*User, error) {
 }
 
 func (model *UserModel) UsernameExists(username string) (bool, error) {
-	var user User
+	var count int64
 
-	err := model.db.Model(&User{}).Where("username = ?", username).First(&user).Error
-	if err == nil {
-		return true, nil
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	err := model.db.Model(&User{}).Where("username = ?", username).Count(&count).Error
+	if err != nil {
 		return false, fmt.Errorf("failed to check for existing user: %v", err)
 	}
 
-	return false, nil
+	return count > 0, nil
 }
 
 func (model *UserModel) EmailExists(email string) (bool, error) {
-	var user User
+	var count int64
 
-	err := model.db.Where("email = ?", email).First(&user).Error
-	if err == nil {
-		return true, nil
+	err := model.db.Model(&User{}).Where("email = ?", email).Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to check for existing email: %v", err)
 	}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, fmt.Errorf("failed to check for existing user: %v", err)
-	}
-
-	return false, nil
+	return count > 0, nil
 }
 
 func (model *UserModel) GetUserById(id uint64) (*User, error) {

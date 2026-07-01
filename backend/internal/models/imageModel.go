@@ -87,7 +87,7 @@ func (model *ImageModel) ConstructImageMetadata(name string, tagsNames []string,
 	return image
 }
 
-func (model *ImageModel) AddImage(tx *gorm.DB, image *ImageMetadata) error {
+func (model *ImageModel) CreateImage(tx *gorm.DB, image *ImageMetadata) error {
 	if model.containsImageHash(tx, image.Hash) {
 		return fmt.Errorf("image with hash %s already exists", image.Hash)
 	}

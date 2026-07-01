@@ -15,15 +15,18 @@ func Init() {
 		return
 	}
 
-	if _, exists := os.LookupEnv("OWN_DOTENV"); !exists{
+	file := os.Getenv("ENV_FILE")
+	if file == "" {
 		loaded = true
+		println("intializing with no separate .env file")
 		return
 	}
 
-	err := godotenv.Load(".env")
+	err := godotenv.Load(file)
 	if err != nil {
 		panic("Error loading .env file")
 	}
+	fmt.Printf("intializing with %s file", file)
 
 	loaded = true
 }
