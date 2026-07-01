@@ -1,62 +1,47 @@
-X Delete image query
-X tags input hints
-X Upload image progress bar
-X Fixed Nginx config
-X Upload Form to use grid
-Cover Api with test
-DB transactions, prevent upload abort errors
+~~Fixed Nginx config~~
 
-From filename to hash identification, optinal names
+FRONTEND:
 
-Api token for frontend and telegram
+- ~~Tags input hints~~
+- ~~Upload Form to use grid~~
+- ~~Upload image progress bar~~
+- Url uploading
+- Perspective image card over inteface
+- Image page
+- Dynamic favicon and title
+- Reverse image search, find image origins, suggest replacing image with better resolution
+- Saucenao
+- Rework log loading
+- log grouping
+- Single upload if hash matches, route to image page
+- Profile page
+- Single error handling system
+- Tags mouse tooltip overlay
+- Single filtering system for searching and boards
+- Themes
+- Bg image
+- Image sound
+- image surfing page, add image sources
+- image UPDATE method
+- image editing page
+- Photopea edit image integration
+- Uploading update webhook
+- Fix captcha not reloading on error upload
+- Add Last seen on webhooks
+- Crawling from selected resources: telegram groups, discord active channels
 
-Remove limits for moderator users
+BACKEND:
 
-Rewrite tgbot to use webhooks
+- ~~Delete image query~~
+- Cover Api with test
+- Boards system
+- boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
+- DB transactions, prevent upload abort errors
+- Api token for frontend and telegram
+- Remove limits for moderator users
+- From filename to hash identification, optional names
 
-Save to kartonko on reaction
+TGBOT:
 
-Board system
-
-boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
-
-URL UPLOADING
-
-Single upload if hash matches route to image page
-
-Add Last seen on webhooks
-
-Fix captcha not reloading on error upload
-
-image UPDATE method - Photopea integration
-
-!!rework log loading
-
-UPLOADING update webhook
-
-reverse image search, find image origins, suggest replacing image with better resolution
-
-Saucenao
-
-CRAWLING from selected resources: telegram groups, discord active channels
-
-image surfing page, add image sources
-
-dynamic favicon and title
-
-BOGDAN SAVYTSKIY
-PERSPERTIVA WYLAZIAET
-
-IMAGE PAGE
-LOG GROUPING
-ADD log image status, too much request on loading
-
-PROFILE PAGE
-ERROR HANDLING, TOASTER
-TAGS OVERLAY
-SEARCH WITH FILTERS
-UPLOAD FILTERING PIPELINE
-THEME & CUSTOMIZATIONS
-FIX BG IMAGE
-
-IMAGE SOUND
+- Rewrite tgbot to use webhooks
+- Save to kartonko on reaction
