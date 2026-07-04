@@ -1,18 +1,41 @@
 services:
     backend:
         build:
-            context: ./backend
+            context: ../backend
             dockerfile: Dockerfile.dev
         container_name: backend
+        environment:
+            GARAGE_ENDPOINT: ${GARAGE_ENDPOINT}
+            GARAGE_ACCESS_KEY: ${GARAGE_ACCESS_KEY}
+            GARAGE_SECRET_KEY: ${GARAGE_SECRET_KEY}
+            GARAGE_BUCKET_NAME: ${GARAGE_BUCKET_NAME}
+
+            DB_HOST: ${DB_HOST}
+            DB_USER: ${DB_USER}
+            DB_PASSWORD: ${DB_PASSWORD}
+            DB_NAME: ${DB_NAME}
+            DB_PORT: ${DB_PORT}
+
+            BACKEND_PORT: ${BACKEND_PORT}
+            API_ORIGIN: ${API_ORIGIN}
+            FRONTEND_ORIGIN: ${FRONTEND_URI}
+            DOMAIN: ${DOMAIN}
+
+            JWT_SECRET: ${JWT_SECRET}
+            JWT_COOKIE_MAX_AGE_HOURS: ${JWT_COOKIE_MAX_AGE_HOURS}
+
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+            GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
         depends_on:
             garage:
                 condition: service_healthy
             postgresql:
                 condition: service_healthy
-        env_file:
-            - .env
+            clip:
+                condition: service_started
         volumes:
-            - ./backend:/app
+            - ../backend:/app
         command: air -c .air.toml
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -23,23 +46,28 @@ services:
         restart: unless-stopped
         networks:
             - app-network
+            - ai-network
 
     frontend:
         build:
-            context: ./frontend
+            context: ../frontend
             dockerfile: Dockerfile.dev
         container_name: frontend
-        env_file:
-            - .env
+        environment:
+            API_LOCAL: ${API_LOCAL}
+            TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+            NEXT_PUBLIC_API_ORIGIN: ${API_ORIGIN}
+            NEXT_PUBLIC_FRONTEND_URI: ${FRONTEND_URI}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY}
         volumes:
-            - ./frontend:/app
+            - ../frontend:/app
         command: npm run dev
         depends_on:
             backend:
                 condition: service_healthy
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-            start_period: 20s
+            start_period: 10s
             interval: 30s
             timeout: 5s
             retries: 3
@@ -48,13 +76,15 @@ services:
 
     tgbot:
         build:
-            context: ./tgbot
+            context: ../tgbot
             dockerfile: Dockerfile.dev
         container_name: tgbot
-        env_file:
-            - .env
+        environment:
+            BOT_TOKEN: ${BOT_TOKEN}
+            API_LOCAL: ${API_LOCAL}
+            API_ORIGIN: ${API_ORIGIN}
         volumes:
-            - ./tgbot:/app
+            - ../tgbot:/app
         command: air -c ./.air.toml
         depends_on:
             backend:
@@ -67,9 +97,9 @@ services:
         image: postgres:16-alpine
         container_name: postgresql
         environment:
-            POSTGRES_USER: ${DB_USER:-postgres}
-            POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
-            POSTGRES_DB: ${DB_NAME:-myapp}
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_NAME}
         volumes:
             - pgdata:/var/lib/postgresql/data
         healthcheck:
@@ -127,12 +157,36 @@ services:
         networks:
             - app-network
 
+    clip:
+        build:
+            context: ../clip
+            dockerfile: Dockerfile
+        container_name: clip
+        depends_on:
+            - qdrant
+        networks:
+            - ai-network
+        restart: always
+
+    qdrant:
+        image: qdrant/qdrant:latest
+        container_name: qdrant
+        networks:
+            - ai-network
+        volumes:
+            - qdrantdata:/qdrant/storage
+            - qdrantdata:/qdrant/snapshots
+        restart: always
+
 volumes:
     pgdata:
     garagedata:
+    qdrantdata:
 
 networks:
     public:
         driver: bridge
     app-network:
+        driver: bridge
+    ai-network:
         driver: bridge

@@ -13,7 +13,6 @@ interface Props {
 }
 
 const ImageContent: React.FC<Props> = async ({ image }) => {
-    const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN;
     const user = await getLoggedUserServer();
     const imageOwner = await getUserByIdServer(image.user_id);
 
@@ -34,11 +33,10 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
             <div className="flex lg:flex-row flex-col items-stretch gap-6 mx-auto w-full h-full">
                 <div className="relative flex flex-1 justify-center items-center bg-black/5 rounded-2xl min-w-0 min-h-0">
                     <Image
-                        src={`${API_ORIGIN}/image/raw/${filename}`}
+                        src={`/apilocal/image/raw/${filename}`}
                         alt={filename}
                         width={image.width}
                         height={image.height}
-                        unoptimized
                         className="w-full h-auto max-h-full object-contain"
                     />
                 </div>
