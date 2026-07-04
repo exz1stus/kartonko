@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UserDataResponce struct {
+type UserDataResponse struct {
 	ID         uint   `json:"id"`
 	Username   string `json:"username"`
 	Privileage string `json:"privileage"`
@@ -19,8 +19,8 @@ type UserDataResponce struct {
 	Online     bool   `json:"online"`
 }
 
-func constructUserResponce(user *models.User) UserDataResponce {
-	res := UserDataResponce{
+func constructUserResponse(user *models.User) UserDataResponse {
+	res := UserDataResponse{
 		ID:         user.ID,
 		Username:   user.Username,
 		Privileage: user.Privileage.String(),
@@ -44,7 +44,7 @@ func (api *api) GetUserByName(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, constructUserResponce(user))
+	c.JSON(http.StatusOK, constructUserResponse(user))
 }
 
 func (api *api) GetUserByID(c *gin.Context) {
@@ -63,7 +63,7 @@ func (api *api) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, constructUserResponce(user))
+	c.JSON(http.StatusOK, constructUserResponse(user))
 }
 
 func (api *api) GetMe(c *gin.Context) {
@@ -73,6 +73,6 @@ func (api *api) GetMe(c *gin.Context) {
 		return
 	}
 
-	res := constructUserResponce(user)
+	res := constructUserResponse(user)
 	c.JSON(http.StatusOK, res)
 }

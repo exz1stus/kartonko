@@ -6,7 +6,7 @@ import { serverFetch } from "@/lib/serverFetch";
 import { constructQueryString } from "@/lib/query";
 
 interface Props {
-    initialFetchSize: number;
+    initialFetchSize?: number;
     initialQuery?: SearchQuery;
 }
 
@@ -16,7 +16,7 @@ const INITIAL_QUERY: SearchQuery = {
 };
 
 const GalleryServer = async ({
-    initialFetchSize,
+    initialFetchSize = 50,
     initialQuery = INITIAL_QUERY,
 }: Props) => {
     const fetchImages = async (
