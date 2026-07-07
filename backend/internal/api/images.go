@@ -311,7 +311,7 @@ func (api *api) DeleteImagesByQuery(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-type ImageMetadata struct {
+type ImagePostRequest struct {
 	Name string   `json:"name"`
 	Tags []string `json:"tags"`
 }
@@ -330,7 +330,7 @@ type ImageMetadata struct {
 func (api *api) PostImage(c *gin.Context) {
 	formData := c.PostForm("metadata")
 
-	var metadata ImageMetadata
+	var metadata ImagePostRequest
 	if err := json.Unmarshal([]byte(formData), &metadata); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %v", err)})
 		return
@@ -363,12 +363,12 @@ func (api *api) PostImage(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-type ImageMetadataBatchRequest struct {
-	Data       []ImageMetadata `json:"data"`
-	CommonTags []string        `json:"common_tags"`
+type ImagePostBatchRequest struct {
+	Data       []ImagePostRequest `json:"data"`
+	CommonTags []string           `json:"common_tags"`
 }
 
-type ImageBatchResponse struct {
+type ImagePostBatchResponse struct {
 	Successes []ImageResponse    `json:"successes"`
 	Failures  []image.ImageError `json:"failures"`
 }
@@ -376,7 +376,7 @@ type ImageBatchResponse struct {
 func (api *api) PostImagesBatch(c *gin.Context) {
 	formData := c.PostForm("metadata")
 
-	var batch ImageMetadataBatchRequest
+	var batch ImagePostBatchRequest
 	if err := json.Unmarshal([]byte(formData), &batch); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %s", err.Error())})
 		return
@@ -404,7 +404,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 		return
 	}
 
-	response := &ImageBatchResponse{}
+	response := &ImagePostBatchResponse{}
 
 	for i, metadata := range batch.Data {
 		if i >= len(files) {
@@ -441,7 +441,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func isImageRequestValid(metadata *ImageMetadata, fileHeader *multipart.FileHeader) error {
+func isImageRequestValid(metadata *ImagePostRequest, fileHeader *multipart.FileHeader) error {
 	if len(metadata.Name) == 0 {
 		return fmt.Errorf("empty name provided")
 	}
@@ -458,10 +458,7 @@ func isImageRequestValid(metadata *ImageMetadata, fileHeader *multipart.FileHead
 	return nil
 }
 
-// ImageUploadPipeline persists image bytes + metadata. It uses named
-// returns so the deferred rollback can see every error path without
-// any `:=` shadowing bugs.
-func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImageMetadata, fileHeader *multipart.FileHeader, user *models.User) (img *models.ImageMetadata, err error) {
+func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImagePostRequest, fileHeader *multipart.FileHeader, user *models.User) (img *models.ImageMetadata, err error) {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return nil, fmt.Errorf("error opening uploaded file: %v", err)

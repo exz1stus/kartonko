@@ -3,7 +3,7 @@ import React from "react";
 
 const Footer = () => {
     return (
-        <div className="flex flex-row justify-end gap-4 bg-surface-0/80 px-4 w-full glass">
+        <div className="flex flex-row justify-end gap-4 bg-surface-0/80 px-4 border-t w-full glass">
             <span className="inline-flex">
                 <Link href="/about">about</Link>
             </span>

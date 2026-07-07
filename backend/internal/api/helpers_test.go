@@ -105,7 +105,7 @@ func makeTestPNG(t *testing.T, w, h int) []byte {
 }
 
 func makeFileDataFromMetadata(t *testing.T, metadataJSON string, content func(t *testing.T) []byte) []TestFileData {
-	var metadata []ImageMetadata
+	var metadata []ImagePostRequest
 	if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
 		t.Fatalf("failed to unmarshall test metadata json : %v", err)
 	}

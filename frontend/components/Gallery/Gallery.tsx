@@ -68,7 +68,7 @@ const Gallery: React.FC<Props> = ({
     }));
 
     const footer = (
-        <div className="flex gap-3 w-full">
+        <div className="flex gap-3 px-5">
             <ImageIcon />
             Images: {items.length}
         </div>
@@ -92,7 +92,6 @@ const Gallery: React.FC<Props> = ({
                 } flex  justify-center p-4`}
             >
                 {loading && <Loading />}
-                {reachedEnd && footer}
             </div>
         </div>
     );
@@ -106,9 +105,12 @@ const Gallery: React.FC<Props> = ({
             />
             <div className="flex-1 overflow-hidden">
                 <DragDropZone onFilesDropped={handleUploadFiles}>
-                    <Scrollbar className="overflow-x-hidden">
-                        {content}
-                    </Scrollbar>
+                    <div className="flex flex-col h-full">
+                        <Scrollbar className="overflow-x-hidden">
+                            {content}
+                            {reachedEnd && footer}
+                        </Scrollbar>
+                    </div>
                 </DragDropZone>
             </div>
         </div>

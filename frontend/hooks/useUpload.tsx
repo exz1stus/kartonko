@@ -83,7 +83,6 @@ const useUpload = () => {
         const sanitized = sanitizeNames(sanitizeFormats(files));
         const unique = filterDuplicates(sanitized);
         const batchSize = files.reduce((total, file) => total + file.size, 0);
-        console.log("Size " + batchSize + storeUploadSize);
         const toastId = toast("Checking files...", {
             description: (
                 <ProgressBarToast value={0} currentName={unique[0].name} />

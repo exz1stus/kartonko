@@ -8,7 +8,6 @@ import (
 	"testing"
 )
 
-// Posting batch of images
 func TestPostImagesBatch(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -73,7 +72,7 @@ func TestPostImagesBatch(t *testing.T) {
 			r.ServeHTTP(rec, req)
 
 			if tt.wantStatus < 400 && tt.wantStatus != 207 {
-				var res ImageBatchResponse
+				var res ImagePostBatchResponse
 				if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 					t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 				}
@@ -135,7 +134,7 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 		t.Errorf("got status %d, want %d, body=%s", rec.Code, http.StatusMultiStatus, rec.Body.String())
 	}
 
-	var res ImageBatchResponse
+	var res ImagePostBatchResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 		t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 	}
@@ -153,5 +152,4 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 	if store.Count() != succesCount*2 {
 		t.Errorf("expected %d stored objects (image+thumb), got %d", succesCount*2, store.Count())
 	}
-
 }
