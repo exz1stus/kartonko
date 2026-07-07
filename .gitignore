@@ -1,6 +1,7 @@
 tmp
-storage.db
 data
+desktop
+python
 
 node_modules
 target

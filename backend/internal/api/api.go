@@ -30,6 +30,7 @@ func MustInitApi() *api {
 	storage := storage.MustInitGarageClient()
 	//TODO: temporary for development, remove later
 	models.Users.SetUserPrivilage(1, 1)
+
 	api := &api{models: models, storage: storage, jwtSecret: env.GetEnvString("JWT_SECRET")}
 	api.initRoutes()
 
