@@ -14,5 +14,10 @@ export function constructQueryString(query: SearchQuery) {
             : "";
     const userID = query.userID ? `user_id=${query.userID}&` : "";
 
-    return `${nameQueryString}${tagsQueryString}${userID}`;
+    let queryString = `${nameQueryString}${tagsQueryString}${userID}`;
+
+    if (queryString.length > 0)
+        queryString = queryString.substring(0, queryString.length - 1 - 1);
+
+    return;
 }

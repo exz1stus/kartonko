@@ -23,31 +23,17 @@ type ImageModel struct {
 	Tags *TagModel
 }
 
-type ImageQuery struct {
-	NameContains string
-	WithTags     []string
-	User         *User
-}
-
-func EmptyQuery() ImageQuery {
-	return ImageQuery{
-		NameContains: "",
-		WithTags:     []string{},
-		User:         nil,
-	}
-}
-
 func (model *ImageModel) applyFilters(db *gorm.DB, query ImageQuery) *gorm.DB {
-	if query.NameContains != "" {
-		db = db.Where("filename LIKE ?", "%"+query.NameContains+"%")
+	if query.Prefix != "" {
+		db = db.Where("filename LIKE ?", query.Prefix+"%")
 	}
 
-	if len(query.WithTags) > 0 {
+	if len(query.Tags) > 0 {
 		db = db.Joins("JOIN image_tags ON image_tags.image_metadata_id = image_metadata.id").
 			Joins("JOIN tags ON tags.id = image_tags.tag_id").
-			Where("tags.name IN ?", query.WithTags).
+			Where("tags.name IN ?", query.Tags).
 			Group("image_metadata.id").
-			Having("COUNT(DISTINCT tags.id) = ?", len(query.WithTags))
+			Having("COUNT(DISTINCT tags.id) = ?", len(query.Tags))
 	}
 
 	if query.User != nil {
@@ -164,6 +150,13 @@ func (model *ImageModel) GetImageByName(name string) (*ImageMetadata, error) {
 	return &img, nil
 }
 
+func (model *ImageModel) GetImageCount() (int64, error) {
+	var count int64
+	err := model.Db.Model(&ImageMetadata{}).Count(&count).Error
+
+	return count, err
+}
+
 func (model *ImageModel) GetImages(cursor int, limit int) ([]ImageMetadata, error) {
 	var images []ImageMetadata
 	result := model.Db.Model(&ImageMetadata{}).Preload("Tags").Order("id desc").Limit(limit).Offset(cursor).Find(&images)
@@ -189,7 +182,7 @@ func (model *ImageModel) DeleteImagesByQuery(db *gorm.DB, query ImageQuery, user
 	}
 
 	for _, img := range images {
-		if !model.UserCanEdit(tx, &img, userID) {
+		if !model.UserCanEdit(db, &img, userID) {
 			return nil, fmt.Errorf(
 				"permission denied: user %d cannot delete image '%s' (ID: %d)",
 				userID, img.Filename, img.ID,
@@ -197,7 +190,13 @@ func (model *ImageModel) DeleteImagesByQuery(db *gorm.DB, query ImageQuery, user
 		}
 	}
 
-	if err := tx.Delete(&images).Error; err != nil {
+	// Use a clean query for delete to avoid table name conflicts from JOINs in applyFilters
+	imageIDs := make([]uint, len(images))
+	for i, img := range images {
+		imageIDs[i] = img.ID
+	}
+
+	if err := db.Where("id IN ?", imageIDs).Delete(&ImageMetadata{}).Error; err != nil {
 		return nil, fmt.Errorf("failed to delete images: %w", err)
 	}
 
@@ -210,16 +209,9 @@ func (model *ImageModel) UserCanEdit(db *gorm.DB, image *ImageMetadata, userID u
 	}
 
 	var user User
-
-	err := db.
-		Where("id = ? AND privileage = ?", userID, Moderator).
-		First(&user).Error
-
-	if err != nil {
-		return false
-	}
-
-	return true
+	// Use a clean query on the users table, not the transaction with image JOINs
+	err := db.Unscoped().Model(&User{}).Where("id = ? AND privileage = ?", userID, Moderator).First(&user).Error
+	return err == nil
 }
 
 func (model *ImageModel) DeleteImage(db *gorm.DB, image *ImageMetadata, userID uint) error {

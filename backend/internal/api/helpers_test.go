@@ -130,63 +130,10 @@ func makeFileDataFromMetadata(t *testing.T, metadataJSON string, content func(t 
 	return fileData
 }
 
-func buildBatchUploadRequest(t *testing.T, url string, metadataJSON string, files []TestFileData) *http.Request {
-	t.Helper()
-	body := &bytes.Buffer{}
-	w := multipart.NewWriter(body)
-
-	if err := w.WriteField("metadata", metadataJSON); err != nil {
-		t.Fatalf("failed to write metadata field: %v", err)
-	}
-
-	for _, file := range files {
-		if file.filename != "" {
-			writeFilePart(t, w, "files", file)
-		}
-	}
-
-	if err := w.Close(); err != nil {
-		t.Fatalf("failed to close multipart writer: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, url, body)
-	req.Header.Set("Content-Type", w.FormDataContentType())
-	return req
-}
-
-func buildUploadRequest(t *testing.T, url, metadataJSON, filename, contentType string, content []byte) *http.Request {
-	fileData := TestFileData{filename, contentType, content}
-
-	return buildUploadRequestFileData(t, url, metadataJSON, fileData)
-}
-
-func buildUploadRequestFileData(t *testing.T, url string, metadataJSON string, file TestFileData) *http.Request {
-	t.Helper()
-	body := &bytes.Buffer{}
-	w := multipart.NewWriter(body)
-
-	if err := w.WriteField("metadata", metadataJSON); err != nil {
-		t.Fatalf("failed to write metadata field: %v", err)
-	}
-
-	if file.filename != "" {
-		writeFilePart(t, w, "file", file)
-	}
-	if err := w.Close(); err != nil {
-		t.Fatalf("failed to close multipart writer: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, url, body)
-	req.Header.Set("Content-Type", w.FormDataContentType())
-	return req
-}
-
-func seedImageUsingRequest(t *testing.T, api *api, metadata string, filename string, userID uint64) {
+func seedImageUsingRequest(t *testing.T, r *gin.Engine, metadata string, filename string, content []byte, userID uint64) {
 	t.Helper()
 
-	r := newTestRouter(api)
-
-	req := buildUploadRequest(t, "/upload", metadata, filename, "image/png", makeTestPNG(t, 5, 5))
+	req := buildUploadRequest(t, "/upload", metadata, filename, "image/png", content)
 	req = withTestUser(req, userID)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
@@ -282,9 +229,7 @@ func newTestAPI(t *testing.T) (*api, *storage.MockStorage) {
 
 	seedTestUsers(t, gormModels.Users, users)
 
-	// Postgres persists across tests in the same container, so each test
-	// must clean up after itself. Truncate everything before each test
-	// rather than dropping/recreating the schema (much faster).
+	// Postgres persists across tests in the same container
 	t.Cleanup(func() {
 		gormModels.Images.Db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE")
 	})
