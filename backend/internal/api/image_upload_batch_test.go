@@ -1,12 +1,40 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"server/internal/models"
 	"testing"
 )
+
+func buildBatchUploadRequest(t *testing.T, url string, metadataJSON string, files []TestFileData) *http.Request {
+	t.Helper()
+	body := &bytes.Buffer{}
+	w := multipart.NewWriter(body)
+
+	if err := w.WriteField("metadata", metadataJSON); err != nil {
+		t.Fatalf("failed to write metadata field: %v", err)
+	}
+
+	for _, file := range files {
+		if file.filename != "" {
+			writeFilePart(t, w, "files", file)
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close multipart writer: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, url, body)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	return req
+}
+
+//TODO: very large upload
 
 func TestPostImagesBatch(t *testing.T) {
 	tests := []struct {

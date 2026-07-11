@@ -40,6 +40,7 @@ BACKEND:
 
 - ~~Delete image query~~
 - **Cover Api with test**
+- Upload image create tags that doesn't exist
 - Boards system
 - boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
 - DB transactions, prevent upload abort errors

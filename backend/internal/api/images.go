@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"server/internal/models"
 	"server/pkg/image"
+	"server/pkg/tag"
 	"strconv"
 	"strings"
 	"time"
@@ -180,7 +181,7 @@ func (api *api) GetImagesByQuery(c *gin.Context) {
 		return
 	}
 
-	query, err := api.parseQueryFromContext(c)
+	query, err := api.newQueryFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -230,7 +231,7 @@ func (api *api) DeleteImageByName(c *gin.Context) {
 	}()
 
 	if txErr = api.models.Images.DeleteImage(tx, img, user.ID); txErr != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
 		return
 	}
 
@@ -253,7 +254,7 @@ func (api *api) DeleteImageByName(c *gin.Context) {
 }
 
 func (api *api) DeleteImagesByQuery(c *gin.Context) {
-	query, err := api.parseQueryFromContext(c)
+	query, err := api.newQueryFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("failed parsing query: %v", err)})
 		return
@@ -280,7 +281,7 @@ func (api *api) DeleteImagesByQuery(c *gin.Context) {
 
 	deletedImages, txErr := api.models.Images.DeleteImagesByQuery(tx, *query, user.ID)
 	if txErr != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
 		return
 	}
 
@@ -545,46 +546,39 @@ func (api *api) ImageDeletePipeline(c *gin.Context, img *models.ImageMetadata) e
 	return nil
 }
 
-func (api *api) parseQueryFromContext(c *gin.Context) (*models.ImageQuery, error) {
-	query := models.EmptyQuery()
-
-	nameContains := c.Query("name")
+func (api *api) newQueryFromContext(c *gin.Context) (*models.ImageQuery, error) {
+	prefix := c.Query("name") // TODO: rename to prefix
 	tagsString := c.Query("tags")
-	fromUsername := c.Query("username")
-	fromUserID := c.Query("user_id")
+	username := c.Query("username")
+	userIDStr := c.Query("user_id")
 
-	var err error
-	var tags []string
+	builder := models.NewImageQueryBuilder().Prefix(prefix)
 
-	if nameContains != "" {
-		query.NameContains = nameContains
-	}
 	if tagsString != "" {
-		err = json.Unmarshal([]byte(tagsString), &tags)
+		tags, err := tag.ParseTagsFromJSONString(tagsString)
 		if err != nil {
 			return nil, err
 		}
-		query.WithTags = tags
-	}
-	if fromUsername != "" {
-		uploader, err := api.models.Users.GetUserByUsername(fromUsername)
-		if err != nil {
-			return nil, err
-		}
-		query.User = uploader
-	}
-	if fromUserID != "" {
-		userID, err := strconv.ParseUint(fromUserID, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		uploader, err := api.models.Users.GetUserById(userID)
-		if err != nil {
-			return nil, err
-		}
-		query.User = uploader
+		builder.Tags(tags)
 	}
 
-	return &query, nil
+	if userIDStr != "" {
+		userID, err := strconv.ParseUint(userIDStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		user, err := api.models.Users.GetUserById(userID)
+		if err != nil {
+			return nil, err
+		}
+		builder.User(user)
+	} else if username != "" {
+		user, err := api.models.Users.GetUserByUsername(username)
+		if err != nil {
+			return nil, err
+		}
+		builder.User(user)
+	}
+
+	return builder.Build(), nil
 }
