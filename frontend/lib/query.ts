@@ -17,7 +17,7 @@ export function constructQueryString(query: SearchQuery) {
     let queryString = `${nameQueryString}${tagsQueryString}${userID}`;
 
     if (queryString.length > 0)
-        queryString = queryString.substring(0, queryString.length - 1 - 1);
+        queryString = queryString.substring(0, queryString.length - 1);
 
-    return;
+    return queryString;
 }

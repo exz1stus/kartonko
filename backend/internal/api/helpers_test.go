@@ -201,9 +201,9 @@ func newTestRouter(a *api) *gin.Engine {
 	r.GET("/image/id/:id", a.GetImageByID)
 	r.GET("/image/raw/:name", a.GetRawImageByName)
 	r.GET("/image/thumb/:name", a.GetRawThumbnailByName)
-	r.GET("/images", a.GetImagesByQuery)
+	r.GET("/image", a.GetImagesByQuery)
 	r.DELETE("/image/:name", a.DeleteImageByName)
-	r.DELETE("/images", a.DeleteImagesByQuery)
+	r.DELETE("/image", a.DeleteImagesByQuery)
 	r.POST("/upload", a.PostImage)
 	r.POST("/upload/batch", a.PostImagesBatch)
 

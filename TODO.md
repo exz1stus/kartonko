@@ -32,14 +32,12 @@ FRONTEND:
 - Fix captcha not reloading on error upload
 - Add Last seen on webhooks
 - Crawling from selected resources: telegram groups, discord active channels
-- hashing on pHash
-- comparing for duplicates with CLIP
 - rework profile pop up
 
 BACKEND:
 
 - ~~Delete image query~~
-- **Cover Api with test**
+- Cover Api with test
 - Upload image create tags that doesn't exist
 - Boards system
 - boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
@@ -48,6 +46,8 @@ BACKEND:
 - Remove limits for moderator users
 - From filename to hash identification, optional names
 - Cover Api with swagger
+- hashing on pHash
+- comparing for duplicates with CLIP
 
 TGBOT:
 

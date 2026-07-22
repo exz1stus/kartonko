@@ -39,9 +39,11 @@ const Gallery: React.FC<Props> = ({
             requestSize: number,
         ): Promise<ImageMetadata[]> => {
             const queryString = constructQueryString(searchQuery);
-            const response = await apiFetch(
-                `/image?${queryString}cursor=${cursor}&limit=${requestSize}`,
-            );
+            const cursorParam = `cursor=${cursor}&limit=${requestSize}`;
+            const url = queryString
+                ? `/image?${queryString}&${cursorParam}`
+                : `/image?${cursorParam}`;
+            const response = await apiFetch(url);
             if (!response.ok) throw new Error("Failed to fetch images");
 
             const imageData: ImageMetadata[] = await response.json();
