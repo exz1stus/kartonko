@@ -37,6 +37,7 @@ FRONTEND:
 BACKEND:
 
 - ~~Delete image query~~
+- Store user picture
 - Cover Api with test
 - Upload image create tags that doesn't exist
 - Boards system

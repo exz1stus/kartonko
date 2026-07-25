@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -57,7 +56,7 @@ func ConstructImageResponse(img *models.ImageMetadata) ImageResponse {
 // @Router /image/{name} [get]
 func (api *api) GetImageByName(c *gin.Context) {
 	req := c.Param("name")
-	img, err := api.models.Images.GetImageByName(req)
+	img, err := api.imageService.GetByName(req)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
@@ -331,8 +330,8 @@ type ImagePostRequest struct {
 func (api *api) PostImage(c *gin.Context) {
 	formData := c.PostForm("metadata")
 
-	var metadata ImagePostRequest
-	if err := json.Unmarshal([]byte(formData), &metadata); err != nil {
+	var postRequest ImagePostRequest
+	if err := json.Unmarshal([]byte(formData), &postRequest); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %v", err)})
 		return
 	}
@@ -343,7 +342,7 @@ func (api *api) PostImage(c *gin.Context) {
 		return
 	}
 
-	if err := isImageRequestValid(&metadata, fileHeader); err != nil {
+	if err := isImageRequestValid(&postRequest, fileHeader); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("%v", err)})
 		return
 	}
@@ -354,7 +353,7 @@ func (api *api) PostImage(c *gin.Context) {
 		return
 	}
 
-	img, err := api.ImageUploadPipeline(c, &metadata, fileHeader, user)
+	img, err := api.imageService.Upload(c.Request.Context(), &postRequest, fileHeader, user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("%v", err)})
 		return
@@ -457,77 +456,6 @@ func isImageRequestValid(metadata *ImagePostRequest, fileHeader *multipart.FileH
 	}
 
 	return nil
-}
-
-func (api *api) ImageUploadPipeline(c *gin.Context, metadata *ImagePostRequest, fileHeader *multipart.FileHeader, user *models.User) (img *models.ImageMetadata, err error) {
-	f, err := fileHeader.Open()
-	if err != nil {
-		return nil, fmt.Errorf("error opening uploaded file: %v", err)
-	}
-	defer f.Close()
-
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return nil, fmt.Errorf("error reading uploaded file: %v", err)
-	}
-
-	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
-	if err != nil {
-		return nil, fmt.Errorf("image format parsing error: %v", err)
-	}
-
-	imgWidth, imgHeight, err := image.GetDimensionsBytes(data)
-	if err != nil {
-		return nil, fmt.Errorf("error getting image dimensions: %v", err)
-	}
-
-	img = api.models.Images.ConstructImageMetadata(metadata.Name, metadata.Tags, imgFormat, imgWidth, imgHeight, user.ID)
-	img.Hash = image.HashBytes(data)
-
-	tx := api.models.Images.Db.Begin()
-	if tx.Error != nil {
-		return nil, fmt.Errorf("failed to start database transaction: %v", tx.Error)
-	}
-
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-
-	if err = api.models.Images.CreateImage(tx, img); err != nil {
-		return nil, fmt.Errorf("error saving the image to database: %w", err)
-	}
-
-	if err = api.models.Log.AddImageCreated(tx, img, user); err != nil {
-		return nil, fmt.Errorf("failed to log image creation: %w", err)
-	}
-
-	imageKey := image.ImageKey(img.Hash, img.Format)
-	if err = api.storage.Upload(c, imageKey, bytes.NewReader(data), "image/"+img.Format); err != nil {
-		return nil, fmt.Errorf("error uploading image: %w", err)
-	}
-
-	var thumb []byte
-	thumb, err = image.GenerateThumbnail(data, "."+img.Format)
-	if err != nil {
-		_ = api.storage.Delete(c, imageKey)
-		return nil, fmt.Errorf("error generating thumbnail: %w", err)
-	}
-
-	thumbKey := image.ThumbnailKey(img.Hash)
-	if err = api.storage.Upload(c, thumbKey, bytes.NewReader(thumb), "image/jpeg"); err != nil {
-		_ = api.storage.Delete(c, imageKey)
-		return nil, fmt.Errorf("error uploading thumbnail: %w", err)
-	}
-
-	if err = tx.Commit().Error; err != nil {
-		_ = api.storage.Delete(c, imageKey)
-		_ = api.storage.Delete(c, thumbKey)
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return img, nil
 }
 
 func (api *api) ImageDeletePipeline(c *gin.Context, img *models.ImageMetadata) error {

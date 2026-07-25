@@ -2,8 +2,9 @@ package api
 
 import (
 	"fmt"
+	"server/internal/database"
 	"server/internal/env"
-	"server/internal/models"
+	"server/internal/services"
 	"server/internal/storage"
 	"strconv"
 
@@ -19,19 +20,29 @@ type ErrorResponse struct {
 type Response gin.H
 
 type api struct {
-	router    *gin.Engine
-	models    *models.Models
-	storage   storage.Storage
-	jwtSecret string
+	router       *gin.Engine
+	imageService services.ImageService
+	userService  services.UserService
+	storage      storage.Storage
+	jwtSecret    string
 }
 
 func MustInitApi() *api {
-	models := models.MustInitDB()
+	database.MustInitDB()
 	storage := storage.MustInitGarageClient()
-	//TODO: temporary for development, remove later
-	models.Users.SetUserPrivilage(1, 1)
 
-	api := &api{models: models, storage: storage, jwtSecret: env.GetEnvString("JWT_SECRET")}
+	imageService := services.NewImageService(storage)
+
+	//TODO: temporary for development, remove later
+	userService.SetUserPrivilage(1, 1)
+
+	api := &api{
+		imageService,
+		userService,
+		storage:   storage,
+		jwtSecret: env.GetEnvString("JWT_SECRET"),
+	}
+
 	api.initRoutes()
 
 	return api
