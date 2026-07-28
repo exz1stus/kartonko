@@ -12,11 +12,12 @@ import (
 	"server/internal/storage"
 	"strings"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 func buildUploadRequest(t *testing.T, url, metadataJSON, filename, contentType string, content []byte) *http.Request {
 	fileData := TestFileData{filename, contentType, content}
-
 	return buildUploadRequestFileData(t, url, metadataJSON, fileData)
 }
 
@@ -41,16 +42,69 @@ func buildUploadRequestFileData(t *testing.T, url string, metadataJSON string, f
 	return req
 }
 
+// uploadTestCase represents a single test case for image upload
+type uploadTestCase struct {
+	name       string
+	metadata   string
+	filename   string
+	content    func(t *testing.T) []byte
+	mimeType   string
+	userID     uint64
+	wantStatus int
+}
+
+// testUploadContext holds common test dependencies
+type testUploadContext struct {
+	t       *testing.T
+	a       *api
+	r       *gin.Engine
+	store   *storage.MockStorage
+	mod     *models.User
+}
+
+func newTestUploadContext(t *testing.T) *testUploadContext {
+	t.Helper()
+	a := newTestAPI(t)
+	r := newTestRouter(a)
+	store := a.storage.(*storage.MockStorage)
+
+	mod, err := a.userService.GetByID(1)
+	if err != nil {
+		t.Fatalf("failed getting moderator user")
+	}
+	seedTestTags(t, a.tagService, []string{"animal", "cat", "dog"}, mod)
+
+	return &testUploadContext{t: t, a: a, r: r, store: store, mod: mod}
+}
+
+func (c *testUploadContext) upload(tt uploadTestCase) *httptest.ResponseRecorder {
+	req := buildUploadRequest(c.t, "/upload", tt.metadata, tt.filename, tt.mimeType, tt.content(c.t))
+	if tt.userID != 0 {
+		req = withTestUser(req, tt.userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
+
+func (c *testUploadContext) assertStatus(rec *httptest.ResponseRecorder, wantStatus int) {
+	if rec.Code != wantStatus {
+		c.t.Errorf("got status %d, want %d, body=%s", rec.Code, wantStatus, rec.Body.String())
+	}
+}
+
+func (c *testUploadContext) assertStorageCount(expected int) {
+	count, err := c.store.Count("")
+	if err != nil {
+		c.t.Errorf("failed retrieving store images count: %v", err)
+	}
+	if count != expected {
+		c.t.Errorf("expected %d stored objects, got %d", expected, count)
+	}
+}
+
 func TestPostImage(t *testing.T) {
-	tests := []struct {
-		name       string
-		metadata   string
-		filename   string
-		content    func(t *testing.T) []byte
-		mimeType   string
-		userID     uint64
-		wantStatus int
-	}{
+	tests := []uploadTestCase{
 		{
 			name:       "success valid png",
 			metadata:   `{"name":"cat.png","tags":["animal"]}`,
@@ -108,14 +162,14 @@ func TestPostImage(t *testing.T) {
 		{
 			name:       "no file attached",
 			metadata:   `{"name":"nofile.png"}`,
-			filename:   "", // triggers no file part
+			filename:   "",
 			content:    func(t *testing.T) []byte { return nil },
 			mimeType:   "",
 			userID:     1,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			name:       "tags are not added",
+			name:       "tags are not added (invalid JSON array)",
 			metadata:   `{"name":"nofile.png","tags":[some_tag1, some_tag2]}`,
 			filename:   "notallowedtags.png",
 			content:    func(t *testing.T) []byte { return makeTestPNG(t, 5, 5) },
@@ -127,159 +181,79 @@ func TestPostImage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := newTestAPI(t)
-			r := newTestRouter(a)
-			store := a.storage.(*storage.MockStorage)
+			ctx := newTestUploadContext(t)
+			rec := ctx.upload(tt)
 
-			mod, err := a.userService.GetByID(1)
-			if err != nil {
-				t.Fatalf("failed getting moderator user")
-			}
-			tags := []string{"animal", "cat", "dog"}
-			seedTestTags(t, a.tagService, tags, mod)
+			ctx.assertStatus(rec, tt.wantStatus)
 
-			req := buildUploadRequest(t, "/upload", tt.metadata, tt.filename, tt.mimeType, tt.content(t))
-			if tt.userID != 0 {
-				req = withTestUser(req, tt.userID)
-			}
-			rec := httptest.NewRecorder()
-			r.ServeHTTP(rec, req)
-
-			if rec.Code != tt.wantStatus {
-				t.Errorf("got status %d, want %d, body=%s", rec.Code, tt.wantStatus, rec.Body.String())
-			}
-
-			afterStoreCount, err := store.Count("")
-			if err != nil {
-				t.Errorf("failed retrieving store images count")
-			}
-
-			if tt.wantStatus == http.StatusOK && afterStoreCount != 2 {
-				t.Errorf("expected 2 stored objects (image+thumb), got %d", afterStoreCount)
+			if tt.wantStatus == http.StatusOK {
+				ctx.assertStorageCount(2)
 			}
 		})
 	}
 }
 
 func TestPostImage_TagsAdded(t *testing.T) {
-	a := newTestAPI(t)
-	r := newTestRouter(a)
-	store := a.storage.(*storage.MockStorage)
+	ctx := newTestUploadContext(t)
 
-	mod, err := a.userService.GetByID(1)
-	if err != nil {
-		t.Fatalf("failed getting moderator user")
-	}
-	tags := []string{"animal", "cat", "dog"}
-	seedTestTags(t, a.tagService, tags, mod)
-
-	// Upload image with tags
 	metadata := `{"name":"tagged.png","tags":["animal","cat"]}`
-	req := buildUploadRequest(t, "/upload", metadata, "tagged.png", "image/png", makeTestPNG(t, 10, 10))
-	req = withTestUser(req, 1)
-	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
+	rec := ctx.upload(uploadTestCase{
+		metadata:   metadata,
+		filename:   "tagged.png",
+		content:    func(t *testing.T) []byte { return makeTestPNG(t, 10, 10) },
+		mimeType:   "image/png",
+		userID:     1,
+		wantStatus: http.StatusOK,
+	})
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("upload failed: %d %s", rec.Code, rec.Body.String())
-	}
+	ctx.assertStatus(rec, http.StatusOK)
 
 	// Verify response contains tags
 	var resp dto.ImageResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
+	assertTags(t, resp.Tags, []string{"animal", "cat"}, "response")
 
-	expectedTags := []string{"animal", "cat"}
-	if len(resp.Tags) != len(expectedTags) {
-		t.Errorf("expected %d tags in response, got %d: %v", len(expectedTags), len(resp.Tags), resp.Tags)
-	}
-	for _, expectedTag := range expectedTags {
-		found := false
-		for _, tag := range resp.Tags {
-			if tag == expectedTag {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("expected tag %q in response, got %v", expectedTag, resp.Tags)
-		}
-	}
-
-	// Verify tags are persisted in database by fetching the image
-	img, err := a.imageService.GetByName("tagged.png")
+	// Verify tags are persisted in database
+	img, err := ctx.a.imageService.GetByName("tagged.png")
 	if err != nil {
 		t.Fatalf("failed to get image from DB: %v", err)
 	}
-
 	dbTags := models.TagsToStrings(img.Tags)
-	if len(dbTags) != len(expectedTags) {
-		t.Errorf("expected %d tags in DB, got %d: %v", len(expectedTags), len(dbTags), dbTags)
-	}
-	for _, expectedTag := range expectedTags {
-		found := false
-		for _, tag := range dbTags {
-			if tag == expectedTag {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("expected tag %q in DB, got %v", expectedTag, dbTags)
-		}
-	}
+	assertTags(t, dbTags, []string{"animal", "cat"}, "database")
 
-	// Verify storage count
-	afterStoreCount, err := store.Count("")
-	if err != nil {
-		t.Errorf("failed retrieving store images count")
-	}
-	if afterStoreCount != 2 {
-		t.Errorf("expected 2 stored objects (image+thumb), got %d", afterStoreCount)
-	}
+	ctx.assertStorageCount(2)
 }
 
 func TestPostImage_DuplicateName(t *testing.T) {
-	a := newTestAPI(t)
-	store := a.storage.(*storage.MockStorage)
+	ctx := newTestUploadContext(t)
 
-	r := newTestRouter(a)
 	req1 := buildUploadRequest(t, "/upload", `{"name":"dup.png"}`, "dup.png", "image/png", makeTestPNG(t, 5, 5))
 	req1 = withTestUser(req1, 1)
 	rec1 := httptest.NewRecorder()
-	r.ServeHTTP(rec1, req1)
+	ctx.r.ServeHTTP(rec1, req1)
 
 	req2 := buildUploadRequest(t, "/upload", `{"name":"dup.png"}`, "dup.png", "image/png", makeTestPNG(t, 5, 5))
 	req2 = withTestUser(req2, 1)
 	rec2 := httptest.NewRecorder()
-	r.ServeHTTP(rec2, req2)
+	ctx.r.ServeHTTP(rec2, req2)
+
 	if rec2.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500 for duplicate name, got %d: %s", rec2.Code, rec2.Body.String())
 	}
 
-	afterStoreCount, err := store.Count("")
-	if err != nil {
-		t.Errorf("failed retrieving store images count")
-	}
-
-	// only the original upload's objects should exist
-	if afterStoreCount != 2 {
-		t.Errorf("expected no new storage objects from rejected duplicate, got %d", afterStoreCount)
-	}
+	ctx.assertStorageCount(2)
 }
 
 func TestPostImage_DuplicateHash_DifferentName(t *testing.T) {
-	a := newTestAPI(t)
+	ctx := newTestUploadContext(t)
 	content := makeTestPNG(t, 7, 7)
-	store := a.storage.(*storage.MockStorage)
-
-	r := newTestRouter(a)
 
 	req1 := buildUploadRequest(t, "/upload", `{"name":"first.png"}`, "first.png", "image/png", content)
 	req1 = withTestUser(req1, 1)
 	rec1 := httptest.NewRecorder()
-	r.ServeHTTP(rec1, req1)
+	ctx.r.ServeHTTP(rec1, req1)
 	if rec1.Code != http.StatusOK {
 		t.Fatalf("first upload failed: %d %s", rec1.Code, rec1.Body.String())
 	}
@@ -287,102 +261,71 @@ func TestPostImage_DuplicateHash_DifferentName(t *testing.T) {
 	req2 := buildUploadRequest(t, "/upload", `{"name":"second.png"}`, "second.png", "image/png", content)
 	req2 = withTestUser(req2, 1)
 	rec2 := httptest.NewRecorder()
-	r.ServeHTTP(rec2, req2)
+	ctx.r.ServeHTTP(rec2, req2)
 
 	if rec2.Code != http.StatusInternalServerError {
 		t.Fatalf("expected duplicate-hash upload to fail, got %d: %s", rec2.Code, rec2.Body.String())
 	}
 
-	afterStoreCount, err := store.Count("")
-	if err != nil {
-		t.Errorf("failed retrieving store images count")
-	}
-
-	if afterStoreCount != 2 {
-		t.Errorf("expected only first upload's objects to exist, got %d", afterStoreCount)
-	}
+	ctx.assertStorageCount(2)
 }
 
 func TestPostImage_StorageUploadFails_NoDBRowAndStorageImageLeft(t *testing.T) {
-	a := newTestAPI(t)
-	store := a.storage.(*storage.MockStorage)
-	store.FailUploadOn = func(key string) error {
+	ctx := newTestUploadContext(t)
+	ctx.store.FailUploadOn = func(key string) error {
 		if !strings.Contains(key, "thumb") {
 			return fmt.Errorf("simulated storage failure on main image")
 		}
 		return nil
 	}
 
-	r := newTestRouter(a)
 	req := buildUploadRequest(t, "/upload", `{"name":"y.png"}`, "y.png", "image/png", makeTestPNG(t, 5, 5))
 	req = withTestUser(req, 1)
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
+	ctx.r.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	query := models.NewImageQueryBuilder().
-		Prefix("dog_duplicate.png.png").
-		Build()
-	count, err := a.imageService.Count(query)
+	query := models.NewImageQueryBuilder().Prefix("dog_duplicate.png.png").Build()
+	count, err := ctx.a.imageService.Count(query)
 	if err != nil {
-		t.Errorf("failed counting db rows")
+		t.Errorf("failed counting db rows: %v", err)
 	}
-
 	if count != 0 {
 		t.Errorf("expected no DB row after rollback, found %d", count)
 	}
 
-	afterStoreCount, err := store.Count("")
-	if err != nil {
-		t.Errorf("failed retrieving store images count")
-	}
-
-	if afterStoreCount != 0 {
-		t.Errorf("expected no storage objects, found %d", afterStoreCount)
-	}
+	ctx.assertStorageCount(0)
 }
 
 func TestPostImage_StorageThumbUploadFails_NoDBRowAndStorageImageLeft(t *testing.T) {
-	a := newTestAPI(t)
-	store := a.storage.(*storage.MockStorage)
-	store.FailUploadOn = func(key string) error {
+	ctx := newTestUploadContext(t)
+	ctx.store.FailUploadOn = func(key string) error {
 		if strings.Contains(key, "thumb") {
 			return fmt.Errorf("simulated storage failure on thumb")
 		}
 		return nil
 	}
 
-	r := newTestRouter(a)
 	req := buildUploadRequest(t, "/upload", `{"name":"y.png"}`, "y.png", "image/png", makeTestPNG(t, 5, 5))
 	req = withTestUser(req, 1)
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
+	ctx.r.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	query := models.NewImageQueryBuilder().
-		Prefix("dog_duplicate.png.png").
-		Build()
-	count, err := a.imageService.Count(query)
+	query := models.NewImageQueryBuilder().Prefix("dog_duplicate.png.png").Build()
+	count, err := ctx.a.imageService.Count(query)
 	if err != nil {
-		t.Errorf("failed counting db rows")
+		t.Errorf("failed counting db rows: %v", err)
 	}
-
 	if count != 0 {
 		t.Errorf("expected no DB row after rollback, found %d", count)
 	}
 
-	afterStoreCount, err := store.Count("")
-	if err != nil {
-		t.Errorf("failed retrieving store images count")
-	}
-
-	if afterStoreCount != 0 {
-		t.Errorf("expected no storage objects, found %d", afterStoreCount)
-	}
+	ctx.assertStorageCount(0)
 }

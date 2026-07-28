@@ -2,18 +2,8 @@ package api
 
 import (
 	"net/http"
-	"net/http/httptest"
-	"server/internal/storage"
 	"testing"
 )
-
-func buildDeleteByQueryRequest(t *testing.T, url, queryString string) *http.Request {
-	t.Helper()
-
-	resourceUrl := url + "?" + queryString
-	req := httptest.NewRequest(http.MethodDelete, resourceUrl, http.NoBody)
-	return req
-}
 
 func TestDeleteImageByQuery(t *testing.T) {
 	tests := []struct {
@@ -28,82 +18,65 @@ func TestDeleteImageByQuery(t *testing.T) {
 			query:           `name=ima`,
 			userID:          1,
 			wantStatus:      http.StatusOK,
-			expectedDeleted: 2, // image.png, image2.png (both start with "ima")
+			expectedDeleted: 2,
 		},
 		{
 			name:            "moderator delete by tag success",
 			query:           `tags=["dog"]`,
 			userID:          1,
 			wantStatus:      http.StatusOK,
-			expectedDeleted: 2, // image2.png, user2_image.png (both have tag "dog")
+			expectedDeleted: 2,
 		},
 		{
 			name:            "moderator delete by user id success",
 			query:           `user_id=2`,
 			userID:          1,
 			wantStatus:      http.StatusOK,
-			expectedDeleted: 1, // user2_image.png (owned by user 2)
+			expectedDeleted: 1,
 		},
 		{
 			name:            "user full ownership delete success",
 			query:           `user_id=2`,
 			userID:          2,
 			wantStatus:      http.StatusOK,
-			expectedDeleted: 1, // user2_image.png (owned by user 2)
+			expectedDeleted: 1,
 		},
 		{
 			name:            "user mixed ownership delete failure",
 			query:           `tags=["dog"]`,
 			userID:          2,
 			wantStatus:      http.StatusForbidden,
-			expectedDeleted: 0, // should fail, no images deleted
+			expectedDeleted: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := newTestAPI(t)
-			r := newTestRouter(a)
-			store := a.storage.(storage.TestStorage)
+			ctx := newTestContext(t)
 
-			mod, err := a.userService.GetByID(1)
-			if err != nil {
-				t.Fatalf("failed getting moderator user")
-			}
-			tags := []string{"dog"}
-			seedTestTags(t, a.tagService, tags, mod)
+			// Seed test images
+			ctx.seedImage(`{"name": "image.png"}`, "image.png", makeTestPNG(t, 5, 5), 1)
+			ctx.seedImage(`{"name": "image2.png", "tags": ["dog"]}`, "image2.png", makeTestPNG(t, 7, 5), 1)
+			ctx.seedImage(`{"name": "user2_image.png", "tags": ["dog"]}`, "user2_image.png", makeTestPNG(t, 5, 6), 2)
 
-			seedImageUsingRequest(t, r, `{"name": "image.png"}`, "image.png", makeTestPNG(t, 5, 5), 1)
-			seedImageUsingRequest(t, r, `{"name": "image2.png", "tags": ["dog"]}`, "image2.png", makeTestPNG(t, 7, 5), 1)
-			seedImageUsingRequest(t, r, `{"name": "user2_image.png", "tags": ["dog"]}`, "user2_image.png", makeTestPNG(t, 5, 6), 2)
-
-			initialCount64, err := a.imageService.Count(nil)
+			initialCount64, err := ctx.a.imageService.Count(nil)
 			initialCount := int(initialCount64)
 			if err != nil {
 				t.Fatal("failed to count test initial images count")
 			}
 
-			req := buildDeleteByQueryRequest(t, "/image", tt.query)
+			rec := ctx.deleteImagesByQuery(tt.query, tt.userID)
 
-			if tt.userID != 0 {
-				req = withTestUser(req, tt.userID)
-			}
+			ctx.assertStatus(rec, tt.wantStatus)
 
-			rec := httptest.NewRecorder()
-			r.ServeHTTP(rec, req)
-
-			if rec.Code != tt.wantStatus {
-				t.Errorf("got status %d, want %d, body=%s", rec.Code, tt.wantStatus, rec.Body.String())
-			}
-
-			afterStoreCount, err := store.Count("")
+			afterStoreCount, err := ctx.store.Count("")
 			if err != nil {
-				t.Errorf("failed retrieving store images count")
+				t.Errorf("failed retrieving store images count: %v", err)
 			}
 
-			afterDbCount, err := a.imageService.Count(nil)
+			afterDbCount, err := ctx.a.imageService.Count(nil)
 			if err != nil {
-				t.Errorf("failed retrieving db images count")
+				t.Errorf("failed retrieving db images count: %v", err)
 			}
 
 			expectedRemaining := initialCount - tt.expectedDeleted
@@ -112,7 +85,7 @@ func TestDeleteImageByQuery(t *testing.T) {
 				t.Errorf("expected %d db rows remaining, got %d", expectedRemaining, afterDbCount)
 			}
 
-			expectedStoreRemaining := (initialCount - tt.expectedDeleted) * 2 // image + thumb
+			expectedStoreRemaining := (initialCount - tt.expectedDeleted) * 2
 			if afterStoreCount != expectedStoreRemaining {
 				t.Errorf("expected %d stored objects remaining, got %d", expectedStoreRemaining, afterStoreCount)
 			}

@@ -108,6 +108,12 @@ func makeTestPNG(t *testing.T, w, h int) []byte {
 	return buf.Bytes()
 }
 
+// makeUniqueTestPNG creates a test PNG with unique dimensions to avoid duplicate hash errors
+func makeUniqueTestPNG(t *testing.T, baseW, baseH int, unique int) []byte {
+	t.Helper()
+	return makeTestPNG(t, baseW+unique*10, baseH+unique*10)
+}
+
 func makeFileDataFromMetadata(t *testing.T, metadataJSON string, content func(t *testing.T) []byte) []TestFileData {
 	var metadata []dto.ImagePostRequest
 	if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
@@ -259,4 +265,232 @@ func newTestAPI(t *testing.T) *api {
 	})
 
 	return api
+}
+
+// ============================================================================
+// Common Test Contexts & Helpers
+// ============================================================================
+
+// testContext holds common test dependencies for all test types
+type testContext struct {
+	t       *testing.T
+	a       *api
+	r       *gin.Engine
+	store   *storage.MockStorage
+	mod     *models.User
+}
+
+// newTestContext creates a fresh test context with seeded tags
+func newTestContext(t *testing.T) *testContext {
+	t.Helper()
+	a := newTestAPI(t)
+	r := newTestRouter(a)
+	store := a.storage.(*storage.MockStorage)
+
+	mod, err := a.userService.GetByID(1)
+	if err != nil {
+		t.Fatalf("failed getting moderator user")
+	}
+	seedTestTags(t, a.tagService, []string{"animal", "cat", "dog", "bird", "test"}, mod)
+
+	return &testContext{t: t, a: a, r: r, store: store, mod: mod}
+}
+
+// assertStatus checks response status
+func (c *testContext) assertStatus(rec *httptest.ResponseRecorder, wantStatus int) {
+	c.t.Helper()
+	if rec.Code != wantStatus {
+		c.t.Errorf("got status %d, want %d, body=%s", rec.Code, wantStatus, rec.Body.String())
+	}
+}
+
+// assertStorageCount checks storage object count
+func (c *testContext) assertStorageCount(expected int) {
+	c.t.Helper()
+	count, err := c.store.Count("")
+	if err != nil {
+		c.t.Errorf("failed retrieving store images count: %v", err)
+	}
+	if count != expected {
+		c.t.Errorf("expected %d stored objects, got %d", expected, count)
+	}
+}
+
+// assertTags checks tags match expected (order-insensitive)
+func assertTags(t *testing.T, got, expected []string, context string) {
+	t.Helper()
+	if len(got) != len(expected) {
+		t.Errorf("%s: expected %d tags, got %d: %v", context, len(expected), len(got), got)
+		return
+	}
+	for _, exp := range expected {
+		found := false
+		for _, g := range got {
+			if g == exp {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("%s: expected tag %q, got %v", context, exp, got)
+		}
+	}
+}
+
+// assertImageCount checks number of images in DB matching a query
+func (c *testContext) assertImageCount(query *models.ImageQuery, expected int64) {
+	c.t.Helper()
+	count, err := c.a.imageService.Count(query)
+	if err != nil {
+		c.t.Errorf("failed counting images: %v", err)
+		return
+	}
+	if count != expected {
+		c.t.Errorf("expected %d images, got %d", expected, count)
+	}
+}
+
+// uploadImage uploads an image and returns the response recorder
+func (c *testContext) uploadImage(metadata, filename string, content []byte, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	req := buildUploadRequest(c.t, "/upload", metadata, filename, "image/png", content)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
+
+// uploadImageWithResponse uploads and returns both recorder and parsed response
+func (c *testContext) uploadImageWithResponse(metadata, filename string, content []byte, userID uint64) (*httptest.ResponseRecorder, dto.ImageResponse) {
+	c.t.Helper()
+	rec := c.uploadImage(metadata, filename, content, userID)
+
+	var resp dto.ImageResponse
+	if rec.Code == http.StatusOK {
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			c.t.Fatalf("failed to unmarshal response: %v", err)
+		}
+	}
+	return rec, resp
+}
+
+// queryImages performs a GET /image request with query string
+func (c *testContext) queryImages(query string, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	url := "/image"
+	if query != "" {
+		url += "?" + query
+	}
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
+
+// queryImagesWithResponse performs query and returns parsed response
+func (c *testContext) queryImagesWithResponse(query string, userID uint64) (*httptest.ResponseRecorder, []dto.ImageResponse) {
+	c.t.Helper()
+	rec := c.queryImages(query, userID)
+
+	var images []dto.ImageResponse
+	if rec.Code == http.StatusOK {
+		if err := json.Unmarshal(rec.Body.Bytes(), &images); err != nil {
+			c.t.Fatalf("failed to unmarshal response: %v", err)
+		}
+	}
+	return rec, images
+}
+
+// getImageByName fetches an image by name
+func (c *testContext) getImageByName(filename string, userID uint64) (*httptest.ResponseRecorder, dto.ImageResponse) {
+	c.t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/image/"+filename, nil)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+
+	var resp dto.ImageResponse
+	if rec.Code == http.StatusOK {
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			c.t.Fatalf("failed to unmarshal response: %v", err)
+		}
+	}
+	return rec, resp
+}
+
+// getRawImage fetches raw image data
+func (c *testContext) getRawImage(filename string, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/image/raw/"+filename, nil)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
+
+// getThumbnail fetches thumbnail
+func (c *testContext) getThumbnail(filename string, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/image/thumb/"+filename, nil)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
+
+// deleteImageByName deletes a single image
+func (c *testContext) deleteImageByName(filename string, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	req := buildDeleteRequest(c.t, "/image", filename)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
+
+// deleteImagesByQuery deletes images by query
+func (c *testContext) deleteImagesByQuery(query string, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	url := "/image"
+	if query != "" {
+		url += "?" + query
+	}
+	req := httptest.NewRequest(http.MethodDelete, url, http.NoBody)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
+
+// seedImage uploads an image for test setup (panics on failure)
+func (c *testContext) seedImage(metadata, filename string, content []byte, userID uint64) dto.ImageResponse {
+	c.t.Helper()
+	rec, resp := c.uploadImageWithResponse(metadata, filename, content, userID)
+	if rec.Code != http.StatusOK {
+		c.t.Fatalf("seedImage(%s) failed: status=%d body=%s", filename, rec.Code, rec.Body.String())
+	}
+	return resp
+}
+
+// buildDeleteRequest creates a DELETE request for a single image
+func buildDeleteRequest(t *testing.T, url, filename string) *http.Request {
+	t.Helper()
+	resourceUrl := url + "/" + filename
+	req := httptest.NewRequest(http.MethodDelete, resourceUrl, http.NoBody)
+	return req
 }
