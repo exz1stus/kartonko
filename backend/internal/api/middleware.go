@@ -52,7 +52,7 @@ func (app *api) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		user, err := app.models.Users.GetUserById(uint64(userId))
+		user, err := app.userService.GetByID(uint(userId))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			c.Abort()
@@ -60,11 +60,6 @@ func (app *api) AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("user", user)
-
-		err = app.models.Users.UpdateLastSeen(user)
-		if err != nil {
-			print(err)
-		}
 
 		c.Next()
 	}

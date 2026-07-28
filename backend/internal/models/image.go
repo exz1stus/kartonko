@@ -7,7 +7,7 @@ import (
 type ImageMetadata struct {
 	gorm.Model
 	Hash     string `json:"hash" gorm:"not null"`
-	Filename string `json:"filename"`
+	Filename string `json:"filename" gorm:"not null"`
 	Tags     []Tag  `json:"tags"  gorm:"many2many:image_tags;constraint:OnDelete:CASCADE;"`
 	Format   string `json:"format" gorm:"not null"`
 	Width    uint   `json:"width" gorm:"not null"`

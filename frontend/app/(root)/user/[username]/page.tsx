@@ -57,8 +57,8 @@ const UserPage = async ({
         //                 {" "}
         //                 <span className="text-xl">{user.username}</span>
         //                 <div className="flex justify-between">
-        //                     <span>Privileage: </span>
-        //                     <span>{user.privileage}</span>
+        //                     <span>Privilege: </span>
+        //                     <span>{user.privilege}</span>
         //                 </div>
         //                 <div className="flex justify-between">
         //                     <span>Joined at: </span>
@@ -95,8 +95,8 @@ const UserPage = async ({
                     <div className="flex flex-col px-1 py-2">
                         <span className="text-xl">{user.username}</span>
                         <div className="flex justify-between">
-                            <span>Privileage: </span>
-                            <span>{user.privileage}</span>
+                            <span>Privilege: </span>
+                            <span>{user.privilege}</span>
                         </div>
                         <div className="flex justify-between">
                             <span>Joined at: </span>

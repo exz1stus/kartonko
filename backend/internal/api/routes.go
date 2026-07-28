@@ -12,8 +12,7 @@ import (
 )
 
 func (api *api) initRoutes() {
-	api.router = gin.Default()
-	r := api.router
+	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{env.GetEnvString("FRONTEND_ORIGIN")},
@@ -72,4 +71,6 @@ func (api *api) initRoutes() {
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, "/swagger/index.html")
 	})
+
+	api.router = r
 }

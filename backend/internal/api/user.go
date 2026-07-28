@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"server/internal/api/dto"
 	"server/internal/models"
 	"strconv"
 	"time"
@@ -9,23 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UserDataResponse struct {
-	ID         uint   `json:"id"`
-	Username   string `json:"username"`
-	Privileage string `json:"privileage"`
-	PictureURL string `json:"picture_url"`
-	JoinedAt   string `json:"joined_at"`
-	LastSeen   string `json:"last_seen"`
-	Online     bool   `json:"online"`
-}
-
-func constructUserResponse(user *models.User) UserDataResponse {
-	res := UserDataResponse{
-		ID:         user.ID,
-		Username:   user.Username,
-		Privileage: user.Privileage.String(),
-		JoinedAt:   user.CreatedAt.Format(time.DateOnly),
-		LastSeen:   user.LastSeen.Format(time.DateTime),
+func constructUserResponse(user *models.User) dto.UserDataResponse {
+	res := dto.UserDataResponse{
+		ID:        user.ID,
+		Username:  user.Username,
+		Privilege: user.Privilege.String(),
+		JoinedAt:  user.CreatedAt.Format(time.DateOnly),
+		LastSeen:  user.LastSeen.Format(time.DateTime),
 	}
 
 	if user.IsOauth() {
@@ -37,7 +28,7 @@ func constructUserResponse(user *models.User) UserDataResponse {
 
 func (api *api) GetUserByName(c *gin.Context) {
 	username := c.Param("name")
-	user, err := api.models.Users.GetUserByUsername(username)
+	user, err := api.userService.GetByUsername(username)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
@@ -56,7 +47,7 @@ func (api *api) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	user, err := api.models.Users.GetUserById(id)
+	user, err := api.userService.GetByID(uint(id))
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})

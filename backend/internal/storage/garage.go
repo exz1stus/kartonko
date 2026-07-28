@@ -120,3 +120,31 @@ func (g *GarageClient) List(ctx context.Context, prefix string) ([]FileInfo, err
 	}
 	return items, nil
 }
+
+// Testing storage methods
+
+func (g *GarageClient) Count(prefix string) (int, error) {
+	var count int
+	var token *string
+	for {
+		out, err := g.S3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
+			Bucket:            aws.String(g.BucketName),
+			Prefix:            aws.String(prefix),
+			ContinuationToken: token,
+		})
+		if err != nil {
+			return 0, err
+		}
+		for _, o := range out.Contents {
+			if o.Key == nil {
+				continue
+			}
+			count++
+		}
+		if out.NextContinuationToken == nil {
+			break
+		}
+		token = out.NextContinuationToken
+	}
+	return count, nil
+}

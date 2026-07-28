@@ -1,39 +1,117 @@
 package services
 
-import "server/internal/models"
+import (
+	"fmt"
+	"server/internal/models"
+	"server/internal/repositories"
+)
 
 type UserService interface {
-	Create(user *models.User) (*models.User, error)
+	Create(user *models.User) error
 	CreateByGoogle(username string, email string, googleID string, pictureURL string) (*models.User, error)
 	CreateByRegistration(username string, hashedPassword string) (*models.User, error)
 
 	GetByID(id uint) (*models.User, error)
 	GetByUsername(username string) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
+	GetByProviderID(id string) (*models.User, error)
 
-	SetUserPrivilage(userID uint64, privileage models.Privileage)
+	SetPrivilege(userID uint, privilege models.Privilege) error
 
 	ExistsByUsername(username string) (bool, error)
 	ExistsByEmail(email string) (bool, error)
 }
 
 type userService struct {
+	users  repositories.UserRepository
+	images repositories.ImageRepository
 }
 
-func (model *UserModel) GetOrRegisterGoogle(username string, email string, googleID string, pictureURL string) (*User, error)
+func NewUserService(users repositories.UserRepository, images repositories.ImageRepository) UserService {
+	return &userService{users, images}
+}
 
-func (model *UserModel) CreateUserGoogle(username string, email string, googleID string, pictureURL string) (*User, error)
+func (s *userService) Create(user *models.User) error {
+	if user.Username == "" {
+		return fmt.Errorf("username cannot be empty")
+	}
 
-func (model *UserModel) CreateUserRegistration(username string, hashedPassword string) (*User, error)
+	exists, err := s.ExistsByUsername(user.Username)
+	if err != nil {
+		return fmt.Errorf("check duplicate username error: %w", err)
+	}
+	if exists {
+		return fmt.Errorf("user with username %s already exists", user.Username)
+	}
 
-func (model *UserModel) CreateUser(user *User) (*User, error)
+	if err := s.users.Create(user); err != nil {
+		return fmt.Errorf("failed creating user: %w", err)
+	}
 
-func (model *UserModel) UsernameExists(username string) (bool, error)
+	return nil
+}
 
-func (model *UserModel) GetUserById(id uint64) (*User, error)
+func (s *userService) CreateByGoogle(username string, email string, googleID string, pictureURL string) (*models.User, error) {
+	if email == "" {
+		return nil, fmt.Errorf("email is empty")
+	}
 
-func (model *UserModel) GetUserByUsername(name string) (*User, error)
+	if googleID == "" {
+		return nil, fmt.Errorf("googleID is empty")
+	}
 
-func (model *UserModel) GetUserByEmail(email string) (*User, error)
+	user := &models.User{
+		Username:   username,
+		Email:      email,
+		Privilege:  models.Unprivileged,
+		Provider:   "google",
+		ProviderID: googleID,
+		PictureURL: pictureURL,
+	}
 
-func (model *UserModel) SetUserPrivilage(userID uint64, privileage Privileage) error
+	err := s.Create(user)
+	return user, err
+}
+
+func (s *userService) CreateByRegistration(username string, hashedPassword string) (*models.User, error) {
+	if hashedPassword == "" {
+		return nil, fmt.Errorf("hashed password is empty")
+	}
+
+	user := &models.User{
+		Username:       username,
+		HashedPassword: hashedPassword,
+		Privilege:      models.Unprivileged,
+	}
+
+	err := s.Create(user)
+	return user, err
+}
+
+func (s *userService) GetByID(id uint) (*models.User, error) {
+	return s.users.GetByID(id)
+}
+
+func (s *userService) GetByUsername(username string) (*models.User, error) {
+	return s.users.GetByUsername(username)
+}
+
+func (s *userService) GetByEmail(email string) (*models.User, error) {
+	return s.users.GetByEmail(email)
+}
+
+func (s *userService) GetByProviderID(id string) (*models.User, error) {
+	return s.users.GetByProviderID(id)
+}
+
+func (s *userService) SetPrivilege(userID uint, privilege models.Privilege) error {
+	return s.users.SetPrivilege(userID, privilege)
+}
+
+func (s *userService) ExistsByUsername(username string) (bool, error) {
+	return s.users.ExistsByUsername(username)
+}
+
+func (s *userService) ExistsByEmail(email string) (bool, error) {
+	return s.users.ExistsByEmail(email)
+}

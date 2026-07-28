@@ -14,8 +14,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"server/internal/api/dto"
+	"server/internal/database"
 	"server/internal/env"
 	"server/internal/models"
+	"server/internal/repositories"
+	"server/internal/services"
 	"server/internal/storage"
 	"strings"
 	"testing"
@@ -105,7 +109,7 @@ func makeTestPNG(t *testing.T, w, h int) []byte {
 }
 
 func makeFileDataFromMetadata(t *testing.T, metadataJSON string, content func(t *testing.T) []byte) []TestFileData {
-	var metadata []ImagePostRequest
+	var metadata []dto.ImagePostRequest
 	if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
 		t.Fatalf("failed to unmarshall test metadata json : %v", err)
 	}
@@ -143,23 +147,22 @@ func seedImageUsingRequest(t *testing.T, r *gin.Engine, metadata string, filenam
 	}
 }
 
-func seedTestTags(t *testing.T, model *models.TagModel, tags []string) {
+func seedTestTags(t *testing.T, service services.TagService, tags []string, user *models.User) {
 	t.Helper()
 
 	for _, tag := range tags {
-		_, err := model.CreateTag(tag)
+		_, err := service.Create(context.Background(), tag, user)
 		if err != nil {
 			t.Fatalf("failed to seed tag %s: %v", tag, err)
 		}
 	}
 }
 
-func seedTestUsers(t *testing.T, model *models.UserModel, users []models.User) {
+func seedTestUsers(t *testing.T, service services.UserService, users []models.User) {
 	t.Helper()
 
 	for _, u := range users {
-		_, err := model.CreateUser(&u)
-		if err != nil {
+		if err := service.Create(&u); err != nil {
 			t.Fatalf("failed to seed user %s: %v", u.Username, err)
 		}
 	}
@@ -181,7 +184,7 @@ func testAuthMiddleware(api *api) gin.HandlerFunc {
 		}
 		var id uint64
 		fmt.Sscanf(idStr, "%d", &id)
-		user, err := api.models.Users.GetUserById(id)
+		user, err := api.userService.GetByID(uint(id))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("failed parsing test user from context: %v", err)})
 			c.Abort()
@@ -210,29 +213,50 @@ func newTestRouter(a *api) *gin.Engine {
 	return r
 }
 
-func newTestAPI(t *testing.T) (*api, *storage.MockStorage) {
+func newTestAPI(t *testing.T) *api {
 	t.Helper()
 
-	gormModels, err := models.InitGorm(postgres.Open(sharedDSN), &gorm.Config{})
+	db, err := database.InitGorm(postgres.Open(sharedDSN), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to connect to init gorm: %v", err)
 	}
 	storage := storage.NewMockStorage()
-	api := &api{models: gormModels, storage: storage, jwtSecret: env.GetEnvString("JWT_SECRET")}
+
+	imageRepo := repositories.NewImageRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+	tagRepo := repositories.NewTagRepository(db)
+	logRepo := repositories.NewLogRepository(db)
+
+	logService := services.NewLogService(logRepo)
+	userService := services.NewUserService(userRepo, imageRepo)
+	imageService := services.NewImageService(db, imageRepo, logService, storage)
+	tagService := services.NewTagService(db, tagRepo, logService)
+
+	api := &api{
+		imageService: imageService,
+		userService:  userService,
+		tagService:   tagService,
+		logService:   logService,
+
+		storage:   storage,
+		jwtSecret: env.GetEnvString("JWT_SECRET"),
+		db:        db,
+	}
+
 	api.router = newTestRouter(api)
 
 	users := []models.User{
-		{Model: gorm.Model{ID: 1}, Username: "mod", Privileage: models.Moderator, Email: "mod@test.local", ProviderID: "test-provider-1"},
-		{Model: gorm.Model{ID: 2}, Username: "alice", Privileage: models.Unprivileaged, Email: "alice@test.local", ProviderID: "test-provider-2"},
-		{Model: gorm.Model{ID: 3}, Username: "bob", Privileage: models.Unprivileaged, Email: "bob@test.local", ProviderID: "test-provider-3"},
+		{Model: gorm.Model{ID: 1}, Username: "mod", Privilege: models.Moderator, Email: "mod@test.local", ProviderID: "test-provider-1"},
+		{Model: gorm.Model{ID: 2}, Username: "alice", Privilege: models.Unprivileged, Email: "alice@test.local", ProviderID: "test-provider-2"},
+		{Model: gorm.Model{ID: 3}, Username: "bob", Privilege: models.Unprivileged, Email: "bob@test.local", ProviderID: "test-provider-3"},
 	}
 
-	seedTestUsers(t, gormModels.Users, users)
+	seedTestUsers(t, api.userService, users)
 
 	// Postgres persists across tests in the same container
 	t.Cleanup(func() {
-		gormModels.Images.Db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE")
+		db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE")
 	})
 
-	return api, storage
+	return api
 }

@@ -6,6 +6,8 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"server/internal/api/dto"
+	"server/internal/errors"
 	"server/internal/models"
 	"server/pkg/image"
 	"server/pkg/tag"
@@ -16,24 +18,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ImageResponse struct {
-	ID       uint     `json:"id"`
-	Hash     string   `json:"hash"`
-	Filename string   `json:"filename"`
-	Tags     []string `json:"tags"`
-	Format   string   `json:"format"`
-	Width    uint     `json:"width"`
-	Height   uint     `json:"height"`
-	UserID   uint     `json:"user_id"`
-	Uploaded string   `json:"uploaded_at"`
-}
-
 const TimeFormat = time.RFC3339
 
-func ConstructImageResponse(img *models.ImageMetadata) ImageResponse {
+func ConstructImageResponse(img *models.ImageMetadata) dto.ImageResponse {
 	tags := models.TagsToStrings(img.Tags)
 
-	return ImageResponse{
+	return dto.ImageResponse{
 		ID:       img.ID,
 		Hash:     img.Hash,
 		Filename: img.Filename,
@@ -69,7 +59,7 @@ func (api *api) GetImageByName(c *gin.Context) {
 
 func (api *api) GetImageByHash(c *gin.Context) {
 	req := c.Param("hash")
-	img, err := api.models.Images.GetImageByHash(req)
+	img, err := api.imageService.GetByHash(req)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
@@ -83,13 +73,14 @@ func (api *api) GetImageByHash(c *gin.Context) {
 func (api *api) GetImageByID(c *gin.Context) {
 	idStr := c.Param("id")
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id64, err := strconv.ParseUint(idStr, 10, strconv.IntSize)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad id"})
 		return
 	}
 
-	img, err := api.models.Images.GetImageByID(id)
+	id := uint(id64)
+	img, err := api.imageService.GetByID(id)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
@@ -136,7 +127,7 @@ func (api *api) GetRawThumbnailByName(c *gin.Context) {
 // storage to the client with no intermediate buffering.
 func (api *api) streamObject(c *gin.Context, keyFn func(*models.ImageMetadata) (string, string)) {
 	name := c.Param("name")
-	img, err := api.models.Images.GetImageByName(name)
+	img, err := api.imageService.GetByName(name)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
@@ -174,25 +165,19 @@ func (api *api) streamObject(c *gin.Context, keyFn func(*models.ImageMetadata) (
 // @Failure 500 {object} ErrorResponse
 // @Router /images [get]
 func (api *api) GetImagesByQuery(c *gin.Context) {
-	cursor, limit, err := parseCursorLimit(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
 	query, err := api.newQueryFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	images, err := api.models.Images.SearchImages(*query, cursor, limit)
+	images, err := api.imageService.Search(query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	response := make([]ImageResponse, len(images))
+	response := make([]dto.ImageResponse, len(images))
 	for i, img := range images {
 		response[i] = ConstructImageResponse(&img)
 	}
@@ -210,42 +195,12 @@ func (api *api) DeleteImageByName(c *gin.Context) {
 		return
 	}
 
-	img, err := api.models.Images.GetImageByName(name)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
-		return
-	}
-
-	tx := api.models.Images.Db.Begin()
-	if tx.Error != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("failed to start database transaction: %v", tx.Error)})
-		return
-	}
-
-	var txErr error
-	defer func() {
-		if txErr != nil {
-			tx.Rollback()
+	if err := api.imageService.DeleteByName(c.Request.Context(), user, name); err != nil {
+		if err == errors.ErrPermissionDenied {
+			c.JSON(http.StatusForbidden, ErrorResponse{Error: "permission denied: " + err.Error()})
+			return
 		}
-	}()
-
-	if txErr = api.models.Images.DeleteImage(tx, img, user.ID); txErr != nil {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
-		return
-	}
-
-	if txErr = api.ImageDeletePipeline(c, img); txErr != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
-		return
-	}
-
-	if txErr = api.models.Log.AddImageDeleted(tx, img, user); txErr != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + txErr.Error()})
-		return
-	}
-
-	if txErr = tx.Commit().Error; txErr != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to commit transaction: " + txErr.Error()})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
 		return
 	}
 
@@ -265,55 +220,31 @@ func (api *api) DeleteImagesByQuery(c *gin.Context) {
 		return
 	}
 
-	tx := api.models.Images.Db.Begin()
-	if tx.Error != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("failed to start database transaction: %v", tx.Error)})
-		return
-	}
-
-	var txErr error
-	defer func() {
-		if txErr != nil {
-			tx.Rollback()
+	errs := api.imageService.DeleteByQuery(c.Request.Context(), user, query)
+	if errs != nil {
+		hasPermissionError := false
+		messages := make([]string, len(errs))
+		for i, err := range errs {
+			messages[i] = err.Error()
+			if err == errors.ErrPermissionDenied {
+				hasPermissionError = true
+			}
 		}
-	}()
 
-	deletedImages, txErr := api.models.Images.DeleteImagesByQuery(tx, *query, user.ID)
-	if txErr != nil {
-		c.JSON(http.StatusForbidden, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
-		return
-	}
-
-	for i := range deletedImages {
-		img := &deletedImages[i]
-
-		if txErr = api.ImageDeletePipeline(c, img); txErr != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed deleting image: " + txErr.Error()})
+		if hasPermissionError {
+			c.JSON(http.StatusForbidden, gin.H{
+				"errors": messages,
+			})
 			return
 		}
 
-		if txErr = api.models.Log.AddImageDeleted(tx, img, user); txErr != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed adding log entry: " + txErr.Error()})
-			return
-		}
-	}
-
-	if txErr = tx.Commit().Error; txErr != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("failed to commit transaction: %v", txErr)})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errors": messages,
+		})
 		return
 	}
 
-	response := make([]ImageResponse, len(deletedImages))
-	for i, img := range deletedImages {
-		response[i] = ConstructImageResponse(&img)
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-type ImagePostRequest struct {
-	Name string   `json:"name"`
-	Tags []string `json:"tags"`
+	c.JSON(http.StatusOK, gin.H{"success": "images deleted"})
 }
 
 // PostImage godoc
@@ -330,7 +261,7 @@ type ImagePostRequest struct {
 func (api *api) PostImage(c *gin.Context) {
 	formData := c.PostForm("metadata")
 
-	var postRequest ImagePostRequest
+	var postRequest dto.ImagePostRequest
 	if err := json.Unmarshal([]byte(formData), &postRequest); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %v", err)})
 		return
@@ -353,7 +284,7 @@ func (api *api) PostImage(c *gin.Context) {
 		return
 	}
 
-	img, err := api.imageService.Upload(c.Request.Context(), &postRequest, fileHeader, user)
+	img, err := api.imageService.Upload(c.Request.Context(), user, &postRequest, fileHeader)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("%v", err)})
 		return
@@ -363,20 +294,10 @@ func (api *api) PostImage(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-type ImagePostBatchRequest struct {
-	Data       []ImagePostRequest `json:"data"`
-	CommonTags []string           `json:"common_tags"`
-}
-
-type ImagePostBatchResponse struct {
-	Successes []ImageResponse    `json:"successes"`
-	Failures  []image.ImageError `json:"failures"`
-}
-
 func (api *api) PostImagesBatch(c *gin.Context) {
 	formData := c.PostForm("metadata")
 
-	var batch ImagePostBatchRequest
+	var batch dto.ImagePostBatchRequest
 	if err := json.Unmarshal([]byte(formData), &batch); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %s", err.Error())})
 		return
@@ -404,7 +325,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 		return
 	}
 
-	response := &ImagePostBatchResponse{}
+	response := &dto.ImagePostBatchResponse{}
 
 	for i, metadata := range batch.Data {
 		if i >= len(files) {
@@ -422,7 +343,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 			continue
 		}
 
-		img, err := api.ImageUploadPipeline(c, &metadata, files[i], user)
+		img, err := api.imageService.Upload(c.Request.Context(), user, &metadata, files[i])
 		if err != nil {
 			response.Failures = append(response.Failures, image.ImageError{
 				Name: metadata.Name, Error: err.Error(),
@@ -441,7 +362,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func isImageRequestValid(metadata *ImagePostRequest, fileHeader *multipart.FileHeader) error {
+func isImageRequestValid(metadata *dto.ImagePostRequest, fileHeader *multipart.FileHeader) error {
 	if len(metadata.Name) == 0 {
 		return fmt.Errorf("empty name provided")
 	}
@@ -475,12 +396,20 @@ func (api *api) ImageDeletePipeline(c *gin.Context, img *models.ImageMetadata) e
 }
 
 func (api *api) newQueryFromContext(c *gin.Context) (*models.ImageQuery, error) {
+	cursor, limit, err := parseCursorLimit(c)
+	if err != nil {
+		return nil, err
+	}
+
 	prefix := c.Query("name") // TODO: rename to prefix
 	tagsString := c.Query("tags")
 	username := c.Query("username")
 	userIDStr := c.Query("user_id")
 
-	builder := models.NewImageQueryBuilder().Prefix(prefix)
+	builder := models.NewImageQueryBuilder().
+		Prefix(prefix).
+		Cursor(cursor).
+		Limit(limit)
 
 	if tagsString != "" {
 		tags, err := tag.ParseTagsFromJSONString(tagsString)
@@ -491,17 +420,18 @@ func (api *api) newQueryFromContext(c *gin.Context) (*models.ImageQuery, error) 
 	}
 
 	if userIDStr != "" {
-		userID, err := strconv.ParseUint(userIDStr, 10, 64)
+		userID64, err := strconv.ParseUint(userIDStr, 10, 64)
+		userID := uint(userID64)
 		if err != nil {
 			return nil, err
 		}
-		user, err := api.models.Users.GetUserById(userID)
+		user, err := api.userService.GetByID(userID)
 		if err != nil {
 			return nil, err
 		}
 		builder.User(user)
 	} else if username != "" {
-		user, err := api.models.Users.GetUserByUsername(username)
+		user, err := api.userService.GetByUsername(username)
 		if err != nil {
 			return nil, err
 		}

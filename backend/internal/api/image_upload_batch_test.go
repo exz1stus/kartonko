@@ -6,7 +6,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"server/internal/api/dto"
 	"server/internal/models"
+	"server/internal/storage"
 	"testing"
 )
 
@@ -83,11 +85,16 @@ func TestPostImagesBatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a, store := newTestAPI(t)
+			a := newTestAPI(t)
 			r := newTestRouter(a)
+			store := a.storage.(storage.TestStorage)
 
+			mod, err := a.userService.GetByID(1)
+			if err != nil {
+				t.Fatalf("failed getting moderator user")
+			}
 			tags := []string{"animal", "cat", "dog"}
-			seedTestTags(t, a.models.Tags, tags)
+			seedTestTags(t, a.tagService, tags, mod)
 
 			fileDatas := tt.fileDatas(t)
 
@@ -100,7 +107,7 @@ func TestPostImagesBatch(t *testing.T) {
 			r.ServeHTTP(rec, req)
 
 			if tt.wantStatus < 400 && tt.wantStatus != 207 {
-				var res ImagePostBatchResponse
+				var res dto.ImagePostBatchResponse
 				if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 					t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 				}
@@ -116,16 +123,22 @@ func TestPostImagesBatch(t *testing.T) {
 				t.Errorf("got status %d, want %d, body=%s", rec.Code, tt.wantStatus, rec.Body.String())
 			}
 
-			if tt.wantStatus == http.StatusOK && store.Count() != len(fileDatas)*2 {
-				t.Errorf("expected %d stored objects (image+thumb), got %d", len(fileDatas)*2, store.Count())
+			afterStoreCount, err := store.Count("")
+			if err != nil {
+				t.Errorf("failed retrieving store images count")
+			}
+
+			if tt.wantStatus == http.StatusOK && afterStoreCount != len(fileDatas)*2 {
+				t.Errorf("expected %d stored objects (image+thumb), got %d", len(fileDatas)*2, afterStoreCount)
 			}
 		})
 	}
 }
 
 func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
-	a, store := newTestAPI(t)
+	a := newTestAPI(t)
 	r := newTestRouter(a)
+	store := a.storage.(*storage.MockStorage)
 
 	metadata := `{"data": [{"name":"cat.png"},{"name":"dog.png"},{"name":"cat.png"}]}`
 
@@ -162,13 +175,20 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 		t.Errorf("got status %d, want %d, body=%s", rec.Code, http.StatusMultiStatus, rec.Body.String())
 	}
 
-	var res ImagePostBatchResponse
+	var res dto.ImagePostBatchResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 		t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 	}
 
-	var count int64
-	a.models.Images.Db.Model(&models.ImageMetadata{}).Where("filename = ?", "dog_duplicate.png.png").Count(&count)
+	query := models.NewImageQueryBuilder().
+		Prefix("dog_duplicate.png.png").
+		Build()
+
+	count, err := a.imageService.Count(query)
+	if err != nil {
+		t.Errorf("failed counting db rows")
+	}
+
 	if count != 0 {
 		t.Errorf("expected no failed images in db")
 	}
@@ -177,7 +197,12 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 		t.Errorf("expected %d successes , got %d", succesCount, len(res.Successes))
 	}
 
-	if store.Count() != succesCount*2 {
-		t.Errorf("expected %d stored objects (image+thumb), got %d", succesCount*2, store.Count())
+	afterStoreCount, err := store.Count("")
+	if err != nil {
+		t.Errorf("failed retrieving store images count")
+	}
+
+	if afterStoreCount != succesCount*2 {
+		t.Errorf("expected %d stored objects (image+thumb), got %d", succesCount*2, afterStoreCount)
 	}
 }

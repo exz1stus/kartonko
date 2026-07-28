@@ -1,7 +1,8 @@
 export interface LogEntryData {
     id: number;
     user_id: number;
-    entry_type: string;
+    action: string;
+    object_type: string;
     affected_obj_id: number;
     created_at: string;
     data: Object | null;

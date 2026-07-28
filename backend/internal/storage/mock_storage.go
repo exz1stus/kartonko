@@ -115,8 +115,25 @@ func (m *MockStorage) Has(key string) bool {
 	return ok
 }
 
-func (m *MockStorage) Count() int {
+func (m *MockStorage) Count(prefix string) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return len(m.objects)
+	if prefix != "" {
+		return len(m.objects), nil
+	}
+
+	count := 0
+	for k, _ := range m.objects {
+		if strings.HasPrefix(k, prefix) {
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+func (m *MockStorage) Reset() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.objects = make(map[string]mockStorageObj)
 }

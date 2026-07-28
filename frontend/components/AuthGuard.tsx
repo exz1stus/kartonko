@@ -22,7 +22,7 @@ const AuthGuard = ({ moderator = false, children }: Props) => {
     }, [user, loading, router]);
 
     if (!user) return <Loading />;
-    if (moderator && user.privileage !== "Moderator")
+    if (moderator && user.privilege !== "Moderator")
         return <div>Forbidden</div>;
     return <>{children}</>;
 };

@@ -37,6 +37,9 @@ FRONTEND:
 BACKEND:
 
 - ~~Delete image query~~
+- **Rewrite to service/repo**
+- Fix tags not added to image
+- Last seen webhook
 - Store user picture
 - Cover Api with test
 - Upload image create tags that doesn't exist

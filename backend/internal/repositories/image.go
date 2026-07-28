@@ -34,8 +34,12 @@ type imageRepository struct {
 	db *gorm.DB
 }
 
+func NewImageRepository(db *gorm.DB) ImageRepository {
+	return &imageRepository{db: db}
+}
+
 func (r *imageRepository) WithTx(tx *gorm.DB) ImageRepository {
-	return &imageRepository{db: tx}
+	return NewImageRepository(tx)
 }
 
 func (r *imageRepository) Create(image *models.ImageMetadata) error {
@@ -47,26 +51,26 @@ func (r *imageRepository) Update(image *models.ImageMetadata) error {
 }
 
 func (r *imageRepository) GetByID(id uint) (*models.ImageMetadata, error) {
-	var image *models.ImageMetadata
-	err := r.db.Preload("Tags").Where("id = ?", id).First(image).Error
-	return image, err
+	var image models.ImageMetadata
+	err := r.db.Preload("Tags").Where("id = ?", id).First(&image).Error
+	return &image, err
 }
 
 func (r *imageRepository) GetByName(name string) (*models.ImageMetadata, error) {
-	var image *models.ImageMetadata
-	err := r.db.Preload("Tags").Where("filename = ?", name).First(image).Error
-	return image, err
+	var image models.ImageMetadata
+	err := r.db.Preload("Tags").Where("filename = ?", name).First(&image).Error
+	return &image, err
 }
 
 func (r *imageRepository) GetByHash(hash string) (*models.ImageMetadata, error) {
-	var image *models.ImageMetadata
-	err := r.db.Preload("Tags").Where("hash = ?", hash).First(image).Error
-	return image, err
+	var image models.ImageMetadata
+	err := r.db.Preload("Tags").Where("hash = ?", hash).First(&image).Error
+	return &image, err
 }
 
 func (r *imageRepository) Search(query *models.ImageQuery) ([]models.ImageMetadata, error) {
 	var images []models.ImageMetadata
-	db := r.db.Preload("Tags").Model(&models.ImageMetadata{}).Order("image_metadata.id desc")
+	db := r.db.Model(&models.ImageMetadata{}).Order("image_metadata.id desc")
 
 	db = applyFilters(db, query)
 
@@ -74,15 +78,28 @@ func (r *imageRepository) Search(query *models.ImageQuery) ([]models.ImageMetada
 		return nil, err
 	}
 
+	// Manually load tags for each image
+	for i := range images {
+		if err := r.db.Model(&images[i]).Association("Tags").Find(&images[i].Tags); err != nil {
+			return nil, err
+		}
+	}
+
 	return images, nil
 }
 
 func (r *imageRepository) DeleteByID(id uint) error {
-	return r.db.Model(&models.ImageMetadata{}).Delete("id = ?", id).Error
+	return r.db.
+		Where("id = ?", id).
+		Delete(&models.ImageMetadata{}).
+		Error
 }
 
 func (r *imageRepository) DeleteByIDs(ids []uint) error {
-	return r.db.Model(&models.ImageMetadata{}).Delete("id IN ?", ids).Error
+	return r.db.
+		Where("id IN ?", ids).
+		Delete(&models.ImageMetadata{}).
+		Error
 }
 
 func (r *imageRepository) Count(query *models.ImageQuery) (int64, error) {
@@ -110,12 +127,19 @@ func (r *imageRepository) ExistsByName(name string) (bool, error) {
 
 func (r *imageRepository) AttachTags(image *models.ImageMetadata, tags []models.Tag) error {
 	tagNames := models.TagsToStrings(tags)
+	if len(tags) == 0 {
+		return nil
+	}
 	var dbTags []models.Tag
 	if err := r.db.Where("name IN ?", tagNames).Find(&dbTags).Error; err != nil {
 		return fmt.Errorf("failed to retrieve tags: %w", err)
 	}
 
-	if err := r.db.Model(image).Association("Tags").Append(dbTags); err != nil {
+	if len(dbTags) != len(tags) {
+		return fmt.Errorf("not all tags found: expected %d, got %d for tags %v", len(tags), len(dbTags), tagNames)
+	}
+
+	if err := r.db.Model(image).Association("Tags").Append(&dbTags); err != nil {
 		return fmt.Errorf("failed to associate tags with image: %w", err)
 	}
 
@@ -128,11 +152,13 @@ func applyFilters(db *gorm.DB, query *models.ImageQuery) *gorm.DB {
 	}
 
 	if len(query.Tags) > 0 {
-		db = db.Joins("JOIN image_tags ON image_tags.image_metadata_id = image_metadata.id").
+		// Use HAVING COUNT to ensure ALL tags are present (AND logic)
+		db = db.Distinct().
+			Joins("JOIN image_tags ON image_tags.image_metadata_id = image_metadata.id").
 			Joins("JOIN tags ON tags.id = image_tags.tag_id").
 			Where("tags.name IN ?", query.Tags).
 			Group("image_metadata.id").
-			Having("COUNT(DISTINCT tags.id) = ?", len(query.Tags))
+			Having("COUNT(DISTINCT tags.name) = ?", len(query.Tags))
 	}
 
 	if query.User != nil {
@@ -146,6 +172,8 @@ func applyFilters(db *gorm.DB, query *models.ImageQuery) *gorm.DB {
 	if query.Cursor != 0 {
 		db = db.Offset(query.Cursor)
 	}
+
+	db = db.Debug()
 
 	return db
 }
@@ -305,7 +333,7 @@ func applyFilters(db *gorm.DB, query *models.ImageQuery) *gorm.DB {
 
 // 	var user User
 // 	// Use a clean query on the users table, not the transaction with image JOINs
-// 	err := db.Unscoped().Model(&User{}).Where("id = ? AND privileage = ?", userID, Moderator).First(&user).Error
+// 	err := db.Unscoped().Model(&User{}).Where("id = ? AND privilege = ?", userID, Moderator).First(&user).Error
 // 	return err == nil
 // }
 

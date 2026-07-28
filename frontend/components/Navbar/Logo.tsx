@@ -5,9 +5,9 @@ const Logo = () => {
     return (
         <Link
             href="/"
-            className="left-1/2 absolute font-bold text-2xl -translate-x-1/2 cursor-pointer transform"
+            className="left-1/2 absolute -translate-x-1/2 cursor-pointer"
         >
-            <span>kartonko</span>
+            <span className="font-bold text-2xl">kartonko</span>
         </Link>
     );
 };

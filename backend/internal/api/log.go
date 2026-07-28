@@ -23,7 +23,7 @@ func (api *api) GetAuditLogEntries(c *gin.Context) {
 		return
 	}
 
-	entries, err := api.models.Log.GetEntries(cursor, limit)
+	entries, err := api.logService.GetEntries(cursor, limit)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})

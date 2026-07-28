@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"server/internal/api/dto"
 	"server/internal/env"
 	"strings"
 	"sync"
@@ -11,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"gorm.io/gorm"
 )
 
 func googleRedirectURL() string {
@@ -87,11 +90,23 @@ func (rh *api) GetGoogleCallback(c *gin.Context) {
 		return
 	}
 
-	user, err := rh.models.Users.GetOrRegisterGoogle(userInfo.Name, userInfo.Email, userInfo.ID, userInfo.Picture)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+	user, err := rh.userService.GetByProviderID(userInfo.ID)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
+	}
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		user, err = rh.userService.CreateByGoogle(
+			userInfo.Name,
+			userInfo.Email,
+			userInfo.ID,
+			userInfo.Picture,
+		)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
 	}
 
 	tokenString, err := GenerateJwtToken(user.ID)
@@ -107,7 +122,7 @@ func (rh *api) GetGoogleCallback(c *gin.Context) {
 		return
 	}
 
-	res := &LoginResponse{
+	res := &dto.LoginResponse{
 		Token: tokenString,
 		User:  *user,
 	}

@@ -1,8 +1,8 @@
 package api
 
 import (
-	"log"
 	"net/http"
+	"server/internal/api/dto"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +25,7 @@ func (api *api) GetTags(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "failed to parse limit"})
 		return
 	}
-	tags, err := api.models.Tags.SearchTags(query, limit)
+	tags, err := api.tagService.SearchPrefix(query, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
@@ -33,63 +33,73 @@ func (api *api) GetTags(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": tags})
 }
 
-type CreateTagRequest struct {
-	Name string `json:"name"`
-}
-
 func (api *api) PostTag(c *gin.Context) {
-	var req CreateTagRequest
+	var req dto.PostTagRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body"})
 		return
 	}
 
-	tag, err := api.models.Tags.CreateTag(req.Name)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	if err = api.models.Log.AddTagCreated(tag, user); err != nil {
+
+	tag, err := api.tagService.Create(c.Request.Context(), req.Name, user)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"tag": tag})
 }
 
-type BatchTagsRequest struct {
-	Names []string `json:"names" binding:"required,min=1"`
-}
-
 func (api *api) PostTagsBatch(c *gin.Context) {
-	var req BatchTagsRequest
+	var req dto.PostTagsBatchRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request body or empty names list"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "invalid request body or empty names list",
+		})
 		return
 	}
 
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error: err.Error(),
+		})
 		return
 	}
 
-	tags, err := api.models.Tags.AddTagsBatch(req.Names)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
+	created := make([]string, 0, len(req.Names))
+	errs := make([]string, 0)
 
-	for _, tag := range tags {
-		if err = api.models.Log.AddTagCreated(&tag, user); err != nil {
-			log.Printf("Failed to log tag creation for %s: %v", tag.Name, err)
+	for _, name := range req.Names {
+		tag, err := api.tagService.Create(
+			c.Request.Context(),
+			name,
+			user,
+		)
+
+		if err != nil {
+			errs = append(errs, err.Error())
+			continue
 		}
+
+		created = append(created, tag.Name)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"tags": tags})
+	response := gin.H{
+		"created": created,
+	}
+
+	if len(errs) > 0 {
+		response["errors"] = errs
+		c.JSON(http.StatusMultiStatus, response)
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
 }

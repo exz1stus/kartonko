@@ -6,8 +6,12 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"server/internal/api/dto"
+	"server/internal/auth"
+	"server/internal/errors"
 	"server/internal/models"
 	"server/internal/repositories"
+
 	"server/internal/storage"
 	"server/pkg/image"
 
@@ -15,15 +19,16 @@ import (
 )
 
 type ImageService interface {
-	Upload(ctx context.Context, image *models.ImageMetadata) error
+	Upload(ctx context.Context, user *models.User, uploadMetadata *dto.ImagePostRequest, fileHeader *multipart.FileHeader) (*models.ImageMetadata, error)
 
 	GetByID(id uint) (*models.ImageMetadata, error)
 	GetByName(name string) (*models.ImageMetadata, error)
 	GetByHash(hash string) (*models.ImageMetadata, error)
 	Search(query *models.ImageQuery) ([]models.ImageMetadata, error)
 
-	DeleteByID(ctx context.Context, id uint) error
-	DeleteByQuery(ctx context.Context, ids []uint) []error
+	DeleteByID(ctx context.Context, user *models.User, id uint) error
+	DeleteByName(ctx context.Context, user *models.User, name string) error
+	DeleteByQuery(ctx context.Context, user *models.User, query *models.ImageQuery) []error
 
 	Count(query *models.ImageQuery) (int64, error)
 
@@ -32,18 +37,19 @@ type ImageService interface {
 }
 
 type imageService struct {
-	images repositories.ImageRepository
-	//users repositories.UserRepository
-	//  logs    repositories.LogRepository
+	images  repositories.ImageRepository
+	logs    LogService
 	storage storage.Storage
 
 	db *gorm.DB
 }
 
-func NewImageService(db *gorm.DB, storage storage.Storage) ImageService {
+func NewImageService(db *gorm.DB, images repositories.ImageRepository, logs LogService, storage storage.Storage) ImageService {
 	return &imageService{
-		db:      db,
-		storage: storage,
+		images,
+		logs,
+		storage,
+		db,
 	}
 }
 
@@ -76,11 +82,31 @@ func (s *imageService) ExistsByName(name string) (bool, error) {
 }
 
 func (s *imageService) DeleteByID(ctx context.Context, user *models.User, id uint) error {
-	//TODO: userService.HasPermission
-
+	if user == nil {
+		fmt.Errorf("deleting image: recieved nil user")
+	}
 	img, err := s.images.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed getting image for deletion: %v", err)
+	}
+
+	allowed := auth.CanEdit(user, img)
+	if !allowed {
+		return errors.ErrPermissionDenied
+	}
+
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		imagesRepoTx := s.images.WithTx(tx)
+		if err := imagesRepoTx.DeleteByID(id); err != nil {
+			return err
+		}
+		if err := s.logs.Log(tx, "delete", "image", user.ID, img.ID, nil); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	if err := s.storage.Delete(ctx, image.ImageKey(img.Hash, img.Format)); err != nil {
@@ -91,12 +117,13 @@ func (s *imageService) DeleteByID(ctx context.Context, user *models.User, id uin
 		return fmt.Errorf("failed deleting image thumbnail: %v", err)
 	}
 
-	return s.images.DeleteByID(id)
+	return nil
 }
 
 func (s *imageService) DeleteByQuery(ctx context.Context, user *models.User, query *models.ImageQuery) []error {
-	//TODO: userService.HasPermission
-
+	if user == nil {
+		fmt.Errorf("deleting image: recieved nil user")
+	}
 	imgs, err := s.images.Search(query)
 	var errs []error
 	if err != nil {
@@ -104,13 +131,30 @@ func (s *imageService) DeleteByQuery(ctx context.Context, user *models.User, que
 		return errs
 	}
 
-	ids := make([]uint, len(imgs))
-	for i, img := range imgs {
-		ids[i] = img.ID
+	ids := make([]uint, 0, len(imgs))
+	for _, img := range imgs {
+		if !auth.CanEdit(user, &img) {
+			return []error{errors.ErrPermissionDenied}
+		}
+
+		ids = append(ids, img.ID)
 	}
 
-	if err := s.images.DeleteByIDs(ids); err != nil {
-		errs = append(errs, fmt.Errorf("failed deleting images by query %w", err))
+	if err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		imagesRepoTx := s.images.WithTx(tx)
+		if err := imagesRepoTx.DeleteByIDs(ids); err != nil {
+			return fmt.Errorf("failed deleting images by query %w", err)
+		}
+
+		for _, id := range ids {
+			if err := s.logs.Log(tx, "delete", "image", user.ID, id, nil); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}); err != nil {
+		errs = append(errs, err)
 		return errs
 	}
 
@@ -131,7 +175,16 @@ func (s *imageService) DeleteByQuery(ctx context.Context, user *models.User, que
 	return nil
 }
 
-func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMetadata *ImagePostRequest, fileHeader *multipart.FileHeader) (*models.ImageMetadata, error) {
+func (s *imageService) DeleteByName(ctx context.Context, user *models.User, name string) error {
+	img, err := s.GetByName(name)
+	if err != nil {
+		return err
+	}
+
+	return s.DeleteByID(ctx, user, img.ID)
+}
+
+func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMetadata *dto.ImagePostRequest, fileHeader *multipart.FileHeader) (*models.ImageMetadata, error) {
 	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
 	if err != nil {
 		return nil, fmt.Errorf("image format parsing error: %v", err)
@@ -181,23 +234,27 @@ func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMeta
 		return nil, fmt.Errorf("error uploading thumbnail: %w", err)
 	}
 
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		imgRepoTx := s.images.WithTx(tx)
+
+		// Save tags from upload metadata before clearing
+		tagsToAttach := img.Tags
+		img.Tags = nil
 
 		if err := imgRepoTx.Create(img); err != nil {
 			return fmt.Errorf("error saving the image to database: %w", err)
 		}
 
-		if err := imgRepoTx.AttachTags(img, img.Tags); err != nil {
+		if err := imgRepoTx.AttachTags(img, tagsToAttach); err != nil {
 			return err
 		}
 
-		//TODO: logservice add
+		if err := s.logs.Log(tx, "create", "image", user.ID, img.ID, nil); err != nil {
+			return err
+		}
 
 		return nil
-	})
-
-	if err != nil {
+	}); err != nil {
 		_ = s.storage.Delete(ctx, imageKey)
 		_ = s.storage.Delete(ctx, thumbKey)
 		return nil, err

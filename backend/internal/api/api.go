@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"server/internal/database"
 	"server/internal/env"
+	"server/internal/repositories"
 	"server/internal/services"
 	"server/internal/storage"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // swagger:model
@@ -20,27 +22,44 @@ type ErrorResponse struct {
 type Response gin.H
 
 type api struct {
-	router       *gin.Engine
+	router *gin.Engine
+
 	imageService services.ImageService
 	userService  services.UserService
-	storage      storage.Storage
-	jwtSecret    string
+	tagService   services.TagService
+	logService   services.LogService
+
+	storage   storage.Storage
+	jwtSecret string
+	db        *gorm.DB
 }
 
 func MustInitApi() *api {
-	database.MustInitDB()
+	db := database.MustInitDB()
 	storage := storage.MustInitGarageClient()
 
-	imageService := services.NewImageService(storage)
+	imageRepo := repositories.NewImageRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+	tagRepo := repositories.NewTagRepository(db)
+	logRepo := repositories.NewLogRepository(db)
+
+	logService := services.NewLogService(logRepo)
+	userService := services.NewUserService(userRepo, imageRepo)
+	imageService := services.NewImageService(db, imageRepo, logService, storage)
+	tagService := services.NewTagService(db, tagRepo, logService)
 
 	//TODO: temporary for development, remove later
-	userService.SetUserPrivilage(1, 1)
+	userService.SetPrivilege(1, 1)
 
 	api := &api{
-		imageService,
-		userService,
+		imageService: imageService,
+		userService:  userService,
+		tagService:   tagService,
+		logService:   logService,
+
 		storage:   storage,
 		jwtSecret: env.GetEnvString("JWT_SECRET"),
+		db:        db,
 	}
 
 	api.initRoutes()
@@ -50,6 +69,11 @@ func MustInitApi() *api {
 
 func (api *api) Run() {
 	api.router.Run(fmt.Sprintf(":%s", env.GetEnvString("BACKEND_PORT")))
+}
+
+// CleanTestDB truncates all test tables for test isolation
+func (api *api) CleanTestDB() error {
+	return api.db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE").Error
 }
 
 const defaultLimit = 100

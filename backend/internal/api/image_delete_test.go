@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
+	"server/internal/storage"
 	"testing"
 )
 
@@ -55,13 +56,18 @@ func TestDeleteImage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a, store := newTestAPI(t)
+			a := newTestAPI(t)
 			r := newTestRouter(a)
+			store := a.storage.(storage.TestStorage)
 
 			seedImageUsingRequest(t, r, `{"name": "image.png"}`, "image.png", makeTestPNG(t, 5, 5), 2)
 
-			storeCount := store.Count()
-			dbCount, err := a.models.Images.GetImageCount()
+			storeCount, err := store.Count("")
+			if err != nil {
+				t.Errorf("failed retrieving store images count")
+			}
+
+			dbCount, err := a.imageService.Count(nil)
 
 			if err != nil {
 				t.Errorf("failed retrieving images count")
@@ -79,9 +85,12 @@ func TestDeleteImage(t *testing.T) {
 				t.Errorf("got status %d, want %d, body=%s", rec.Code, tt.wantStatus, rec.Body.String())
 			}
 
-			afterStoreCount := store.Count()
-			afterDbCount, err := a.models.Images.GetImageCount()
+			afterStoreCount, err := store.Count("")
+			if err != nil {
+				t.Errorf("failed retrieving store images count")
+			}
 
+			afterDbCount, err := a.imageService.Count(nil)
 			if err != nil {
 				t.Errorf("failed retrieving images count")
 			}

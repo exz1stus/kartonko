@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"server/internal/api/dto"
 	"server/internal/env"
 	"server/internal/models"
 	"sync"
@@ -17,16 +18,6 @@ var (
 	jwtCookieMaxAge     time.Duration
 	jwtCookieMaxAgeOnce sync.Once
 )
-
-type authRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type LoginResponse struct {
-	Token string      `json:"token"`
-	User  models.User `json:"user"`
-}
 
 func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 	userInter, exists := c.Get("user")
@@ -54,13 +45,13 @@ func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
 func (rh *api) PostLogin(c *gin.Context) {
-	var input authRequest
+	var input dto.AuthRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprint("invalid input: ", err.Error())})
 		return
 	}
 
-	user, err := rh.models.Users.GetUserByUsername(input.Username)
+	user, err := rh.userService.GetByUsername(input.Username)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid username"})
 		return
@@ -79,7 +70,7 @@ func (rh *api) PostLogin(c *gin.Context) {
 
 	setTokenCookie(tokenString, &c.Writer)
 
-	res := &LoginResponse{
+	res := &dto.LoginResponse{
 		Token: tokenString,
 		User:  *user,
 	}
@@ -106,7 +97,7 @@ func GetJWTCookieMaxAge() time.Duration {
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/register [post]
 func (rh *api) PostRegister(c *gin.Context) {
-	var input authRequest
+	var input dto.AuthRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid input"})
@@ -119,7 +110,7 @@ func (rh *api) PostRegister(c *gin.Context) {
 		return
 	}
 
-	user, err := rh.models.Users.CreateUserRegistration(input.Username, string(hashedPassword))
+	user, err := rh.userService.CreateByRegistration(input.Username, string(hashedPassword))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprint("failed to create user: ", err.Error())})
 		return

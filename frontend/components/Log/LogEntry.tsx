@@ -4,7 +4,7 @@ import UserElement from "../UserElement";
 import TimeField from "../TimeField";
 import { UserData } from "@/lib/user/user";
 import { getUserById } from "@/lib/user/user.client";
-import { useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useState } from "react";
 
 import ImageCreated from "./ImageCreated";
 import ImageDeleted from "./ImageDeleted";
@@ -21,16 +21,18 @@ const LogEntry = ({ data }: Props) => {
         string,
         (data: LogEntryData) => React.JSX.Element
     > = {
-        image_created: (data) => <ImageCreated data={data} />,
-        image_deleted: (data) => <ImageDeleted data={data} />,
-        tag_created: (data) => <TagCreated data={data} />,
-        tag_deleted: (data) => <TagDeleted data={data} />,
+        image_create: (data) => <ImageCreated data={data} />,
+        image_delete: (data) => <ImageDeleted data={data} />,
+        tag_create: (data) => <TagCreated data={data} />,
+        tag_delete: (data) => <TagDeleted data={data} />,
     };
 
-    const entry = entryComponents[data.entry_type] ? (
-        entryComponents[data.entry_type](data)
+    const entryType = data.object_type + "_" + data.action;
+
+    const entry = entryComponents[entryType] ? (
+        entryComponents[entryType](data)
     ) : (
-        <div>Unknown entry type: {data.entry_type}</div>
+        <div>Unknown entry type: {entryType}</div>
     );
 
     const fetchUser = async () => {
@@ -40,7 +42,7 @@ const LogEntry = ({ data }: Props) => {
 
     useEffect(() => {
         fetchUser();
-    }, [data]);
+    }, [data, fetchUser]);
 
     return (
         <div className="flex justify-between items-center bg-surface-0 p-2 border hover:border-surface-50 rounded-lg">
