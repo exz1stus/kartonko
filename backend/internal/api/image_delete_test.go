@@ -65,35 +65,15 @@ func TestDeleteImage(t *testing.T) {
 
 			ctx.assertStatus(rec, tt.wantStatus)
 
-			afterStoreCount, err := ctx.store.Count("")
-			if err != nil {
-				t.Errorf("failed retrieving store images count: %v", err)
-			}
-
-			afterDbCount, err := ctx.a.imageService.Count(nil)
-			if err != nil {
-				t.Errorf("failed retrieving images count: %v", err)
-			}
-
 			if tt.wantStatus != http.StatusOK {
-				if afterStoreCount != storeCount {
-					t.Errorf("expected %d stored objects (image and thumb), got %d", storeCount, afterStoreCount)
-				}
-
-				if afterDbCount != dbCount {
-					t.Errorf("expected %d db row, got %d", dbCount, afterDbCount)
-				}
+				ctx.assertStorageCount(storeCount)
+				ctx.assertImageCount(nil, dbCount)
 
 				return
 			}
 
-			if afterStoreCount != 0 {
-				t.Errorf("expected 0 stored objects (image and thumb deleted), got %d", afterStoreCount)
-			}
-
-			if afterDbCount != 0 {
-				t.Errorf("expected 0 db rows, got %d", afterDbCount)
-			}
+			ctx.assertStorageCount(0)
+			ctx.assertImageCount(nil, 0)
 		})
 	}
 }

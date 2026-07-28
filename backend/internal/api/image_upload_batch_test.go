@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"server/internal/api/dto"
 	"server/internal/models"
-	"server/internal/storage"
 	"testing"
 )
 
@@ -85,16 +84,10 @@ func TestPostImagesBatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := newTestAPI(t)
-			r := newTestRouter(a)
-			store := a.storage.(storage.TestStorage)
+			ctx := newTestContext(t)
 
-			mod, err := a.userService.GetByID(1)
-			if err != nil {
-				t.Fatalf("failed getting moderator user")
-			}
 			tags := []string{"animal", "cat", "dog"}
-			seedTestTags(t, a.tagService, tags, mod)
+			seedTestTags(t, ctx.a.tagService, tags, ctx.mod)
 
 			fileDatas := tt.fileDatas(t)
 
@@ -104,7 +97,7 @@ func TestPostImagesBatch(t *testing.T) {
 			}
 
 			rec := httptest.NewRecorder()
-			r.ServeHTTP(rec, req)
+			ctx.r.ServeHTTP(rec, req)
 
 			if tt.wantStatus < 400 && tt.wantStatus != 207 {
 				var res dto.ImagePostBatchResponse
@@ -120,25 +113,16 @@ func TestPostImagesBatch(t *testing.T) {
 			}
 
 			if rec.Code != tt.wantStatus {
-				t.Errorf("got status %d, want %d, body=%s", rec.Code, tt.wantStatus, rec.Body.String())
+				t.Fatalf("got status %d, want %d, body=%s", rec.Code, tt.wantStatus, rec.Body.String())
 			}
 
-			afterStoreCount, err := store.Count("")
-			if err != nil {
-				t.Errorf("failed retrieving store images count")
-			}
-
-			if tt.wantStatus == http.StatusOK && afterStoreCount != len(fileDatas)*2 {
-				t.Errorf("expected %d stored objects (image+thumb), got %d", len(fileDatas)*2, afterStoreCount)
-			}
+			ctx.assertStorageCount(len(fileDatas) * 2)
 		})
 	}
 }
 
 func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
-	a := newTestAPI(t)
-	r := newTestRouter(a)
-	store := a.storage.(*storage.MockStorage)
+	ctx := newTestContext(t)
 
 	metadata := `{"data": [{"name":"cat.png"},{"name":"dog.png"},{"name":"cat.png"}]}`
 
@@ -169,7 +153,7 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 	req = withTestUser(req, 1)
 
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
+	ctx.r.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusMultiStatus {
 		t.Errorf("got status %d, want %d, body=%s", rec.Code, http.StatusMultiStatus, rec.Body.String())
@@ -184,25 +168,11 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 		Prefix("dog_duplicate.png.png").
 		Build()
 
-	count, err := a.imageService.Count(query)
-	if err != nil {
-		t.Errorf("failed counting db rows")
-	}
-
-	if count != 0 {
-		t.Errorf("expected no failed images in db")
-	}
+	ctx.assertImageCount(query, 0)
 
 	if len(res.Successes) != succesCount {
 		t.Errorf("expected %d successes , got %d", succesCount, len(res.Successes))
 	}
 
-	afterStoreCount, err := store.Count("")
-	if err != nil {
-		t.Errorf("failed retrieving store images count")
-	}
-
-	if afterStoreCount != succesCount*2 {
-		t.Errorf("expected %d stored objects (image+thumb), got %d", succesCount*2, afterStoreCount)
-	}
+	ctx.assertStorageCount(succesCount * 2)
 }

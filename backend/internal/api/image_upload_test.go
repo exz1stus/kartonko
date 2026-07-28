@@ -12,8 +12,6 @@ import (
 	"server/internal/storage"
 	"strings"
 	"testing"
-
-	"github.com/gin-gonic/gin"
 )
 
 func buildUploadRequest(t *testing.T, url, metadataJSON, filename, contentType string, content []byte) *http.Request {
@@ -53,16 +51,7 @@ type uploadTestCase struct {
 	wantStatus int
 }
 
-// testUploadContext holds common test dependencies
-type testUploadContext struct {
-	t       *testing.T
-	a       *api
-	r       *gin.Engine
-	store   *storage.MockStorage
-	mod     *models.User
-}
-
-func newTestUploadContext(t *testing.T) *testUploadContext {
+func newTestUploadContext(t *testing.T) *testContext {
 	t.Helper()
 	a := newTestAPI(t)
 	r := newTestRouter(a)
@@ -74,10 +63,10 @@ func newTestUploadContext(t *testing.T) *testUploadContext {
 	}
 	seedTestTags(t, a.tagService, []string{"animal", "cat", "dog"}, mod)
 
-	return &testUploadContext{t: t, a: a, r: r, store: store, mod: mod}
+	return &testContext{t: t, a: a, r: r, store: store, mod: mod}
 }
 
-func (c *testUploadContext) upload(tt uploadTestCase) *httptest.ResponseRecorder {
+func (c *testContext) upload(tt uploadTestCase) *httptest.ResponseRecorder {
 	req := buildUploadRequest(c.t, "/upload", tt.metadata, tt.filename, tt.mimeType, tt.content(c.t))
 	if tt.userID != 0 {
 		req = withTestUser(req, tt.userID)
@@ -85,22 +74,6 @@ func (c *testUploadContext) upload(tt uploadTestCase) *httptest.ResponseRecorder
 	rec := httptest.NewRecorder()
 	c.r.ServeHTTP(rec, req)
 	return rec
-}
-
-func (c *testUploadContext) assertStatus(rec *httptest.ResponseRecorder, wantStatus int) {
-	if rec.Code != wantStatus {
-		c.t.Errorf("got status %d, want %d, body=%s", rec.Code, wantStatus, rec.Body.String())
-	}
-}
-
-func (c *testUploadContext) assertStorageCount(expected int) {
-	count, err := c.store.Count("")
-	if err != nil {
-		c.t.Errorf("failed retrieving store images count: %v", err)
-	}
-	if count != expected {
-		c.t.Errorf("expected %d stored objects, got %d", expected, count)
-	}
 }
 
 func TestPostImage(t *testing.T) {
@@ -289,14 +262,8 @@ func TestPostImage_StorageUploadFails_NoDBRowAndStorageImageLeft(t *testing.T) {
 	}
 
 	query := models.NewImageQueryBuilder().Prefix("dog_duplicate.png.png").Build()
-	count, err := ctx.a.imageService.Count(query)
-	if err != nil {
-		t.Errorf("failed counting db rows: %v", err)
-	}
-	if count != 0 {
-		t.Errorf("expected no DB row after rollback, found %d", count)
-	}
 
+	ctx.assertImageCount(query, 0)
 	ctx.assertStorageCount(0)
 }
 
@@ -319,13 +286,7 @@ func TestPostImage_StorageThumbUploadFails_NoDBRowAndStorageImageLeft(t *testing
 	}
 
 	query := models.NewImageQueryBuilder().Prefix("dog_duplicate.png.png").Build()
-	count, err := ctx.a.imageService.Count(query)
-	if err != nil {
-		t.Errorf("failed counting db rows: %v", err)
-	}
-	if count != 0 {
-		t.Errorf("expected no DB row after rollback, found %d", count)
-	}
 
+	ctx.assertImageCount(query, 0)
 	ctx.assertStorageCount(0)
 }
