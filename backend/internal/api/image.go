@@ -36,14 +36,6 @@ func ConstructImageResponse(img *models.ImageMetadata) dto.ImageResponse {
 	}
 }
 
-// GetImageByName godoc
-// @Summary Returns imageData by it's unique name
-// @Tags Image
-// @Produce  application/json
-// @Param   name path string true "name"
-// @Failure 200 {object} map[string]interface{}
-// @Failure 404 {object} ErrorResponse
-// @Router /image/{name} [get]
 func (api *api) GetImageByName(c *gin.Context) {
 	req := c.Param("name")
 	img, err := api.imageService.GetByName(req)
@@ -91,33 +83,15 @@ func (api *api) GetImageByID(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetRawImageByName godoc
-// @Summary Returns image file by its unique name
-// @Tags Image
-// @Produce  application/octet-stream
-// @Param   name path string true "name"
-// @Failure 200 {object} map[string]interface{}
-// @Failure 404 {object} ErrorResponse
-// @Router /image/raw/{name} [get]
 func (api *api) GetRawImageByName(c *gin.Context) {
 	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
 		return image.ImageKey(img.Hash, img.Format), "image/" + img.Format
 	})
 }
 
-// GetRawThumbnailByName godoc
-// @Summary Returns the thumbnail for an image by its unique name
-// @Tags Image
-// @Produce  application/octet-stream
-// @Param   name path string true "name"
-// @Failure 200 {object} map[string]interface{}
-// @Failure 404 {object} ErrorResponse
-// @Router /image/thumb/{name} [get]
 func (api *api) GetRawThumbnailByName(c *gin.Context) {
 	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
-		// Format is unused; the thumbnail is always JPEG. The key derivation
-		// would normally need the format, but ThumbnailKey ignores it.
-		return image.ThumbnailKey(img.Hash), "image/jpeg"
+		return image.ThumbnailKey(img.Hash, img.Format), "image/" + img.Format
 	})
 }
 
@@ -151,19 +125,6 @@ func (api *api) streamObject(c *gin.Context, keyFn func(*models.ImageMetadata) (
 	}
 }
 
-// GetImagesByQuery godoc
-// @Summary Searches images by given query
-// @Description Returns a list of images at "cursor + limit" matching the "query"
-// @Tags Image
-// @Produce  application/json
-// @Param   name query string false "name" "name contains"
-// @Param   tags query string false "tags" "with tags"
-// @Param   cursor query int false "cursor" "cursor for pagination"
-// @Param   limit query int false "limit" "limit for pagination"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /images [get]
 func (api *api) GetImagesByQuery(c *gin.Context) {
 	query, err := api.newQueryFromContext(c)
 	if err != nil {
@@ -247,23 +208,12 @@ func (api *api) DeleteImagesByQuery(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": "images deleted"})
 }
 
-// PostImage godoc
-// @Summary Uploads image
-// @Description Uploads image, name and hash must be unique
-// @Tags Image
-// @Accept  application/json, multipart/form-data
-// @Produce  json
-// @Security BearerToken
-// @Failure 200 {object} map[string]interface{}
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /upload [post]
 func (api *api) PostImage(c *gin.Context) {
 	formData := c.PostForm("metadata")
 
 	var postRequest dto.ImagePostRequest
 	if err := json.Unmarshal([]byte(formData), &postRequest); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %v", err)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %w", err)})
 		return
 	}
 
@@ -274,19 +224,19 @@ func (api *api) PostImage(c *gin.Context) {
 	}
 
 	if err := isImageRequestValid(&postRequest, fileHeader); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %v", err)})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %w", err)})
 		return
 	}
 
 	img, err := api.imageService.Upload(c.Request.Context(), user, &postRequest, fileHeader)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprintf("%v", err)})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -329,7 +279,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 
 	for i, metadata := range batch.Data {
 		if i >= len(files) {
-			response.Failures = append(response.Failures, image.ImageError{
+			response.Failures = append(response.Failures, dto.ImageError{
 				Name:  metadata.Name,
 				Error: "No file provided for this metadata",
 			})
@@ -337,7 +287,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 		}
 
 		if err := isImageRequestValid(&metadata, files[i]); err != nil {
-			response.Failures = append(response.Failures, image.ImageError{
+			response.Failures = append(response.Failures, dto.ImageError{
 				Name: metadata.Name, Error: err.Error(),
 			})
 			continue
@@ -345,7 +295,7 @@ func (api *api) PostImagesBatch(c *gin.Context) {
 
 		img, err := api.imageService.Upload(c.Request.Context(), user, &metadata, files[i])
 		if err != nil {
-			response.Failures = append(response.Failures, image.ImageError{
+			response.Failures = append(response.Failures, dto.ImageError{
 				Name: metadata.Name, Error: err.Error(),
 			})
 			continue
@@ -374,22 +324,6 @@ func isImageRequestValid(metadata *dto.ImagePostRequest, fileHeader *multipart.F
 
 	if !image.IsFormatSupported(imgFormat) {
 		return fmt.Errorf("unsupported image format: %s", imgFormat)
-	}
-
-	return nil
-}
-
-func (api *api) ImageDeletePipeline(c *gin.Context, img *models.ImageMetadata) error {
-	if img == nil {
-		return fmt.Errorf("image is nil")
-	}
-
-	if err := api.storage.Delete(c, image.ImageKey(img.Hash, img.Format)); err != nil {
-		return fmt.Errorf("failed deleting image: %v", err)
-	}
-
-	if err := api.storage.Delete(c, image.ThumbnailKey(img.Hash)); err != nil {
-		return fmt.Errorf("failed deleting image thumbnail: %v", err)
 	}
 
 	return nil

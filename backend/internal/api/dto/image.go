@@ -1,7 +1,5 @@
 package dto
 
-import "server/pkg/image"
-
 type ImagePostRequest struct {
 	Name string   `json:"name"`
 	Tags []string `json:"tags"`
@@ -24,7 +22,12 @@ type ImagePostBatchRequest struct {
 	CommonTags []string           `json:"common_tags"`
 }
 
+type ImageError struct {
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}
+
 type ImagePostBatchResponse struct {
-	Successes []ImageResponse    `json:"successes"`
-	Failures  []image.ImageError `json:"failures"`
+	Successes []ImageResponse `json:"successes"`
+	Failures  []ImageError    `json:"failures"`
 }

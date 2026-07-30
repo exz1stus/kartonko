@@ -7,16 +7,12 @@ import (
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
+	"image/png"
 	_ "image/png"
 	"strings"
 
 	"github.com/disintegration/imaging"
 )
-
-type ImageError struct {
-	Name  string `json:"name"`
-	Error string `json:"error"`
-}
 
 var SupportedFormats = []string{"jpeg", "jpg", "png", "gif"}
 
@@ -31,29 +27,16 @@ func MIMETypeToFormat(mimeType string) (string, error) {
 	return parts[1], nil
 }
 
-func imagingExtToString(ext imaging.Format) string {
-	switch ext {
-	case imaging.JPEG:
-		return "jpg"
-	case imaging.GIF:
-		return "gif"
-	case imaging.PNG:
-		return "png"
-	default:
-		return ""
-	}
+func ObjectKey(prefix string, hash string, format string) string {
+	return prefix + "/" + hash + "." + format
 }
 
-func ObjectKey(prefix string, hash string, ext string) string {
-	return prefix + "/" + hash + "." + ext
+func ImageKey(hash string, format string) string {
+	return ObjectKey("image", hash, format)
 }
 
-func ImageKey(hash string, ext string) string {
-	return ObjectKey("image", hash, ext)
-}
-
-func ThumbnailKey(hash string) string {
-	return ObjectKey("thumb", hash, imagingExtToString(THUMBNAILS_FORMAT))
+func ThumbnailKey(hash string, format string) string {
+	return ObjectKey("thumb", hash, format)
 }
 
 func GetDimensionsBytes(data []byte) (uint, uint, error) {
@@ -75,21 +58,28 @@ func HashBytes(data []byte) string {
 	return fmt.Sprintf("%x", sum)
 }
 
-func GenerateThumbnail(data []byte, ext string) ([]byte, error) {
-	if ext == ".gif" {
+func GenerateThumbnail(data []byte, format imaging.Format) ([]byte, error) {
+	if format == imaging.GIF {
 		return data, nil
 	}
+
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
-	thumb := imaging.Fit(img, 320, 320, imaging.Lanczos)
+	const thumbDimension = 320
+	thumb := imaging.Fit(img, thumbDimension, thumbDimension, imaging.Lanczos)
 	var buf bytes.Buffer
-	var opts imaging.EncodeOption = imaging.JPEGQuality(75)
-	if ext == ".png" {
-		opts = imaging.PNGCompressionLevel(75)
+	switch format {
+	case imaging.JPEG:
+		err = imaging.Encode(&buf, thumb, imaging.JPEG, imaging.JPEGQuality(75))
+	case imaging.PNG:
+		err = imaging.Encode(&buf, thumb, imaging.PNG, imaging.PNGCompressionLevel(png.DefaultCompression))
+	default:
+		err = imaging.Encode(&buf, thumb, THUMBNAILS_FORMAT)
 	}
-	if err := imaging.Encode(&buf, thumb, THUMBNAILS_FORMAT, opts); err != nil {
+
+	if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
