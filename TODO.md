@@ -37,15 +37,14 @@ FRONTEND:
 BACKEND:
 
 - ~~Delete image query~~
-- **Rewrite to service/repo**
-- Fix tags not added to image
+- ~~Rewrite to service/repo~~
 - Last seen webhook
 - Store user picture
 - Cover Api with test
-- Upload image create tags that doesn't exist
+- Upload image creates tags that doesn't exist
 - Boards system
 - boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
-- DB transactions, prevent upload abort errors
+- ~~DB transactions, prevent upload abort errors~~
 - Api token for frontend and telegram
 - Remove limits for moderator users
 - From filename to hash identification, optional names

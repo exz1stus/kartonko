@@ -7,9 +7,10 @@ import (
 	"io"
 	"log"
 	"path/filepath"
+	"strings"
+
 	"server/internal/storage"
 	"server/pkg/image"
-	"strings"
 )
 
 const imagePrefix = "image/"
@@ -29,7 +30,9 @@ func RegenerateThumbnails(ctx context.Context, store storage.Storage) error {
 		if ext == "" {
 			continue
 		}
-		if !image.IsFormatSupported(strings.TrimPrefix(ext, ".")) {
+		format, err := image.FormatFromExtension(ext)
+
+		if !format.IsSupported() {
 			log.Printf("skipping unsupported image object %s", obj.Key)
 			continue
 		}
@@ -46,19 +49,16 @@ func RegenerateThumbnails(ctx context.Context, store storage.Storage) error {
 			continue
 		}
 
-		thumb, err := image.GenerateThumbnail(data, ext)
+		thumb, err := image.GenerateThumbnail(data, format)
 		if err != nil {
 			log.Printf("failed generating thumbnail for %s: %v", obj.Key, err)
 			continue
 		}
 
-		// ThumbnailKey("") is wrong here; rebuild it from the hash. The key
-		// for the original is "image/<hash>.<ext>", so the hash is the
-		// basename without the extension.
 		base := filepath.Base(obj.Key)
 		hash := strings.TrimSuffix(base, ext)
 
-		thumbKey := image.ThumbnailKey(hash)
+		thumbKey := image.ThumbnailKey(hash, format)
 		if err := store.Upload(ctx, thumbKey, bytes.NewReader(thumb), "image/jpeg"); err != nil {
 			log.Printf("failed uploading thumbnail %s: %v", thumbKey, err)
 			continue

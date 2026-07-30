@@ -85,13 +85,15 @@ func (api *api) GetImageByID(c *gin.Context) {
 
 func (api *api) GetRawImageByName(c *gin.Context) {
 	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
-		return image.ImageKey(img.Hash, img.Format), "image/" + img.Format
+		format, _ := image.ParseFormat(img.Format)
+		return image.ImageKey(img.Hash, format), format.MIMEType()
 	})
 }
 
 func (api *api) GetRawThumbnailByName(c *gin.Context) {
 	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
-		return image.ThumbnailKey(img.Hash, img.Format), "image/" + img.Format
+		format, _ := image.ParseFormat(img.Format)
+		return image.ThumbnailKey(img.Hash, format), format.MIMEType()
 	})
 }
 
@@ -213,7 +215,7 @@ func (api *api) PostImage(c *gin.Context) {
 
 	var postRequest dto.ImagePostRequest
 	if err := json.Unmarshal([]byte(formData), &postRequest); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %w", err)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %v", err)})
 		return
 	}
 
@@ -230,7 +232,7 @@ func (api *api) PostImage(c *gin.Context) {
 
 	user, err := api.GetUserFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %w", err)})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %v", err)})
 		return
 	}
 
@@ -317,12 +319,12 @@ func isImageRequestValid(metadata *dto.ImagePostRequest, fileHeader *multipart.F
 		return fmt.Errorf("empty name provided")
 	}
 
-	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
+	imgFormat, err := image.FormatFromMIME(fileHeader.Header.Get("Content-Type"))
 	if err != nil {
 		return fmt.Errorf("image format parsing error: %v", err)
 	}
 
-	if !image.IsFormatSupported(imgFormat) {
+	if !imgFormat.IsSupported() {
 		return fmt.Errorf("unsupported image format: %s", imgFormat)
 	}
 

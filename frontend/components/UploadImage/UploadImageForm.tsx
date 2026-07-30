@@ -15,7 +15,7 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({
 }) => {
     if (!item) return null;
     const intialFilename = item.name;
-    const extension = item.file.name.split(".").pop();
+    const format = item.file.name.split(".").pop();
     return (
         // <form className="space-y-6">
         //     <div className="flex sm:flex-row flex-col sm:items-center gap-2 sm:gap-4">
@@ -73,7 +73,7 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({
                     className="flex-1 bg-transparent border-none outline-none min-w-0 h-full"
                 />
                 <span className="pl-2 text-primary-0/50 text-sm">
-                    .{extension}
+                    .{format}
                 </span>
             </div>
             <label className="font-medium text-gray-700 text-sm">

@@ -83,7 +83,7 @@ func (s *imageService) ExistsByName(name string) (bool, error) {
 
 func (s *imageService) DeleteByID(ctx context.Context, user *models.User, id uint) error {
 	if user == nil {
-		fmt.Errorf("deleting image: recieved nil user")
+		return fmt.Errorf("deleting image: received nil user")
 	}
 	img, err := s.images.GetByID(id)
 	if err != nil {
@@ -109,11 +109,16 @@ func (s *imageService) DeleteByID(ctx context.Context, user *models.User, id uin
 		return err
 	}
 
-	if err := s.storage.Delete(ctx, image.ImageKey(img.Hash, img.Format)); err != nil {
+	format, err := image.ParseFormat(img.Format)
+	if err != nil {
+		return fmt.Errorf("failed to parse image format: %w", err)
+	}
+
+	if err := s.storage.Delete(ctx, image.ImageKey(img.Hash, format)); err != nil {
 		return fmt.Errorf("failed deleting image: %v", err)
 	}
 
-	if err := s.storage.Delete(ctx, image.ThumbnailKey(img.Hash)); err != nil {
+	if err := s.storage.Delete(ctx, image.ThumbnailKey(img.Hash, format)); err != nil {
 		return fmt.Errorf("failed deleting image thumbnail: %v", err)
 	}
 
@@ -159,11 +164,16 @@ func (s *imageService) DeleteByQuery(ctx context.Context, user *models.User, que
 	}
 
 	for _, img := range imgs {
-		if err := s.storage.Delete(ctx, image.ImageKey(img.Hash, img.Format)); err != nil {
+		format, err := image.ParseFormat(img.Format)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse image format for %s: %w", img.Hash, err))
+			continue
+		}
+		if err := s.storage.Delete(ctx, image.ImageKey(img.Hash, format)); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting image: %w", err))
 		}
 
-		if err := s.storage.Delete(ctx, image.ThumbnailKey(img.Hash)); err != nil {
+		if err := s.storage.Delete(ctx, image.ThumbnailKey(img.Hash, format)); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting image thumbnail: %w", err))
 		}
 	}
@@ -185,7 +195,7 @@ func (s *imageService) DeleteByName(ctx context.Context, user *models.User, name
 }
 
 func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMetadata *dto.ImagePostRequest, fileHeader *multipart.FileHeader) (*models.ImageMetadata, error) {
-	imgFormat, err := image.MIMETypeToFormat(fileHeader.Header.Get("Content-Type"))
+	format, err := image.FormatFromMIME(fileHeader.Header.Get("Content-Type"))
 	if err != nil {
 		return nil, fmt.Errorf("image format parsing error: %v", err)
 	}
@@ -206,7 +216,7 @@ func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMeta
 		return nil, fmt.Errorf("error getting image dimensions: %v", err)
 	}
 
-	img := models.ConstructImageMetadata(uploadMetadata.Name, uploadMetadata.Tags, imgFormat, imgWidth, imgHeight, user.ID)
+	img := models.ConstructImageMetadata(uploadMetadata.Name, uploadMetadata.Tags, format.String(), imgWidth, imgHeight, user.ID)
 	img.Hash = image.HashBytes(data)
 
 	exists, err := s.images.ExistsByHash(img.Hash)
@@ -218,17 +228,17 @@ func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMeta
 	}
 
 	var thumb []byte
-	thumb, err = image.GenerateThumbnail(data, "."+img.Format)
+	thumb, err = image.GenerateThumbnail(data, format)
 	if err != nil {
 		return nil, fmt.Errorf("error generating thumbnail: %w", err)
 	}
 
-	imageKey := image.ImageKey(img.Hash, img.Format)
-	if err = s.storage.Upload(ctx, imageKey, bytes.NewReader(data), "image/"+img.Format); err != nil {
+	imageKey := image.ImageKey(img.Hash, format)
+	if err = s.storage.Upload(ctx, imageKey, bytes.NewReader(data), format.MIMEType()); err != nil {
 		return nil, fmt.Errorf("error uploading image: %w", err)
 	}
 
-	thumbKey := image.ThumbnailKey(img.Hash)
+	thumbKey := image.ThumbnailKey(img.Hash, format)
 	if err = s.storage.Upload(ctx, thumbKey, bytes.NewReader(thumb), "image/jpeg"); err != nil {
 		_ = s.storage.Delete(ctx, imageKey)
 		return nil, fmt.Errorf("error uploading thumbnail: %w", err)
