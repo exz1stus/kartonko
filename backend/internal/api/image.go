@@ -337,7 +337,7 @@ func (api *api) newQueryFromContext(c *gin.Context) (*models.ImageQuery, error) 
 		return nil, err
 	}
 
-	prefix := c.Query("name") // TODO: rename to prefix
+	prefix := c.Query("prefix")
 	tagsString := c.Query("tags")
 	username := c.Query("username")
 	userIDStr := c.Query("user_id")

@@ -34,7 +34,7 @@ var API_LOCAL = env.GetEnvString("API_LOCAL")
 const PAGE_SIZE = 30
 
 func searchImages(query string, cursor int) ([]Image, error) {
-	url := fmt.Sprintf("%s/image?cursor=%d&limit=%d&name=%s", API_LOCAL, cursor, PAGE_SIZE, url.QueryEscape(query))
+	url := fmt.Sprintf("%s/image?cursor=%d&limit=%d&prefix=%s", API_LOCAL, cursor, PAGE_SIZE, url.QueryEscape(query))
 
 	client := http.Client{
 		Timeout: 10 * time.Second,

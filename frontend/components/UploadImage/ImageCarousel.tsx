@@ -210,7 +210,6 @@ const ImageCarousel = ({
                         <span>Add Common Tags</span>
                     </div>
                     <TagSelector
-                        className="px-3 py-2"
                         tags={tags}
                         newTags={newTags}
                         removeTag={(tag: string) => {

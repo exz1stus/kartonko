@@ -1,5 +1,7 @@
 - ~~Fixed Nginx config~~
 - CI / CD Pipeline with testing, building on github, container pulling on server
+- testing on pre-push
+- integration tests
 
 FRONTEND:
 
@@ -38,16 +40,16 @@ BACKEND:
 
 - ~~Delete image query~~
 - ~~Rewrite to service/repo~~
+- From filename to hash identification, optional names
+- Boards system
+- boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
+- Api token for frontend and telegram
+- Remove limits for moderator users
 - Last seen webhook
 - Store user picture
 - Cover Api with test
 - Upload image creates tags that doesn't exist
-- Boards system
-- boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
 - ~~DB transactions, prevent upload abort errors~~
-- Api token for frontend and telegram
-- Remove limits for moderator users
-- From filename to hash identification, optional names
 - Cover Api with swagger
 - hashing on pHash
 - comparing for duplicates with CLIP

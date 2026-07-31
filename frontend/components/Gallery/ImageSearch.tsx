@@ -7,12 +7,12 @@ import NameField from "../NameField";
 import { useDebouncedCallback } from "use-debounce";
 
 export function isQueryEmpty(query: SearchQuery) {
-    return query.nameContains === "" && query.withTags?.length === 0;
+    return query.prefix === "" && query.withTags?.length === 0;
 }
 
 export function isQueriesEqual(query1: SearchQuery, query2: SearchQuery) {
     return (
-        query1.nameContains === query2.nameContains &&
+        query1.prefix === query2.prefix &&
         JSON.stringify(query1.withTags) === JSON.stringify(query2.withTags)
     );
 }
@@ -41,7 +41,7 @@ const ImageSearch: React.FC<Props> = ({
     const tagSelectorRef = React.useRef<TagSelectorRef>(null);
 
     const [tags, setTags] = useState<string[]>(initialQuery?.withTags || []);
-    const [name, setName] = useState(initialQuery?.nameContains ?? "");
+    const [name, setName] = useState(initialQuery?.prefix ?? "");
 
     const userID = initialQuery?.userID;
 
@@ -52,7 +52,7 @@ const ImageSearch: React.FC<Props> = ({
     const debouncedQuery = useDebouncedCallback(
         () =>
             onQueryChange({
-                nameContains: name,
+                prefix: name,
                 withTags: tags,
                 userID,
             }),

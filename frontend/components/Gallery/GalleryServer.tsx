@@ -11,7 +11,7 @@ interface Props {
 }
 
 const INITIAL_QUERY: SearchQuery = {
-    nameContains: "",
+    prefix: "",
     withTags: [],
 };
 

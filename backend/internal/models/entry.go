@@ -1,14 +1,12 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type AuditEntry struct {
-	ID        uint      `gorm:"primarykey, not null, autoincrement"`
-	CreatedAt time.Time `gorm:"not null"`
+	gorm.Model
 
 	UserID        uint           `json:"user_id" gorm:"not null"`
 	Action        string         `json:"action" gorm:"not null"`
