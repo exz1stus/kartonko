@@ -12,7 +12,7 @@ type TagRepository interface {
 
 	Create(tag string) (*models.Tag, error)
 
-	SearchPrefix(prefix string, limit int) ([]models.Tag, error)
+	SearchPrefix(prefix string, cursor int, limit int) ([]models.Tag, error)
 
 	Exists(name string) (bool, error)
 	ExistMany(tags []models.Tag) ([]bool, error)
@@ -39,10 +39,11 @@ func (r *tagRepository) Create(tag string) (*models.Tag, error) {
 	return newTag, nil
 }
 
-func (r *tagRepository) SearchPrefix(prefix string, limit int) ([]models.Tag, error) {
+func (r *tagRepository) SearchPrefix(prefix string, cursor int, limit int) ([]models.Tag, error) {
 	var tags []models.Tag
 	if err := r.db.Model(&models.Tag{}).
 		Where("name LIKE ?", prefix+"%").
+		Offset(cursor).
 		Limit(limit).
 		Find(&tags).Error; err != nil {
 		return nil, err

@@ -16,6 +16,17 @@ import (
 	"gorm.io/gorm"
 )
 
+func toServiceError[T any](val T, err error) (T, error) {
+	if err == nil {
+		return val, nil
+	}
+	var zero T
+	if err == gorm.ErrRecordNotFound {
+		return zero, errors.ErrNotFound
+	}
+	return zero, err
+}
+
 type ImageService interface {
 	Upload(ctx context.Context, user *models.User, uploadMetadata *dto.ImagePostRequest, fileHeader *multipart.FileHeader) (*models.ImageMetadata, error)
 
@@ -54,15 +65,15 @@ func NewImageService(db *gorm.DB, images repositories.ImageRepository, logs LogS
 }
 
 func (s *imageService) GetByID(id uint) (*models.ImageMetadata, error) {
-	return s.images.GetByID(id)
+	return toServiceError(s.images.GetByID(id))
 }
 
 func (s *imageService) GetByName(name string) (*models.ImageMetadata, error) {
-	return s.images.GetByName(name)
+	return toServiceError(s.images.GetByName(name))
 }
 
 func (s *imageService) GetByHash(hash string) (*models.ImageMetadata, error) {
-	return s.images.GetByHash(hash)
+	return toServiceError(s.images.GetByHash(hash))
 }
 
 func (s *imageService) Search(query *models.ImageQuery) ([]models.ImageMetadata, error) {
@@ -127,7 +138,7 @@ func (s *imageService) DeleteByID(ctx context.Context, user *models.User, id uin
 
 func (s *imageService) DeleteByQuery(ctx context.Context, user *models.User, query *models.ImageQuery) []error {
 	if user == nil {
-		fmt.Errorf("deleting image: recieved nil user")
+		return []error{fmt.Errorf("deleting image: received nil user")}
 	}
 	imgs, err := s.images.Search(query)
 	var errs []error

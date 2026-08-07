@@ -1,7 +1,7 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -20,7 +20,7 @@ import (
 
 const TimeFormat = time.RFC3339
 
-func ConstructImageResponse(img *models.ImageMetadata) dto.ImageResponse {
+func NewImageResponse(img *models.ImageMetadata) dto.ImageResponse {
 	tags := models.TagsToStrings(img.Tags)
 
 	return dto.ImageResponse{
@@ -37,304 +37,152 @@ func ConstructImageResponse(img *models.ImageMetadata) dto.ImageResponse {
 }
 
 func (api *api) GetImageByName(c *gin.Context) {
-	req := c.Param("name")
-	img, err := api.imageService.GetByName(req)
-
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
-		return
-	}
-
-	response := ConstructImageResponse(img)
-	c.JSON(http.StatusOK, response)
+	HandleGet(c, func() (*models.ImageMetadata, error) {
+		return api.imageService.GetByName(c.Param("name"))
+	}, func(img *models.ImageMetadata) any { return NewImageResponse(img) })
 }
 
 func (api *api) GetImageByHash(c *gin.Context) {
-	req := c.Param("hash")
-	img, err := api.imageService.GetByHash(req)
-
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
-		return
-	}
-
-	response := ConstructImageResponse(img)
-	c.JSON(http.StatusOK, response)
+	HandleGet(c, func() (*models.ImageMetadata, error) {
+		return api.imageService.GetByHash(c.Param("hash"))
+	}, func(img *models.ImageMetadata) any { return NewImageResponse(img) })
 }
 
 func (api *api) GetImageByID(c *gin.Context) {
 	idStr := c.Param("id")
-
 	id64, err := strconv.ParseUint(idStr, 10, strconv.IntSize)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad id"})
+		RespondError(c, errors.ErrBadRequest)
 		return
 	}
+	HandleGet(c, func() (*models.ImageMetadata, error) {
+		return api.imageService.GetByID(uint(id64))
+	}, func(img *models.ImageMetadata) any { return NewImageResponse(img) })
+}
 
-	id := uint(id64)
-	img, err := api.imageService.GetByID(id)
-
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
-		return
+func getRawContentType(meta any) string {
+	if img, ok := meta.(*models.ImageMetadata); ok {
+		return img.ParseFormat().MIMEType()
 	}
-
-	response := ConstructImageResponse(img)
-	c.JSON(http.StatusOK, response)
+	return "application/octet-stream"
 }
 
 func (api *api) GetRawImageByName(c *gin.Context) {
 	name := c.Param("name")
-	img, err := api.imageService.GetByName(name)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	body, _, err := api.objectService.GetRawImageByHash(c.Request.Context(), img.Hash)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	defer body.Close()
-
-	c.Header("Content-Type", img.ParseFormat().MIMEType())
-	io.Copy(c.Writer, body)
+	HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		img, err := api.imageService.GetByName(name)
+		if err != nil {
+			return nil, nil, err
+		}
+		return api.objectService.GetRawImageByHash(ctx, img.Hash)
+	}, getRawContentType)
 }
 
 func (api *api) GetRawThumbnailByName(c *gin.Context) {
 	name := c.Param("name")
-	img, err := api.imageService.GetByName(name)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	body, _, err := api.objectService.GetRawThumbnailByHash(c.Request.Context(), img.Hash)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	defer body.Close()
-
-	c.Header("Content-Type", img.ParseFormat().MIMEType())
-	io.Copy(c.Writer, body)
+	HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		img, err := api.imageService.GetByName(name)
+		if err != nil {
+			return nil, nil, err
+		}
+		return api.objectService.GetRawThumbnailByHash(ctx, img.Hash)
+	}, getRawContentType)
 }
 
 func (api *api) GetRawImageByHash(c *gin.Context) {
 	hash := c.Param("hash")
-	body, img, err := api.objectService.GetRawImageByHash(c.Request.Context(), hash)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	defer body.Close()
-
-	c.Header("Content-Type", img.ParseFormat().MIMEType())
-	io.Copy(c.Writer, body)
+	HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		return api.objectService.GetRawImageByHash(ctx, hash)
+	}, getRawContentType)
 }
 
 func (api *api) GetRawThumbnailByHash(c *gin.Context) {
 	hash := c.Param("hash")
-	body, img, err := api.objectService.GetRawThumbnailByHash(c.Request.Context(), hash)
-	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
-		return
-	}
-	defer body.Close()
-
-	c.Header("Content-Type", img.ParseFormat().MIMEType())
-	io.Copy(c.Writer, body)
+	HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		return api.objectService.GetRawThumbnailByHash(ctx, hash)
+	}, getRawContentType)
 }
 
 func (api *api) GetImagesByQuery(c *gin.Context) {
-	query, err := api.newQueryFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	images, err := api.imageService.Search(query)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	response := make([]dto.ImageResponse, len(images))
-	for i, img := range images {
-		response[i] = ConstructImageResponse(&img)
-	}
-
-	c.JSON(http.StatusOK, response)
+	WithQuery(c, api.newQueryFromContext, func(query *models.ImageQuery) error {
+		images, err := api.imageService.Search(query)
+		if err != nil {
+			return err
+		}
+		RespondImages(c, images)
+		return nil
+	})
 }
 
 func (api *api) DeleteImageByName(c *gin.Context) {
-	name := c.Param("name")
-	name = strings.ToLower(name)
-
-	user, err := api.GetUserFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	if err := api.imageService.DeleteByName(c.Request.Context(), user, name); err != nil {
-		if err == errors.ErrPermissionDenied {
-			c.JSON(http.StatusForbidden, ErrorResponse{Error: "permission denied: " + err.Error()})
-			return
-		}
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "failed getting image: " + err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "image deleted"})
+	name := strings.ToLower(c.Param("name"))
+	WithUser(c, api, func(user *models.User) error {
+		return api.imageService.DeleteByName(c.Request.Context(), user, name)
+	})
 }
 
 func (api *api) DeleteImagesByQuery(c *gin.Context) {
-	query, err := api.newQueryFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("failed parsing query: %v", err)})
-		return
-	}
-
-	user, err := api.GetUserFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	errs := api.imageService.DeleteByQuery(c.Request.Context(), user, query)
-	if errs != nil {
-		hasPermissionError := false
-		messages := make([]string, len(errs))
-		for i, err := range errs {
-			messages[i] = err.Error()
-			if err == errors.ErrPermissionDenied {
-				hasPermissionError = true
+	WithUserAndQuery(c, api, api.newQueryFromContext, func(user *models.User, query *models.ImageQuery) error {
+		errs := api.imageService.DeleteByQuery(c.Request.Context(), user, query)
+		if errs != nil {
+			hasPermissionError := false
+			messages := make([]string, len(errs))
+			for i, err := range errs {
+				messages[i] = err.Error()
+				if err == errors.ErrPermissionDenied {
+					hasPermissionError = true
+				}
 			}
+			if hasPermissionError {
+				c.JSON(http.StatusForbidden, gin.H{"errors": messages})
+				return nil
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"errors": messages})
 		}
-
-		if hasPermissionError {
-			c.JSON(http.StatusForbidden, gin.H{
-				"errors": messages,
-			})
-			return
-		}
-
-		c.JSON(http.StatusBadRequest, gin.H{
-			"errors": messages,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"success": "images deleted"})
+		return nil
+	})
 }
 
 func (api *api) PostImage(c *gin.Context) {
 	formData := c.PostForm("metadata")
-
-	var postRequest dto.ImagePostRequest
-	if err := json.Unmarshal([]byte(formData), &postRequest); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %v", err)})
-		return
-	}
-
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "no file received"})
+		RespondError(c, errors.ErrBadRequest)
 		return
 	}
 
-	if err := isImageRequestValid(&postRequest, fileHeader); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	user, err := api.GetUserFromContext(c)
+	img, err := HandleUpload(c, api, formData, fileHeader)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %v", err)})
+		RespondError(c, err)
 		return
 	}
-
-	img, err := api.imageService.Upload(c.Request.Context(), user, &postRequest, fileHeader)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	response := ConstructImageResponse(img)
-	c.JSON(http.StatusOK, response)
+	RespondImage(c, img)
 }
 
 func (api *api) PostImagesBatch(c *gin.Context) {
 	formData := c.PostForm("metadata")
-
-	var batch dto.ImagePostBatchRequest
-	if err := json.Unmarshal([]byte(formData), &batch); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid JSON metadata: %s", err.Error())})
-		return
-	}
-
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("invalid form data: %v", err)})
+		RespondError(c, errors.ErrBadRequest)
 		return
 	}
 
-	files := form.File["files"]
-	if files == nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "no files provided in form"})
-		return
-	}
-
-	if len(batch.Data) != len(files) {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("files: %d and metadata: %d quantities are different", len(files), len(batch.Data))})
-	}
-
-	user, err := api.GetUserFromContext(c)
+	response, err := HandleBatchUpload(c, api, formData, form)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: fmt.Sprintf("failed to get user: %v", err)})
+		RespondError(c, err)
 		return
-	}
-
-	response := &dto.ImagePostBatchResponse{}
-
-	for i, metadata := range batch.Data {
-		if i >= len(files) {
-			response.Failures = append(response.Failures, dto.ImageError{
-				Name:  metadata.Name,
-				Error: "No file provided for this metadata",
-			})
-			continue
-		}
-
-		if err := isImageRequestValid(&metadata, files[i]); err != nil {
-			response.Failures = append(response.Failures, dto.ImageError{
-				Name: metadata.Name, Error: err.Error(),
-			})
-			continue
-		}
-
-		img, err := api.imageService.Upload(c.Request.Context(), user, &metadata, files[i])
-		if err != nil {
-			response.Failures = append(response.Failures, dto.ImageError{
-				Name: metadata.Name, Error: err.Error(),
-			})
-			continue
-		}
-
-		response.Successes = append(response.Successes, ConstructImageResponse(img))
 	}
 
 	if len(response.Failures) > 0 {
 		c.JSON(http.StatusMultiStatus, response)
 		return
 	}
-
 	c.JSON(http.StatusOK, response)
 }
 
 func isImageRequestValid(metadata *dto.ImagePostRequest, fileHeader *multipart.FileHeader) error {
 	if len(metadata.Name) == 0 {
-		return fmt.Errorf("empty name provided")
+		return errors.ErrBadRequest
 	}
 
 	imgFormat, err := image.FormatFromMIME(fileHeader.Header.Get("Content-Type"))
@@ -350,7 +198,7 @@ func isImageRequestValid(metadata *dto.ImagePostRequest, fileHeader *multipart.F
 }
 
 func (api *api) newQueryFromContext(c *gin.Context) (*models.ImageQuery, error) {
-	cursor, limit, err := parseCursorLimit(c)
+	cursor, limit, err := GetCursorLimit(c)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +216,7 @@ func (api *api) newQueryFromContext(c *gin.Context) (*models.ImageQuery, error) 
 	if tagsString != "" {
 		tags, err := tag.ParseTagsFromJSONString(tagsString)
 		if err != nil {
-			return nil, err
+			return nil, wrapBadRequest(err)
 		}
 		builder.Tags(tags)
 	}
@@ -377,7 +225,7 @@ func (api *api) newQueryFromContext(c *gin.Context) (*models.ImageQuery, error) 
 		userID64, err := strconv.ParseUint(userIDStr, 10, 64)
 		userID := uint(userID64)
 		if err != nil {
-			return nil, err
+			return nil, wrapBadRequest(err)
 		}
 		user, err := api.userService.GetByID(userID)
 		if err != nil {

@@ -12,7 +12,7 @@ import (
 type TagService interface {
 	Create(ctx context.Context, tag string, user *models.User) (*models.Tag, error)
 
-	SearchPrefix(prefix string, limit int) ([]models.Tag, error)
+	SearchPrefix(prefix string, cursor int, limit int) ([]models.Tag, error)
 
 	Exists(name string) (bool, error)
 	ExistMany(tags []models.Tag) ([]bool, error)
@@ -60,8 +60,8 @@ func (s *tagService) Create(ctx context.Context, tag string, user *models.User) 
 	return createdTag, nil
 }
 
-func (s *tagService) SearchPrefix(prefix string, limit int) ([]models.Tag, error) {
-	return s.tags.SearchPrefix(prefix, limit)
+func (s *tagService) SearchPrefix(prefix string, cursor int, limit int) ([]models.Tag, error) {
+	return s.tags.SearchPrefix(prefix, cursor, limit)
 }
 
 func (s *tagService) Exists(name string) (bool, error) {

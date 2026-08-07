@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"server/internal/api/dto"
+	"server/internal/errors"
 	"server/internal/models"
 	"strconv"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func constructUserResponse(user *models.User) dto.UserDataResponse {
+func NewUserResponse(user *models.User) dto.UserDataResponse {
 	res := dto.UserDataResponse{
 		ID:        user.ID,
 		Username:  user.Username,
@@ -27,43 +28,26 @@ func constructUserResponse(user *models.User) dto.UserDataResponse {
 }
 
 func (api *api) GetUserByName(c *gin.Context) {
-	username := c.Param("name")
-	user, err := api.userService.GetByUsername(username)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, constructUserResponse(user))
+	HandleGet(c, func() (*models.User, error) {
+		return api.userService.GetByUsername(c.Param("name"))
+	}, func(u *models.User) any { return NewUserResponse(u) })
 }
 
 func (api *api) GetUserByID(c *gin.Context) {
 	idStr := c.Param("id")
-
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id64, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "bad id"})
+		RespondError(c, errors.ErrBadRequest)
 		return
 	}
-
-	user, err := api.userService.GetByID(uint(id))
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, constructUserResponse(user))
+	HandleGet(c, func() (*models.User, error) {
+		return api.userService.GetByID(uint(id64))
+	}, func(u *models.User) any { return NewUserResponse(u) })
 }
 
 func (api *api) GetMe(c *gin.Context) {
-	user, err := api.GetUserFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	res := constructUserResponse(user)
-	c.JSON(http.StatusOK, res)
+	WithUser(c, api, func(user *models.User) error {
+		RespondJSON(c, http.StatusOK, NewUserResponse(user))
+		return nil
+	})
 }

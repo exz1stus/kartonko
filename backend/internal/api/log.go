@@ -1,33 +1,13 @@
 package api
 
 import (
-	"net/http"
+	"server/internal/api/dto"
 
 	"github.com/gin-gonic/gin"
 )
 
-// GetAuditLogEntries godoc
-// @Summary Gets audit log entries by given range
-// @Description Returns a list of log entries at "cursor + limit" matching the "query"
-// @Tags AuditLog
-// @Produce  json
-// @Param   cursor query string true "cursor"
-// @Param   limit query string true "limit"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} ErrorResponse
-// @Router /log [get]
 func (api *api) GetAuditLogEntries(c *gin.Context) {
-	cursor, limit, err := parseCursorLimit(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
-		return
-	}
-
-	entries, err := api.logService.GetEntries(cursor, limit)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
-	}
-
-	c.JSON(http.StatusOK, entries)
+	HandleList(c, func(cursor, limit int) ([]dto.EntryResponse, error) {
+		return api.logService.GetEntries(cursor, limit)
+	}, func(entry dto.EntryResponse) any { return entry })
 }

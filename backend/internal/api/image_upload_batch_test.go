@@ -21,9 +21,6 @@ func buildBatchUploadRequest(t *testing.T, url string, metadataJSON string, file
 	}
 
 	for _, file := range files {
-		// if err := httphelpers.WriteFilePart(w, "files", file.filename, file.contentType, file.content); err != nil {
-		// 	t.Fatalf("write file part %v", err)
-		// }
 		writeFilePart(t, w, "files", file)
 	}
 
@@ -111,13 +108,13 @@ func TestPostImagesBatch(t *testing.T) {
 						t.Errorf("batch upload error: %s", err)
 					}
 				}
+
+				ctx.assertStorageCount(len(fileDatas) * 2)
 			}
 
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("got status %d, want %d, body=%s", rec.Code, tt.wantStatus, rec.Body.String())
 			}
-
-			ctx.assertStorageCount(len(fileDatas) * 2)
 		})
 	}
 }
