@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"image"
 	"image/png"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"net/textproto"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -85,20 +83,6 @@ type TestFileData struct {
 	content     []byte
 }
 
-func writeFilePart(t *testing.T, w *multipart.Writer, fieldName string, file TestFileData) {
-	t.Helper()
-	part, err := w.CreatePart(textproto.MIMEHeader{
-		"Content-Disposition": {fmt.Sprintf(`form-data; name="%s"; filename="%s"`, fieldName, file.filename)},
-		"Content-Type":        {file.contentType},
-	})
-	if err != nil {
-		t.Fatalf("failed to create form part: %v", err)
-	}
-	if _, err := part.Write(file.content); err != nil {
-		t.Fatalf("failed to write part content: %v", err)
-	}
-}
-
 func makeTestPNG(t *testing.T, w, h int) []byte {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
@@ -109,7 +93,6 @@ func makeTestPNG(t *testing.T, w, h int) []byte {
 	return buf.Bytes()
 }
 
-// makeUniqueTestPNG creates a test PNG with unique dimensions to avoid duplicate hash errors
 func makeUniqueTestPNG(t *testing.T, baseW, baseH int, unique int) []byte {
 	t.Helper()
 	return makeTestPNG(t, baseW+unique*10, baseH+unique*10)
@@ -145,13 +128,12 @@ func seedTestTags(t *testing.T, service services.TagService, tags []string, user
 	t.Helper()
 
 	for _, tag := range tags {
-		// Check if tag already exists
 		exists, err := service.Exists(tag)
 		if err != nil {
 			t.Fatalf("failed to check tag %s: %v", tag, err)
 		}
 		if exists {
-			continue // Tag already exists, skip
+			continue
 		}
 		_, err = service.Create(context.Background(), tag, user)
 		if err != nil {

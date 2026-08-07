@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"server/internal/api/dto"
 	"server/internal/models"
+	"server/pkg/httphelpers"
 	"testing"
 )
 
@@ -21,7 +22,9 @@ func buildBatchUploadRequest(t *testing.T, url string, metadataJSON string, file
 	}
 
 	for _, file := range files {
-		writeFilePart(t, w, "files", file)
+		if err := httphelpers.WriteFilePart(w, "files", file.filename, file.contentType, file.content); err != nil {
+			t.Fatalf("failed to write file: %v", err)
+		}
 	}
 
 	if err := w.Close(); err != nil {
