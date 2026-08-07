@@ -10,6 +10,7 @@ import (
 	"server/internal/api/dto"
 	"server/internal/models"
 	"server/internal/storage"
+	"server/pkg/httphelpers"
 	"strings"
 	"testing"
 )
@@ -28,9 +29,13 @@ func buildUploadRequestFileData(t *testing.T, url string, metadataJSON string, f
 		t.Fatalf("failed to write metadata field: %v", err)
 	}
 
-	if file.filename != "" {
-		writeFilePart(t, w, "file", file)
+	// Only add file part if filename is provided
+	if file.filename != "" && len(file.content) > 0 {
+		if err := httphelpers.WriteFilePart(w, "file", file.filename, file.contentType, file.content); err != nil {
+			t.Fatalf("write file part %v", err)
+		}
 	}
+
 	if err := w.Close(); err != nil {
 		t.Fatalf("failed to close multipart writer: %v", err)
 	}

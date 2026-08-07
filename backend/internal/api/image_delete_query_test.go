@@ -2,8 +2,24 @@ package api
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
+
+func (c *testContext) deleteImagesByQuery(query string, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	url := "/image"
+	if query != "" {
+		url += "?" + query
+	}
+	req := httptest.NewRequest(http.MethodDelete, url, http.NoBody)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
 
 func TestDeleteImageByQuery(t *testing.T) {
 	tests := []struct {
@@ -15,7 +31,7 @@ func TestDeleteImageByQuery(t *testing.T) {
 	}{
 		{
 			name:            "moderator delete by name success",
-			query:           `name=ima`,
+			query:           `prefix=ima`,
 			userID:          1,
 			wantStatus:      http.StatusOK,
 			expectedDeleted: 2,

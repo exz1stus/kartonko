@@ -38,6 +38,10 @@ func (api *api) initRoutes() {
 	r.GET("/image/:name", api.GetImageByName)
 	r.GET("/image/id/:id", api.GetImageByID)
 	r.GET("/image/hash/:hash", api.GetImageByHash)
+
+	r.GET("/image/raw/hash/:hash", api.GetRawImageByHash)
+	r.GET("/image/thumb/hash/:hash", api.GetRawThumbnailByHash)
+
 	r.GET("/image/raw/:name", api.GetRawImageByName)
 	r.GET("/image/thumb/:name", api.GetRawThumbnailByName)
 

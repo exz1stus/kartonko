@@ -3,6 +3,9 @@
 - testing on pre-push
 - integration tests
 
+- Crawling from selected resources: telegram groups, discord active channels
+- Web universal scraping: each user has its saved sources, he can open them as gallery and view, or site view with upload on click for "<img>" elements
+
 FRONTEND:
 
 - ~~Tags input hints~~
@@ -33,7 +36,6 @@ FRONTEND:
 - Uploading update webhook
 - Fix captcha not reloading on error upload
 - Add Last seen on webhooks
-- Crawling from selected resources: telegram groups, discord active channels
 - rework profile pop up
 
 BACKEND:

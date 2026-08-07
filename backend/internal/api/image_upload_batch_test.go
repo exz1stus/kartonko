@@ -21,9 +21,10 @@ func buildBatchUploadRequest(t *testing.T, url string, metadataJSON string, file
 	}
 
 	for _, file := range files {
-		if file.filename != "" {
-			writeFilePart(t, w, "files", file)
-		}
+		// if err := httphelpers.WriteFilePart(w, "files", file.filename, file.contentType, file.content); err != nil {
+		// 	t.Fatalf("write file part %v", err)
+		// }
+		writeFilePart(t, w, "files", file)
 	}
 
 	if err := w.Close(); err != nil {

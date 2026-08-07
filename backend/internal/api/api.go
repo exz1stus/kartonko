@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"server/internal/clients/embeddings"
 	"server/internal/database"
 	"server/internal/env"
 	"server/internal/repositories"
@@ -24,10 +25,12 @@ type Response gin.H
 type api struct {
 	router *gin.Engine
 
-	imageService services.ImageService
-	userService  services.UserService
-	tagService   services.TagService
-	logService   services.LogService
+	imageService      services.ImageService
+	objectService     services.ObjectService
+	userService       services.UserService
+	tagService        services.TagService
+	logService        services.LogService
+	embeddingsService services.EmbeddingsService
 
 	storage   storage.Storage
 	jwtSecret string
@@ -37,6 +40,7 @@ type api struct {
 func MustInitApi() *api {
 	db := database.MustInitDB()
 	storage := storage.MustInitGarageClient()
+	embeddingsClient := embeddings.NewHTTPEmbeddingClient()
 
 	imageRepo := repositories.NewImageRepository(db)
 	userRepo := repositories.NewUserRepository(db)
@@ -44,18 +48,22 @@ func MustInitApi() *api {
 	logRepo := repositories.NewLogRepository(db)
 
 	logService := services.NewLogService(logRepo)
+	objectService := services.NewObjectService(storage, imageRepo)
+	embeddingsService := services.NewEmbeddingsService(objectService, embeddingsClient)
 	userService := services.NewUserService(userRepo, imageRepo)
-	imageService := services.NewImageService(db, imageRepo, logService, storage)
+	imageService := services.NewImageService(db, imageRepo, logService, objectService, embeddingsService)
 	tagService := services.NewTagService(db, tagRepo, logService)
 
 	//TODO: temporary for development, remove later
 	userService.SetPrivilege(1, 1)
 
 	api := &api{
-		imageService: imageService,
-		userService:  userService,
-		tagService:   tagService,
-		logService:   logService,
+		imageService:      imageService,
+		userService:       userService,
+		tagService:        tagService,
+		logService:        logService,
+		objectService:     objectService,
+		embeddingsService: embeddingsService,
 
 		storage:   storage,
 		jwtSecret: env.GetEnvString("JWT_SECRET"),

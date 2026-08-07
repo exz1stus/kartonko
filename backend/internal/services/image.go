@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -12,7 +11,6 @@ import (
 	"server/internal/models"
 	"server/internal/repositories"
 
-	"server/internal/storage"
 	"server/pkg/image"
 
 	"gorm.io/gorm"
@@ -37,18 +35,20 @@ type ImageService interface {
 }
 
 type imageService struct {
-	images  repositories.ImageRepository
-	logs    LogService
-	storage storage.Storage
+	images     repositories.ImageRepository
+	logs       LogService
+	objects    ObjectService
+	embeddings EmbeddingsService
 
 	db *gorm.DB
 }
 
-func NewImageService(db *gorm.DB, images repositories.ImageRepository, logs LogService, storage storage.Storage) ImageService {
+func NewImageService(db *gorm.DB, images repositories.ImageRepository, logs LogService, objects ObjectService, embeddings EmbeddingsService) ImageService {
 	return &imageService{
 		images,
 		logs,
-		storage,
+		objects,
+		embeddings,
 		db,
 	}
 }
@@ -114,12 +114,12 @@ func (s *imageService) DeleteByID(ctx context.Context, user *models.User, id uin
 		return fmt.Errorf("failed to parse image format: %w", err)
 	}
 
-	if err := s.storage.Delete(ctx, image.ImageKey(img.Hash, format)); err != nil {
-		return fmt.Errorf("failed deleting image: %v", err)
+	if err := s.embeddings.Delete(ctx, img.ID); err != nil {
+		return err
 	}
 
-	if err := s.storage.Delete(ctx, image.ThumbnailKey(img.Hash, format)); err != nil {
-		return fmt.Errorf("failed deleting image thumbnail: %v", err)
+	if err := s.objects.DeleteImageObjects(ctx, img.Hash, format); err != nil {
+		return fmt.Errorf("failed deleting image: %v", err)
 	}
 
 	return nil
@@ -169,12 +169,8 @@ func (s *imageService) DeleteByQuery(ctx context.Context, user *models.User, que
 			errs = append(errs, fmt.Errorf("failed to parse image format for %s: %w", img.Hash, err))
 			continue
 		}
-		if err := s.storage.Delete(ctx, image.ImageKey(img.Hash, format)); err != nil {
+		if err := s.objects.DeleteImageObjects(ctx, img.Hash, format); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting image: %w", err))
-		}
-
-		if err := s.storage.Delete(ctx, image.ThumbnailKey(img.Hash, format)); err != nil {
-			errs = append(errs, fmt.Errorf("failed deleting image thumbnail: %w", err))
 		}
 	}
 
@@ -227,21 +223,12 @@ func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMeta
 		return nil, fmt.Errorf("duplicate image: %w", err)
 	}
 
-	var thumb []byte
-	thumb, err = image.GenerateThumbnail(data, format)
-	if err != nil {
-		return nil, fmt.Errorf("error generating thumbnail: %w", err)
-	}
-
-	imageKey := image.ImageKey(img.Hash, format)
-	if err = s.storage.Upload(ctx, imageKey, bytes.NewReader(data), format.MIMEType()); err != nil {
+	if err := s.objects.UploadImage(ctx, img.Hash, format, data); err != nil {
 		return nil, fmt.Errorf("error uploading image: %w", err)
 	}
 
-	thumbKey := image.ThumbnailKey(img.Hash, format)
-	if err = s.storage.Upload(ctx, thumbKey, bytes.NewReader(thumb), "image/jpeg"); err != nil {
-		_ = s.storage.Delete(ctx, imageKey)
-		return nil, fmt.Errorf("error uploading thumbnail: %w", err)
+	if err := s.embeddings.Upsert(ctx, img.ID, data); err != nil {
+		return nil, err
 	}
 
 	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -265,8 +252,8 @@ func (s *imageService) Upload(ctx context.Context, user *models.User, uploadMeta
 
 		return nil
 	}); err != nil {
-		_ = s.storage.Delete(ctx, imageKey)
-		_ = s.storage.Delete(ctx, thumbKey)
+		_ = s.embeddings.Delete(ctx, img.ID)
+		_ = s.objects.DeleteImageObjects(ctx, img.Hash, format)
 		return nil, err
 	}
 

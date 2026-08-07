@@ -16,3 +16,4 @@ yarn-error.log
 npm-debug.log
 .env
 run.dev.sh
+.venv

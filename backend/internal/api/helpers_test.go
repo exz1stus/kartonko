@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"server/internal/api/dto"
+	"server/internal/clients/embeddings"
 	"server/internal/database"
 	"server/internal/env"
 	"server/internal/models"
@@ -140,24 +141,19 @@ func makeFileDataFromMetadata(t *testing.T, metadataJSON string, content func(t 
 	return fileData
 }
 
-func seedImageUsingRequest(t *testing.T, r *gin.Engine, metadata string, filename string, content []byte, userID uint64) {
-	t.Helper()
-
-	req := buildUploadRequest(t, "/upload", metadata, filename, "image/png", content)
-	req = withTestUser(req, userID)
-	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("seedImage(%s) failed: status=%d body=%s", filename, rec.Code, rec.Body.String())
-	}
-}
-
 func seedTestTags(t *testing.T, service services.TagService, tags []string, user *models.User) {
 	t.Helper()
 
 	for _, tag := range tags {
-		_, err := service.Create(context.Background(), tag, user)
+		// Check if tag already exists
+		exists, err := service.Exists(tag)
+		if err != nil {
+			t.Fatalf("failed to check tag %s: %v", tag, err)
+		}
+		if exists {
+			continue // Tag already exists, skip
+		}
+		_, err = service.Create(context.Background(), tag, user)
 		if err != nil {
 			t.Fatalf("failed to seed tag %s: %v", tag, err)
 		}
@@ -228,21 +224,27 @@ func newTestAPI(t *testing.T) *api {
 	}
 	storage := storage.NewMockStorage()
 
+	embeddingsClient := embeddings.NewMockEmbeddingsClient()
+
 	imageRepo := repositories.NewImageRepository(db)
 	userRepo := repositories.NewUserRepository(db)
 	tagRepo := repositories.NewTagRepository(db)
 	logRepo := repositories.NewLogRepository(db)
 
 	logService := services.NewLogService(logRepo)
+	objectService := services.NewObjectService(storage, imageRepo)
+	embeddingsService := services.NewEmbeddingsService(objectService, embeddingsClient)
 	userService := services.NewUserService(userRepo, imageRepo)
-	imageService := services.NewImageService(db, imageRepo, logService, storage)
+	imageService := services.NewImageService(db, imageRepo, logService, objectService, embeddingsService)
 	tagService := services.NewTagService(db, tagRepo, logService)
 
 	api := &api{
-		imageService: imageService,
-		userService:  userService,
-		tagService:   tagService,
-		logService:   logService,
+		imageService:      imageService,
+		userService:       userService,
+		tagService:        tagService,
+		logService:        logService,
+		objectService:     objectService,
+		embeddingsService: embeddingsService,
 
 		storage:   storage,
 		jwtSecret: env.GetEnvString("JWT_SECRET"),
@@ -273,11 +275,11 @@ func newTestAPI(t *testing.T) *api {
 
 // testContext holds common test dependencies for all test types
 type testContext struct {
-	t       *testing.T
-	a       *api
-	r       *gin.Engine
-	store   *storage.MockStorage
-	mod     *models.User
+	t     *testing.T
+	a     *api
+	r     *gin.Engine
+	store *storage.MockStorage
+	mod   *models.User
 }
 
 // newTestContext creates a fresh test context with seeded tags
@@ -449,34 +451,6 @@ func (c *testContext) getThumbnail(filename string, userID uint64) *httptest.Res
 	return rec
 }
 
-// deleteImageByName deletes a single image
-func (c *testContext) deleteImageByName(filename string, userID uint64) *httptest.ResponseRecorder {
-	c.t.Helper()
-	req := buildDeleteRequest(c.t, "/image", filename)
-	if userID != 0 {
-		req = withTestUser(req, userID)
-	}
-	rec := httptest.NewRecorder()
-	c.r.ServeHTTP(rec, req)
-	return rec
-}
-
-// deleteImagesByQuery deletes images by query
-func (c *testContext) deleteImagesByQuery(query string, userID uint64) *httptest.ResponseRecorder {
-	c.t.Helper()
-	url := "/image"
-	if query != "" {
-		url += "?" + query
-	}
-	req := httptest.NewRequest(http.MethodDelete, url, http.NoBody)
-	if userID != 0 {
-		req = withTestUser(req, userID)
-	}
-	rec := httptest.NewRecorder()
-	c.r.ServeHTTP(rec, req)
-	return rec
-}
-
 // seedImage uploads an image for test setup (panics on failure)
 func (c *testContext) seedImage(metadata, filename string, content []byte, userID uint64) dto.ImageResponse {
 	c.t.Helper()
@@ -485,12 +459,4 @@ func (c *testContext) seedImage(metadata, filename string, content []byte, userI
 		c.t.Fatalf("seedImage(%s) failed: status=%d body=%s", filename, rec.Code, rec.Body.String())
 	}
 	return resp
-}
-
-// buildDeleteRequest creates a DELETE request for a single image
-func buildDeleteRequest(t *testing.T, url, filename string) *http.Request {
-	t.Helper()
-	resourceUrl := url + "/" + filename
-	req := httptest.NewRequest(http.MethodDelete, resourceUrl, http.NoBody)
-	return req
 }

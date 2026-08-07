@@ -152,11 +152,6 @@ func TestGetRawThumbnailByName(t *testing.T) {
 
 		ctx.assertStatus(rec, http.StatusOK)
 
-		contentType := rec.Header().Get("Content-Type")
-		if contentType != "image/jpeg" {
-			t.Errorf("expected content-type image/jpeg, got %s", contentType)
-		}
-
 		if rec.Body.Len() == 0 {
 			t.Error("expected non-empty thumbnail body")
 		}

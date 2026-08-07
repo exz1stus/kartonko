@@ -2,8 +2,27 @@ package api
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
+
+func buildDeleteRequest(t *testing.T, url, filename string) *http.Request {
+	t.Helper()
+	resourceUrl := url + "/" + filename
+	req := httptest.NewRequest(http.MethodDelete, resourceUrl, http.NoBody)
+	return req
+}
+
+func (c *testContext) deleteImageByName(filename string, userID uint64) *httptest.ResponseRecorder {
+	c.t.Helper()
+	req := buildDeleteRequest(c.t, "/image", filename)
+	if userID != 0 {
+		req = withTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.r.ServeHTTP(rec, req)
+	return rec
+}
 
 func TestDeleteImage(t *testing.T) {
 	tests := []struct {

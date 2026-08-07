@@ -84,47 +84,65 @@ func (api *api) GetImageByID(c *gin.Context) {
 }
 
 func (api *api) GetRawImageByName(c *gin.Context) {
-	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
-		format, _ := image.ParseFormat(img.Format)
-		return image.ImageKey(img.Hash, format), format.MIMEType()
-	})
-}
-
-func (api *api) GetRawThumbnailByName(c *gin.Context) {
-	api.streamObject(c, func(img *models.ImageMetadata) (string, string) {
-		format, _ := image.ParseFormat(img.Format)
-		return image.ThumbnailKey(img.Hash, format), format.MIMEType()
-	})
-}
-
-// streamObject resolves an image by name and streams the object at the key
-// returned by keyFn through the response writer. It is storage-agnostic: the
-// key derivation is delegated to the caller, and bytes flow straight from
-// storage to the client with no intermediate buffering.
-func (api *api) streamObject(c *gin.Context, keyFn func(*models.ImageMetadata) (string, string)) {
 	name := c.Param("name")
 	img, err := api.imageService.GetByName(name)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
 	}
-
-	key, defaultContentType := keyFn(img)
-	body, err := api.storage.Download(c, key)
+	body, _, err := api.objectService.GetRawImageByHash(c.Request.Context(), img.Hash)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
 	}
 	defer body.Close()
 
-	contentType := defaultContentType
-	if info, err := api.storage.Stat(c, key); err == nil && info.ContentType != "" {
-		contentType = info.ContentType
+	c.Header("Content-Type", img.ParseFormat().MIMEType())
+	io.Copy(c.Writer, body)
+}
+
+func (api *api) GetRawThumbnailByName(c *gin.Context) {
+	name := c.Param("name")
+	img, err := api.imageService.GetByName(name)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		return
 	}
-	c.Header("Content-Type", contentType)
-	if _, err := io.Copy(c.Writer, body); err != nil {
-		// client likely disconnected; nothing else to do
+	body, _, err := api.objectService.GetRawThumbnailByHash(c.Request.Context(), img.Hash)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		return
 	}
+	defer body.Close()
+
+	c.Header("Content-Type", img.ParseFormat().MIMEType())
+	io.Copy(c.Writer, body)
+}
+
+func (api *api) GetRawImageByHash(c *gin.Context) {
+	hash := c.Param("hash")
+	body, img, err := api.objectService.GetRawImageByHash(c.Request.Context(), hash)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		return
+	}
+	defer body.Close()
+
+	c.Header("Content-Type", img.ParseFormat().MIMEType())
+	io.Copy(c.Writer, body)
+}
+
+func (api *api) GetRawThumbnailByHash(c *gin.Context) {
+	hash := c.Param("hash")
+	body, img, err := api.objectService.GetRawThumbnailByHash(c.Request.Context(), hash)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		return
+	}
+	defer body.Close()
+
+	c.Header("Content-Type", img.ParseFormat().MIMEType())
+	io.Copy(c.Writer, body)
 }
 
 func (api *api) GetImagesByQuery(c *gin.Context) {

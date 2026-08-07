@@ -1,0 +1,78 @@
+[project]
+name = "embedding-service"
+version = "0.1.0"
+description = "Embedding Service for image similarity search"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.141.1",
+    "uvicorn==0.52.0",
+    "pillow==12.3.0",
+    "torch==2.13.0",
+    "torchvision==0.28.0",
+    "qdrant-client==1.18.0",
+    "clip @ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6",
+    "python-multipart==0.0.32",
+    "pydantic==2.13.4",
+    "pydantic-settings==2.10.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff==0.6.0",
+    "pytest==8.2.0",
+    "pytest-asyncio==0.23.0",
+    "httpx==0.28.1",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "C4",
+    "PT",
+    "T20",
+    "PIE",
+    "RUF",
+    "PYI",
+    "TID",
+    "TRY",
+    "ARG",
+    "PTH",
+    "ERA",
+    "PD",
+    "PGH",
+    "PL",
+    "SIM",
+    "TCH",
+    "INT",
+    "FUR",
+    "LOG",
+    "NPY",
+    "RET",
+    "AIR",
+    "ASYNC",
+]
+ignore = []
+
+[tool.ruff.lint.pylint]
+select = ["*"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+indent-width = 4
+
+[tool.pytest.ini_options]
+asyncio-mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

@@ -30,7 +30,7 @@ func NewTagService(db *gorm.DB, tags repositories.TagRepository, logs LogService
 
 func (s *tagService) Create(ctx context.Context, tag string, user *models.User) (*models.Tag, error) {
 	if user == nil {
-		fmt.Errorf("creating tag: recieved nil user")
+		return nil, fmt.Errorf("creating tag: received nil user")
 	}
 	exists, err := s.tags.Exists(tag)
 	if err != nil {

@@ -1,0 +1,1 @@
+"""CLIP Embedding Service - Generate embeddings and search similar images."""

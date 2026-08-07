@@ -32,7 +32,7 @@ services:
                 condition: service_healthy
             postgresql:
                 condition: service_healthy
-            clip:
+            embeddings:
                 condition: service_started
         volumes:
             - ../backend:/app
@@ -157,13 +157,15 @@ services:
         networks:
             - app-network
 
-    clip:
+    embeddings:
         build:
-            context: ../clip
+            context: ../embeddings
             dockerfile: Dockerfile
-        container_name: clip
+        container_name: embeddings
         depends_on:
             - qdrant
+        ports:
+            - "${EMBEDDINGS_PORT}:8000"
         networks:
             - ai-network
         restart: always

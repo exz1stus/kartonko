@@ -41,7 +41,7 @@ func TestGetImagesByQuery(t *testing.T) {
 				ctx.seedImage(`{"name":"dog_image.png","tags":["dog"]}`, "dog_image.png", makeUniqueTestPNG(t, 10, 10, 111), 1)
 				ctx.seedImage(`{"name":"bird_image.png","tags":["bird"]}`, "bird_image.png", makeUniqueTestPNG(t, 10, 10, 112), 1)
 			},
-			query:         "name=cat",
+			query:         "prefix=cat",
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 1,

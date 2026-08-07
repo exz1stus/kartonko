@@ -1,6 +1,8 @@
 package models
 
 import (
+	"server/pkg/image"
+
 	"gorm.io/gorm"
 )
 
@@ -14,6 +16,12 @@ type ImageMetadata struct {
 	Height   uint   `json:"height" gorm:"not null"`
 	UserID   uint   `json:"user_id" gorm:"not null;default:1"`
 	User     User   `json:"user"`
+}
+
+// image model from DB must guarantee parsable format
+func (img *ImageMetadata) ParseFormat() image.Format {
+	format, _ := image.ParseFormat(img.Format)
+	return format
 }
 
 func ConstructImageMetadata(name string, tagsNames []string, format string, width uint, height uint, userID uint) *ImageMetadata {
