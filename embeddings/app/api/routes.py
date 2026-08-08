@@ -64,7 +64,7 @@ async def health_check(settings: Annotated[Settings, Depends(get_settings)]):
     }
 
 
-@router.post("/embedding")
+@router.post("/embeddings")
 async def generate_embedding(
     file: Annotated[UploadFile, File(...)],
     embedding_service: Annotated[EmbeddingService, Depends(get_embedding_service)],
@@ -75,7 +75,7 @@ async def generate_embedding(
     return {"embedding": embedding, "dimension": len(embedding)}
 
 
-@router.post("/embedding/query")
+@router.post("/embeddings/query")
 async def generate_embedding_query(
     query: str,
     embedding_service: Annotated[EmbeddingService, Depends(get_embedding_service)],
@@ -85,7 +85,7 @@ async def generate_embedding_query(
     return {"embedding": embedding, "dimension": len(embedding)}
 
 
-@router.post("/embedding/text")
+@router.post("/embeddings/text")
 async def generate_embedding_text(
     text: str,
     embedding_service: Annotated[EmbeddingService, Depends(get_embedding_service)],
@@ -95,7 +95,7 @@ async def generate_embedding_text(
     return {"embedding": embedding, "dimension": len(embedding)}
 
 
-@router.post("/embedding/batch")
+@router.post("/embeddings/batch")
 async def generate_embeddings_batch(
     files: Annotated[list[UploadFile], File(...)],
     embedding_service: Annotated[EmbeddingService, Depends(get_embedding_service)],

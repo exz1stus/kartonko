@@ -2,12 +2,14 @@ package api
 
 import (
 	"fmt"
-	"server/internal/clients/embeddings"
 	"server/internal/database"
+	embeddingspkg "server/internal/embedding"
 	"server/internal/env"
-	"server/internal/repositories"
-	"server/internal/services"
+	"server/internal/image"
+	"server/internal/log"
 	"server/internal/storage"
+	"server/internal/tag"
+	"server/internal/user"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -25,12 +27,12 @@ type Response gin.H
 type api struct {
 	router *gin.Engine
 
-	imageService      services.ImageService
-	objectService     services.ObjectService
-	userService       services.UserService
-	tagService        services.TagService
-	logService        services.LogService
-	embeddingsService services.EmbeddingsService
+	imageService      image.ImageService
+	objectService     image.ObjectService
+	userService       user.UserService
+	tagService        tag.TagService
+	logService        log.LogService
+	embeddingsService embeddingspkg.EmbeddingsService
 
 	storage   storage.Storage
 	jwtSecret string
@@ -40,19 +42,19 @@ type api struct {
 func MustInitApi() *api {
 	db := database.MustInitDB()
 	storage := storage.MustInitGarageClient()
-	embeddingsClient := embeddings.NewHTTPEmbeddingClient()
+	embeddingsClient := embeddingspkg.NewHTTPEmbeddingClient()
 
-	imageRepo := repositories.NewImageRepository(db)
-	userRepo := repositories.NewUserRepository(db)
-	tagRepo := repositories.NewTagRepository(db)
-	logRepo := repositories.NewLogRepository(db)
+	imageRepo := image.NewImageRepository(db)
+	userRepo := user.NewUserRepository(db)
+	tagRepo := tag.NewTagRepository(db)
+	logRepo := log.NewLogRepository(db)
 
-	logService := services.NewLogService(logRepo)
-	objectService := services.NewObjectService(storage, imageRepo)
-	embeddingsService := services.NewEmbeddingsService(objectService, embeddingsClient)
-	userService := services.NewUserService(userRepo, imageRepo)
-	imageService := services.NewImageService(db, imageRepo, logService, objectService, embeddingsService)
-	tagService := services.NewTagService(db, tagRepo, logService)
+	logService := log.NewLogService(logRepo)
+	objectService := image.NewObjectService(storage, imageRepo)
+	embeddingsService := embeddingspkg.NewEmbeddingsService(objectService, embeddingsClient)
+	userService := user.NewUserService(userRepo)
+	imageService := image.NewImageService(db, imageRepo, logService, objectService, embeddingsService)
+	tagService := tag.NewTagService(db, tagRepo, logService)
 
 	//TODO: temporary for development, remove later
 	userService.SetPrivilege(1, 1)
@@ -79,10 +81,64 @@ func (api *api) Run() {
 	api.router.Run(fmt.Sprintf(":%s", env.GetEnvString("BACKEND_PORT")))
 }
 
+// Router returns the gin router for testing
+func (api *api) Router() *gin.Engine {
+	return api.router
+}
+
 // CleanTestDB truncates all test tables for test isolation
 func (api *api) CleanTestDB() error {
 	return api.db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE").Error
 }
+
+// MustInitAPIForTest creates an API instance for testing with a given database and storage
+func MustInitAPIForTest(db *gorm.DB, storage storage.Storage) *api {
+	embeddingsClient := embeddingspkg.NewHTTPEmbeddingClient()
+
+	imageRepo := image.NewImageRepository(db)
+	userRepo := user.NewUserRepository(db)
+	tagRepo := tag.NewTagRepository(db)
+	logRepo := log.NewLogRepository(db)
+
+	logService := log.NewLogService(logRepo)
+	objectService := image.NewObjectService(storage, imageRepo)
+	embeddingsService := embeddingspkg.NewEmbeddingsService(objectService, embeddingsClient)
+	userService := user.NewUserService(userRepo)
+	imageService := image.NewImageService(db, imageRepo, logService, objectService, embeddingsService)
+	tagService := tag.NewTagService(db, tagRepo, logService)
+
+	//TODO: temporary for development, remove later
+	userService.SetPrivilege(1, 1)
+
+	api := &api{
+		imageService:      imageService,
+		userService:       userService,
+		tagService:        tagService,
+		logService:        logService,
+		objectService:     objectService,
+		embeddingsService: embeddingsService,
+
+		storage:   storage,
+		jwtSecret: "test-secret",
+		db:        db,
+	}
+
+	api.initRoutes()
+
+	return api
+}
+
+// AuthService returns the auth service (API itself implements auth via methods)
+func (a *api) AuthService() *api { return a }
+
+// UserService returns the user service
+func (a *api) UserService() user.UserService { return a.userService }
+
+// TagService returns the tag service
+func (a *api) TagService() tag.TagService { return a.tagService }
+
+// ImageService returns the image service
+func (a *api) ImageService() image.ImageService { return a.imageService }
 
 const defaultLimit = 100
 

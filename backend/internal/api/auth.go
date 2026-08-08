@@ -3,9 +3,8 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"server/internal/api/dto"
 	"server/internal/env"
-	"server/internal/models"
+	"server/internal/user"
 	"sync"
 	"time"
 
@@ -19,15 +18,15 @@ var (
 	jwtCookieMaxAgeOnce sync.Once
 )
 
-func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
+func (rh *api) GetUserFromContext(c *gin.Context) (*user.User, error) {
 	userInter, exists := c.Get("user")
 	if !exists {
 		return nil, fmt.Errorf("user is not passed in context")
 	}
 
-	user, ok := userInter.(*models.User)
+	user, ok := userInter.(*user.User)
 	if !ok {
-		return nil, fmt.Errorf("context user is not of type *models.User")
+		return nil, fmt.Errorf("context user is not of type *user.User")
 	}
 
 	return user, nil
@@ -45,7 +44,7 @@ func (rh *api) GetUserFromContext(c *gin.Context) (*models.User, error) {
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
 func (rh *api) PostLogin(c *gin.Context) {
-	var input dto.AuthRequest
+	var input AuthRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprint("invalid input: ", err.Error())})
 		return
@@ -70,7 +69,7 @@ func (rh *api) PostLogin(c *gin.Context) {
 
 	setTokenCookie(tokenString, &c.Writer)
 
-	res := &dto.LoginResponse{
+	res := &LoginResponse{
 		Token: tokenString,
 		User:  *user,
 	}
@@ -97,7 +96,7 @@ func GetJWTCookieMaxAge() time.Duration {
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/register [post]
 func (rh *api) PostRegister(c *gin.Context) {
-	var input dto.AuthRequest
+	var input AuthRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid input"})

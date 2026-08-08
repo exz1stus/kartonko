@@ -3,7 +3,11 @@ package database
 import (
 	"fmt"
 	"os"
-	"server/internal/models"
+
+	"server/internal/image"
+	"server/internal/log"
+	"server/internal/tag"
+	"server/internal/user"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,10 +24,10 @@ func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 
 	Migrate(db)
 	err = db.AutoMigrate(
-		&models.ImageMetadata{},
-		&models.Tag{},
-		&models.User{},
-		&models.AuditEntry{},
+		&image.ImageMetadata{},
+		&tag.Tag{},
+		&user.User{},
+		&log.AuditEntry{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)

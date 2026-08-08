@@ -4,7 +4,14 @@ import logging
 from typing import Any
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, PointStruct, VectorParams
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    VectorParams,
+)
 
 from app.config import Settings
 from app.protocols import VectorRepository
@@ -86,7 +93,11 @@ class QdrantVectorRepository(VectorRepository):
         )
 
     def search(
-        self, vector: list[float], limit: int = 10, score_threshold: float = 0.7, offset: int = 0
+        self,
+        vector: list[float],
+        limit: int = 10,
+        score_threshold: float = 0.7,
+        offset: int = 0,
     ) -> list[dict[str, Any]]:
         """Search for similar vectors with pagination."""
         results = self.client.search(
@@ -115,7 +126,9 @@ class QdrantVectorRepository(VectorRepository):
         if filter:
             conditions = []
             for key, value in filter.items():
-                conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
+                conditions.append(
+                    FieldCondition(key=key, match=MatchValue(value=value))
+                )
             qdrant_filter = Filter(must=conditions)
 
         # Use search with vector if provided, otherwise just scroll with filter
@@ -142,8 +155,7 @@ class QdrantVectorRepository(VectorRepository):
                 with_vectors=False,
             )
             hits = [
-                {"id": hit.id, "score": 1.0, "payload": hit.payload}
-                for hit in results
+                {"id": hit.id, "score": 1.0, "payload": hit.payload} for hit in results
             ]
 
         next_offset = offset + limit if offset is not None else limit

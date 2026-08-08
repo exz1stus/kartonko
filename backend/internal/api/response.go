@@ -3,20 +3,21 @@ package api
 import (
 	"errors"
 	"net/http"
+	"time"
 
-	"server/internal/api/dto"
+	"server/internal/image"
+	"server/internal/tag"
 	serverrors "server/internal/errors"
-	"server/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RespondImage(c *gin.Context, img *models.ImageMetadata) {
+func RespondImage(c *gin.Context, img *image.ImageMetadata) {
 	c.JSON(http.StatusOK, NewImageResponse(img))
 }
 
-func RespondImages(c *gin.Context, images []models.ImageMetadata) {
-	response := make([]dto.ImageResponse, len(images))
+func RespondImages(c *gin.Context, images []image.ImageMetadata) {
+	response := make([]image.ImageResponse, len(images))
 	for i, img := range images {
 		response[i] = NewImageResponse(&img)
 	}
@@ -39,4 +40,26 @@ func RespondError(c *gin.Context, err error) {
 	}
 
 	c.JSON(status, ErrorResponse{Error: msg})
+}
+
+func NewImageResponse(img *image.ImageMetadata) image.ImageResponse {
+	return image.ImageResponse{
+		ID:       img.ID,
+		Hash:     img.Hash,
+		Filename: img.Filename,
+		Tags:     tagNames(img.Tags),
+		Format:   img.Format,
+		Width:    img.Width,
+		Height:   img.Height,
+		UserID:   img.UserID,
+		Uploaded: img.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+func tagNames(tags []tag.Tag) []string {
+	names := make([]string, len(tags))
+	for i, t := range tags {
+		names[i] = t.Name
+	}
+	return names
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"server/internal/api/dto"
 	"server/internal/env"
 	"strings"
 	"sync"
@@ -122,7 +121,7 @@ func (rh *api) GetGoogleCallback(c *gin.Context) {
 		return
 	}
 
-	res := &dto.LoginResponse{
+	res := &LoginResponse{
 		Token: tokenString,
 		User:  *user,
 	}
