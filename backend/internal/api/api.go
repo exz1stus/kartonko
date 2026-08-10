@@ -93,7 +93,15 @@ func (api *api) CleanTestDB() error {
 
 // MustInitAPIForTest creates an API instance for testing with a given database and storage
 func MustInitAPIForTest(db *gorm.DB, storage storage.Storage) *api {
-	embeddingsClient := embeddingspkg.NewHTTPEmbeddingClient()
+	return MustInitAPIForTestWithAuth(db, storage, nil, nil)
+}
+
+// MustInitAPIForTestWithAuth creates an API instance for testing with a custom auth middleware.
+// If authMiddleware is nil, the default AuthMiddleware is used.
+// If userService is provided, it will be used instead of creating a new one (and createTestUsers is skipped).
+func MustInitAPIForTestWithAuth(db *gorm.DB, storage storage.Storage, authMiddleware func(*gin.RouterGroup), userService user.UserService) *api {
+	// Use mock embeddings client for tests to avoid external dependency
+	embeddingsClient := embeddingspkg.NewMockEmbeddingsClient()
 
 	imageRepo := image.NewImageRepository(db)
 	userRepo := user.NewUserRepository(db)
@@ -103,12 +111,15 @@ func MustInitAPIForTest(db *gorm.DB, storage storage.Storage) *api {
 	logService := log.NewLogService(logRepo)
 	objectService := image.NewObjectService(storage, imageRepo)
 	embeddingsService := embeddingspkg.NewEmbeddingsService(objectService, embeddingsClient)
-	userService := user.NewUserService(userRepo)
+
+	if userService == nil {
+		userService = user.NewUserService(userRepo)
+		// Create test users
+		createTestUsers(db, userService)
+	}
+
 	imageService := image.NewImageService(db, imageRepo, logService, objectService, embeddingsService)
 	tagService := tag.NewTagService(db, tagRepo, logService)
-
-	//TODO: temporary for development, remove later
-	userService.SetPrivilege(1, 1)
 
 	api := &api{
 		imageService:      imageService,
@@ -123,9 +134,29 @@ func MustInitAPIForTest(db *gorm.DB, storage storage.Storage) *api {
 		db:        db,
 	}
 
-	api.initRoutes()
+	api.initRoutesWithAuth(authMiddleware)
 
 	return api
+}
+
+func createTestUsers(db *gorm.DB, userService user.UserService) {
+	users := []*user.User{
+		{Username: "moderator", Email: "moderator@test.com", Privilege: user.Moderator, Provider: "test", ProviderID: "moderator"},
+		{Username: "user1", Email: "user1@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user1"},
+		{Username: "user2", Email: "user2@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user2"},
+		{Username: "alice", Email: "alice@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "alice"},
+		{Username: "user3", Email: "user3@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user3"},
+	}
+	for _, u := range users {
+		// Check if user already exists
+		existing, err := userService.GetByUsername(u.Username)
+		if err == nil && existing != nil {
+			continue
+		}
+		if err := userService.Create(u); err != nil {
+			panic(fmt.Sprintf("failed to create test user %s: %v", u.Username, err))
+		}
+	}
 }
 
 // AuthService returns the auth service (API itself implements auth via methods)

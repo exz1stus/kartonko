@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"server/internal/image/thumbnail"
 	"server/internal/storage"
 )
 
@@ -112,7 +113,7 @@ func (s *objectService) UploadImage(ctx context.Context, hash string, format str
 		return fmt.Errorf("invalid format: %w", err)
 	}
 
-	thumb, err := GenerateThumbnail(data, parsedFormat)
+	thumb, err := thumbnail.GenerateThumbnail(data, format)
 	if err != nil {
 		return fmt.Errorf("error generating thumbnail: %w", err)
 	}

@@ -14,16 +14,35 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"server/internal/api"
 	imgpkg "server/internal/image"
 	"server/internal/storage"
 	"server/internal/tag"
 	userpkg "server/internal/user"
-	"server/internal/testutil"
+
+	"github.com/gin-gonic/gin"
 )
 
 const testAuthHeader = "X-Test-User-ID"
+
+// ImageResponse re-exports the image package's ImageResponse
+type ImageResponse = imgpkg.ImageResponse
+
+// ImagePostBatchResponse re-exports the image package's ImagePostBatchResponse
+type ImagePostBatchResponse = imgpkg.ImagePostBatchResponse
+
+// TagsToStrings converts tag.Tag slice to string slice
+func TagsToStrings(tags []tag.Tag) []string {
+	var names []string
+	for _, t := range tags {
+		names = append(names, t.Name)
+	}
+	return names
+}
+
+// NewQueryBuilder creates a new query builder
+func NewQueryBuilder() *imgpkg.QueryBuilder {
+	return imgpkg.NewQueryBuilder()
+}
 
 // WithTestUser adds a test user ID header to a request
 func WithTestUser(req *http.Request, userID uint64) *http.Request {
@@ -59,15 +78,12 @@ type TestContext struct {
 	ImageService imgpkg.ImageService
 	TagService   tag.TagService
 	Router       *gin.Engine
-	Storage      storage.Storage
+	Storage      storage.TestStorage
 }
 
 // NewTestContext creates a fresh test context with seeded data
-func NewTestContext(t *testing.T, router *gin.Engine, userSvc userpkg.UserService, imgSvc imgpkg.ImageService, tagSvc tag.TagService, storage storage.Storage) *TestContext {
+func NewTestContext(t *testing.T, router *gin.Engine, userSvc userpkg.UserService, imgSvc imgpkg.ImageService, tagSvc tag.TagService, storage storage.TestStorage) *TestContext {
 	t.Helper()
-
-	// Add auth middleware
-	router.Use(TestAuthMiddleware(userSvc))
 
 	mod, err := userSvc.GetByID(1)
 	if err != nil {
@@ -330,25 +346,4 @@ func MakeUniqueTestPNG(t *testing.T, baseW, baseH int, unique int) []byte {
 func HashBytes(data []byte) string {
 	sum := sha256.Sum256(data)
 	return fmt.Sprintf("%x", sum)
-}
-
-// NewTestAPI creates a test API instance with all services wired
-func NewTestAPI(t *testing.T) (*TestContext, func()) {
-	t.Helper()
-	db := testutil.MustOpenDB(t)
-	storage := storage.NewMockStorage()
-
-	apiInstance := api.MustInitAPIForTest(db, storage)
-	userSvc := apiInstance.UserService()
-	tagSvc := apiInstance.TagService()
-	imgSvc := apiInstance.ImageService()
-	router := apiInstance.Router()
-
-	ctx := NewTestContext(t, router, userSvc, imgSvc, tagSvc, storage)
-
-	cleanup := func() {
-		db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE")
-	}
-
-	return ctx, cleanup
 }

@@ -8,6 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"server/internal/image"
+	"server/internal/log"
+	"server/internal/tag"
+	"server/internal/user"
+
 	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -68,12 +73,24 @@ func SharedDSN() string {
 	return sharedDSN
 }
 
-// MustOpenDB opens a GORM connection to the test database.
+// MustOpenDB opens a GORM connection to the test database and runs AutoMigrate.
 func MustOpenDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(postgres.Open(sharedDSN), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to connect to test database: %v", err)
 	}
+
+	// Run AutoMigrate to create tables
+	err = db.AutoMigrate(
+		&image.ImageMetadata{},
+		&tag.Tag{},
+		&user.User{},
+		&log.AuditEntry{},
+	)
+	if err != nil {
+		t.Fatalf("failed to auto migrate database: %v", err)
+	}
+
 	return db
 }

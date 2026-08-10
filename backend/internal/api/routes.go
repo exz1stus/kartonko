@@ -12,6 +12,10 @@ import (
 )
 
 func (api *api) initRoutes() {
+	api.initRoutesWithAuth(nil)
+}
+
+func (api *api) initRoutesWithAuth(customAuthMiddleware func(*gin.RouterGroup)) {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -57,7 +61,11 @@ func (api *api) initRoutes() {
 	r.GET("/auth/google/callback", api.GetGoogleCallback)
 
 	authGroup := r.Group("/")
-	authGroup.Use(api.AuthMiddleware())
+	if customAuthMiddleware != nil {
+		customAuthMiddleware(authGroup)
+	} else {
+		authGroup.Use(api.AuthMiddleware())
+	}
 	{
 		authGroup.GET("/me", api.GetMe)
 
