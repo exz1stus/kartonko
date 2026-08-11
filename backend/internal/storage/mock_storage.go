@@ -27,6 +27,10 @@ func NewMockStorage() *MockStorage {
 	return &MockStorage{objects: make(map[string]mockStorageObj)}
 }
 
+func NewMockTestStorage() TestStorage {
+	return &MockStorage{objects: make(map[string]mockStorageObj)}
+}
+
 func (m *MockStorage) Upload(ctx context.Context, key string, body io.Reader, contentType string) error {
 	if m.FailUploadOn != nil {
 		if err := m.FailUploadOn(key); err != nil {

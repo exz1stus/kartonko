@@ -16,6 +16,8 @@ services:
             DB_NAME: ${DB_NAME}
             DB_PORT: ${DB_PORT}
 
+            EMBEDDINGS_PORT: ${EMBEDDINGS_PORT}
+
             BACKEND_PORT: ${BACKEND_PORT}
             API_ORIGIN: ${API_ORIGIN}
             FRONTEND_ORIGIN: ${FRONTEND_URI}

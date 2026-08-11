@@ -1,14 +1,3 @@
-export default interface ImageMetadata {
-    filename: string;
-    hash: string;
-    tags: string[];
-    width: number;
-    height: number;
-    format: string;
-    user_id: number;
-    uploaded_at: string;
-}
-
 export async function hashFile(file: File): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);

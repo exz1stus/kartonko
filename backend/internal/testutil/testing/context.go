@@ -3,7 +3,6 @@ package testing
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	stdimage "image"
@@ -24,33 +23,11 @@ import (
 
 const testAuthHeader = "X-Test-User-ID"
 
-// ImageResponse re-exports the image package's ImageResponse
-type ImageResponse = imgpkg.ImageResponse
-
-// ImagePostBatchResponse re-exports the image package's ImagePostBatchResponse
-type ImagePostBatchResponse = imgpkg.ImagePostBatchResponse
-
-// TagsToStrings converts tag.Tag slice to string slice
-func TagsToStrings(tags []tag.Tag) []string {
-	var names []string
-	for _, t := range tags {
-		names = append(names, t.Name)
-	}
-	return names
-}
-
-// NewQueryBuilder creates a new query builder
-func NewQueryBuilder() *imgpkg.QueryBuilder {
-	return imgpkg.NewQueryBuilder()
-}
-
-// WithTestUser adds a test user ID header to a request
 func WithTestUser(req *http.Request, userID uint64) *http.Request {
 	req.Header.Set(testAuthHeader, fmt.Sprintf("%d", userID))
 	return req
 }
 
-// TestAuthMiddleware creates a Gin middleware for test authentication
 func TestAuthMiddleware(userSvc userpkg.UserService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		idStr := c.GetHeader(testAuthHeader)
@@ -71,7 +48,6 @@ func TestAuthMiddleware(userSvc userpkg.UserService) gin.HandlerFunc {
 	}
 }
 
-// TestContext holds common test dependencies for image tests
 type TestContext struct {
 	T            *testing.T
 	UserService  userpkg.UserService
@@ -81,8 +57,14 @@ type TestContext struct {
 	Storage      storage.TestStorage
 }
 
-// NewTestContext creates a fresh test context with seeded data
-func NewTestContext(t *testing.T, router *gin.Engine, userSvc userpkg.UserService, imgSvc imgpkg.ImageService, tagSvc tag.TagService, storage storage.TestStorage) *TestContext {
+func NewTestContext(
+	t *testing.T,
+	router *gin.Engine,
+	userSvc userpkg.UserService,
+	imgSvc imgpkg.ImageService,
+	tagSvc tag.TagService,
+	storage storage.TestStorage,
+) *TestContext {
 	t.Helper()
 
 	mod, err := userSvc.GetByID(1)
@@ -101,7 +83,6 @@ func NewTestContext(t *testing.T, router *gin.Engine, userSvc userpkg.UserServic
 	}
 }
 
-// AssertStatus checks response status code
 func (c *TestContext) AssertStatus(rec *httptest.ResponseRecorder, wantStatus int) {
 	c.T.Helper()
 	if rec.Code != wantStatus {
@@ -109,7 +90,6 @@ func (c *TestContext) AssertStatus(rec *httptest.ResponseRecorder, wantStatus in
 	}
 }
 
-// AssertStorageCount checks storage object count
 func (c *TestContext) AssertStorageCount(expected int) {
 	c.T.Helper()
 	files, err := c.Storage.List(c.T.Context(), "")
@@ -121,7 +101,6 @@ func (c *TestContext) AssertStorageCount(expected int) {
 	}
 }
 
-// AssertTags checks tags match expected (order-insensitive)
 func AssertTags(t *testing.T, got, expected []string, context string) {
 	t.Helper()
 	if len(got) != len(expected) {
@@ -142,7 +121,6 @@ func AssertTags(t *testing.T, got, expected []string, context string) {
 	}
 }
 
-// AssertImageCount checks number of images in DB matching a query
 func (c *TestContext) AssertImageCount(query *imgpkg.Query, expected int64) {
 	c.T.Helper()
 	count, err := c.ImageService.Count(query)
@@ -155,7 +133,6 @@ func (c *TestContext) AssertImageCount(query *imgpkg.Query, expected int64) {
 	}
 }
 
-// BuildUploadRequest builds a multipart upload request
 func BuildUploadRequest(t *testing.T, url, metadataJSON, filename, contentType string, content []byte) *http.Request {
 	t.Helper()
 	body := &bytes.Buffer{}
@@ -180,7 +157,6 @@ func BuildUploadRequest(t *testing.T, url, metadataJSON, filename, contentType s
 	return req
 }
 
-// WriteFilePart writes a file part to multipart writer
 func WriteFilePart(w *multipart.Writer, fieldName, filename, contentType string, content []byte) error {
 	if fieldName == "" || filename == "" || len(content) == 0 {
 		return fmt.Errorf("bad file data provided")
@@ -198,7 +174,6 @@ func WriteFilePart(w *multipart.Writer, fieldName, filename, contentType string,
 	return nil
 }
 
-// UploadImage uploads an image and returns the response recorder
 func (c *TestContext) UploadImage(metadata, filename string, content []byte, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
 	req := BuildUploadRequest(c.T, "/upload", metadata, filename, "image/png", content)
@@ -210,7 +185,6 @@ func (c *TestContext) UploadImage(metadata, filename string, content []byte, use
 	return rec
 }
 
-// UploadImageWithResponse uploads and returns both recorder and parsed response
 func (c *TestContext) UploadImageWithResponse(metadata, filename string, content []byte, userID uint64) (*httptest.ResponseRecorder, imgpkg.ImageResponse) {
 	c.T.Helper()
 	rec := c.UploadImage(metadata, filename, content, userID)
@@ -224,7 +198,6 @@ func (c *TestContext) UploadImageWithResponse(metadata, filename string, content
 	return rec, resp
 }
 
-// QueryImages performs a GET /image request with query string
 func (c *TestContext) QueryImages(query string, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
 	url := "/image"
@@ -240,7 +213,6 @@ func (c *TestContext) QueryImages(query string, userID uint64) *httptest.Respons
 	return rec
 }
 
-// QueryImagesWithResponse performs query and returns parsed response
 func (c *TestContext) QueryImagesWithResponse(query string, userID uint64) (*httptest.ResponseRecorder, []imgpkg.ImageResponse) {
 	c.T.Helper()
 	rec := c.QueryImages(query, userID)
@@ -254,7 +226,6 @@ func (c *TestContext) QueryImagesWithResponse(query string, userID uint64) (*htt
 	return rec, images
 }
 
-// GetImageByName fetches an image by name
 func (c *TestContext) GetImageByName(filename string, userID uint64) (*httptest.ResponseRecorder, imgpkg.ImageResponse) {
 	c.T.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/image/"+filename, nil)
@@ -273,7 +244,6 @@ func (c *TestContext) GetImageByName(filename string, userID uint64) (*httptest.
 	return rec, resp
 }
 
-// GetRawImage fetches raw image data
 func (c *TestContext) GetRawImage(filename string, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/image/raw/"+filename, nil)
@@ -285,7 +255,6 @@ func (c *TestContext) GetRawImage(filename string, userID uint64) *httptest.Resp
 	return rec
 }
 
-// GetThumbnail fetches thumbnail
 func (c *TestContext) GetThumbnail(filename string, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/image/thumb/"+filename, nil)
@@ -297,7 +266,6 @@ func (c *TestContext) GetThumbnail(filename string, userID uint64) *httptest.Res
 	return rec
 }
 
-// SeedImage uploads an image for test setup (panics on failure)
 func (c *TestContext) SeedImage(metadata, filename string, content []byte, userID uint64) imgpkg.ImageResponse {
 	c.T.Helper()
 	rec, resp := c.UploadImageWithResponse(metadata, filename, content, userID)
@@ -307,7 +275,6 @@ func (c *TestContext) SeedImage(metadata, filename string, content []byte, userI
 	return resp
 }
 
-// SeedTestTags creates tags if they don't exist
 func SeedTestTags(t *testing.T, svc tag.TagService, tags []string, usr *userpkg.User) {
 	t.Helper()
 	for _, tn := range tags {
@@ -325,7 +292,6 @@ func SeedTestTags(t *testing.T, svc tag.TagService, tags []string, usr *userpkg.
 	}
 }
 
-// MakeTestPNG creates a simple test PNG of given dimensions
 func MakeTestPNG(t *testing.T, w, h int) []byte {
 	t.Helper()
 	img := stdimage.NewRGBA(stdimage.Rect(0, 0, w, h))
@@ -336,14 +302,7 @@ func MakeTestPNG(t *testing.T, w, h int) []byte {
 	return buf.Bytes()
 }
 
-// MakeUniqueTestPNG creates a unique test PNG by varying dimensions
 func MakeUniqueTestPNG(t *testing.T, baseW, baseH int, unique int) []byte {
 	t.Helper()
 	return MakeTestPNG(t, baseW+unique*10, baseH+unique*10)
-}
-
-// HashBytes returns SHA256 hex of data
-func HashBytes(data []byte) string {
-	sum := sha256.Sum256(data)
-	return fmt.Sprintf("%x", sum)
 }

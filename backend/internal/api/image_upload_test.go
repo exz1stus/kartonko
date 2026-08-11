@@ -10,7 +10,9 @@ import (
 	"strings"
 	"testing"
 
+	"server/internal/image"
 	"server/internal/storage"
+	"server/internal/tag"
 
 	tutil "server/internal/testutil/testing"
 )
@@ -125,7 +127,7 @@ func TestPostImage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cleanup := newTestContext(t)
+			ctx, cleanup := setupContext(t)
 			defer cleanup()
 
 			req := buildUploadRequest(t, "/upload", tt.metadata, tt.filename, tt.mimeType, tt.content(t))
@@ -138,6 +140,7 @@ func TestPostImage(t *testing.T) {
 			ctx.AssertStatus(rec, tt.wantStatus)
 
 			if tt.wantStatus == http.StatusOK {
+				ctx.AssertImageCount(nil, 1)
 				ctx.AssertStorageCount(2)
 			}
 		})
@@ -145,7 +148,7 @@ func TestPostImage(t *testing.T) {
 }
 
 func TestPostImage_TagsAdded(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	metadata := `{"name":"tagged.png","tags":["animal","cat"]}`
@@ -154,7 +157,7 @@ func TestPostImage_TagsAdded(t *testing.T) {
 	ctx.AssertStatus(rec, http.StatusOK)
 
 	// Verify response contains tags
-	var resp tutil.ImageResponse
+	var resp image.ImageResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
@@ -165,14 +168,15 @@ func TestPostImage_TagsAdded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get image from DB: %v", err)
 	}
-	dbTags := tutil.TagsToStrings(img.Tags)
+	dbTags := tag.TagsToStrings(img.Tags)
 	tutil.AssertTags(t, dbTags, []string{"animal", "cat"}, "database")
 
+	ctx.AssertImageCount(nil, 1)
 	ctx.AssertStorageCount(2)
 }
 
 func TestPostImage_DuplicateName(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	req1 := buildUploadRequest(t, "/upload", `{"name":"dup.png"}`, "dup.png", "image/png", tutil.MakeTestPNG(t, 5, 5))
@@ -189,11 +193,12 @@ func TestPostImage_DuplicateName(t *testing.T) {
 		t.Fatalf("expected 500 for duplicate name, got %d: %s", rec2.Code, rec2.Body.String())
 	}
 
+	ctx.AssertImageCount(nil, 1)
 	ctx.AssertStorageCount(2)
 }
 
 func TestPostImage_DuplicateHash_DifferentName(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 	content := tutil.MakeTestPNG(t, 7, 7)
 
@@ -214,11 +219,12 @@ func TestPostImage_DuplicateHash_DifferentName(t *testing.T) {
 		t.Fatalf("expected duplicate-hash upload to fail, got %d: %s", rec2.Code, rec2.Body.String())
 	}
 
+	ctx.AssertImageCount(nil, 1)
 	ctx.AssertStorageCount(2)
 }
 
 func TestPostImage_StorageUploadFails_NoDBRowAndStorageImageLeft(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 	ctx.Storage.(*storage.MockStorage).FailUploadOn = func(key string) error {
 		if !strings.Contains(key, "thumb") {
@@ -236,14 +242,14 @@ func TestPostImage_StorageUploadFails_NoDBRowAndStorageImageLeft(t *testing.T) {
 		t.Fatalf("expected 500, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	query := tutil.NewQueryBuilder().Prefix("dog_duplicate.png.png").Build()
+	query := image.NewQueryBuilder().Prefix("dog_duplicate.png.png").Build()
 
 	ctx.AssertImageCount(query, 0)
 	ctx.AssertStorageCount(0)
 }
 
 func TestPostImage_StorageThumbUploadFails_NoDBRowAndStorageImageLeft(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 	ctx.Storage.(*storage.MockStorage).FailUploadOn = func(key string) error {
 		if strings.Contains(key, "thumb") {
@@ -261,7 +267,7 @@ func TestPostImage_StorageThumbUploadFails_NoDBRowAndStorageImageLeft(t *testing
 		t.Fatalf("expected 500, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	query := tutil.NewQueryBuilder().Prefix("dog_duplicate.png.png").Build()
+	query := image.NewQueryBuilder().Prefix("dog_duplicate.png.png").Build()
 
 	ctx.AssertImageCount(query, 0)
 	ctx.AssertStorageCount(0)

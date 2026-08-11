@@ -3,49 +3,86 @@ package api
 import (
 	"testing"
 
+	embeddings "server/internal/embedding"
+	embeddingspkg "server/internal/embedding"
+	"server/internal/image"
+	"server/internal/log"
 	"server/internal/storage"
+	"server/internal/tag"
 	"server/internal/user"
 
-	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	testutil "server/internal/testutil"
 	tutil "server/internal/testutil/testing"
 )
 
-// newTestAPI creates a test context with a fresh database and mock storage for API testing.
-// Returns the test context and a cleanup function to truncate test tables.
-func newTestAPI(t *testing.T) (*tutil.TestContext, func()) {
+func mustInitTestAPI(t *testing.T, storage storage.TestStorage) *api {
 	t.Helper()
 	db := testutil.MustOpenDB(t)
-	storage := storage.NewMockStorage()
 
-	// Create user service first so we can use it in test auth middleware
 	userRepo := user.NewUserRepository(db)
-	userSvc := user.NewUserService(userRepo)
+	userService := user.NewUserService(userRepo)
 
-	// Create test users
-	createTestUsers(db, userSvc)
+	createTestUsers(t, db, userService)
 
-	// Test auth middleware that reads X-Test-User-ID header
-	testAuthMiddleware := func(authGroup *gin.RouterGroup) {
-		authGroup.Use(tutil.TestAuthMiddleware(userSvc))
+	embeddingsClient := embeddings.NewMockEmbeddingsClient()
+
+	imageRepo := image.NewImageRepository(db)
+	tagRepo := tag.NewTagRepository(db)
+	logRepo := log.NewLogRepository(db)
+
+	logService := log.NewLogService(logRepo)
+	objectService := image.NewObjectService(storage, imageRepo)
+	embeddingsService := embeddingspkg.NewEmbeddingsService(objectService, embeddingsClient)
+
+	imageService := image.NewImageService(db, imageRepo, logService, objectService, embeddingsService)
+	tagService := tag.NewTagService(db, tagRepo, logService)
+
+	api := &api{
+		imageService:      imageService,
+		userService:       userService,
+		tagService:        tagService,
+		logService:        logService,
+		objectService:     objectService,
+		embeddingsService: embeddingsService,
+
+		storage:   storage,
+		jwtSecret: "test-secret",
+		db:        db,
 	}
 
-	apiInstance := MustInitAPIForTestWithAuth(db, storage, testAuthMiddleware, userSvc)
-	tagSvc := apiInstance.TagService()
-	imgSvc := apiInstance.ImageService()
-	router := apiInstance.Router()
+	api.initRoutes(tutil.TestAuthMiddleware(userService))
 
-	ctx := tutil.NewTestContext(t, router, userSvc, imgSvc, tagSvc, storage)
+	return api
+}
+
+func createTestUsers(t *testing.T, db *gorm.DB, userService user.UserService) {
+	t.Helper()
+
+	users := []*user.User{
+		{Username: "moderator", Email: "moderator@test.com", Privilege: user.Moderator, Provider: "test", ProviderID: "moderator"},
+		{Username: "user1", Email: "user1@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user1"},
+		{Username: "user2", Email: "user2@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user2"},
+		{Username: "alice", Email: "alice@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "alice"},
+		{Username: "user3", Email: "user3@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user3"},
+	}
+
+	for _, u := range users {
+		if err := userService.Create(u); err != nil {
+			t.Fatalf("failed to create test user %s: %v", u.Username, err)
+		}
+	}
+}
+
+func setupContext(t *testing.T) (*tutil.TestContext, func()) {
+	testStorage := storage.NewMockTestStorage()
+	api := mustInitTestAPI(t, testStorage)
+	ctx := tutil.NewTestContext(t, api.router, api.userService, api.imageService, api.tagService, testStorage)
 
 	cleanup := func() {
-		db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE")
+		testutil.CleanTestDB(api.db)
 	}
 
 	return ctx, cleanup
-}
-
-// newTestContext creates a test context (alias for newTestAPI for backward compatibility)
-func newTestContext(t *testing.T) (*tutil.TestContext, func()) {
-	return newTestAPI(t)
 }

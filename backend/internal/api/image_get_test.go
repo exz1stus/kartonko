@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"server/internal/image"
 	tutil "server/internal/testutil/testing"
 )
 
 func TestGetImageByName(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	img := ctx.SeedImage(`{"name":"test.png","tags":["cat"]}`, "test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 1), 1)
@@ -44,7 +45,7 @@ func TestGetImageByName(t *testing.T) {
 }
 
 func TestGetImageByHash(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	img := ctx.SeedImage(`{"name":"hash_test.png","tags":["dog"]}`, "hash_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 2), 1)
@@ -57,7 +58,7 @@ func TestGetImageByHash(t *testing.T) {
 
 		ctx.AssertStatus(rec, http.StatusOK)
 
-		var resp tutil.ImageResponse
+		var resp image.ImageResponse
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			t.Fatalf("failed to unmarshal: %v", err)
 		}
@@ -78,7 +79,7 @@ func TestGetImageByHash(t *testing.T) {
 }
 
 func TestGetImageByID(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	img := ctx.SeedImage(`{"name":"id_test.png","tags":["bird"]}`, "id_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 3), 1)
@@ -91,7 +92,7 @@ func TestGetImageByID(t *testing.T) {
 
 		ctx.AssertStatus(rec, http.StatusOK)
 
-		var resp tutil.ImageResponse
+		var resp image.ImageResponse
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			t.Fatalf("failed to unmarshal: %v", err)
 		}
@@ -121,7 +122,7 @@ func TestGetImageByID(t *testing.T) {
 }
 
 func TestGetRawImageByName(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	_ = ctx.SeedImage(`{"name":"raw_test.png","tags":["cat"]}`, "raw_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 4), 1)
@@ -148,7 +149,7 @@ func TestGetRawImageByName(t *testing.T) {
 }
 
 func TestGetRawThumbnailByName(t *testing.T) {
-	ctx, cleanup := newTestContext(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	_ = ctx.SeedImage(`{"name":"thumb_test.png","tags":["dog"]}`, "thumb_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 5), 1)

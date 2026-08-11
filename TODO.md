@@ -1,6 +1,5 @@
 - ~~Fixed Nginx config~~
 - CI / CD Pipeline with testing, building on github, container pulling on server
-
 - Crawling from selected resources: telegram groups, discord active channels
 - Web universal scraping: each user has its saved sources, he can open them as gallery and view, or site view with upload on click for "<img>" elements
 
@@ -40,6 +39,10 @@ BACKEND:
 
 - ~~Delete image query~~
 - ~~Rewrite to service/repo~~
+- Cover Api with swagger
+- Generate DTOs from swagger
+- Generate Orval api methods from swagger
+- new doc frontend scalar
 - From filename to hash identification, optional names
 - Boards system
 - boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
@@ -50,7 +53,6 @@ BACKEND:
 - Store user picture
 - Upload image creates tags that doesn't exist
 - ~~DB transactions, prevent upload abort errors~~
-- Cover Api with swagger, new doc frontend scalar
 - hashing on pHash
 - comparing for duplicates with CLIP
 - searching pipeline
@@ -58,7 +60,6 @@ BACKEND:
 TESTS:
 
 - Testing on pre-push
-
 - Auth tests
 - Repo tests
 - Services tests

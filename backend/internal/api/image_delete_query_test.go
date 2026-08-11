@@ -70,7 +70,7 @@ func TestDeleteImageByQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cleanup := newTestAPI(t)
+			ctx, cleanup := setupContext(t)
 			defer cleanup()
 
 			// Seed test images

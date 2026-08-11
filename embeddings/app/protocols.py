@@ -40,7 +40,10 @@ class VectorRepository(Protocol):
 
     @abstractmethod
     def upsert_batch(
-        self, vectors: list[list[float]], ids: list[str], payloads: list[dict] | None = None
+        self,
+        vectors: list[list[float]],
+        ids: list[str],
+        payloads: list[dict] | None = None,
     ) -> None:
         """Batch upsert multiple vectors."""
         ...
@@ -52,7 +55,11 @@ class VectorRepository(Protocol):
 
     @abstractmethod
     def search(
-        self, vector: list[float], limit: int = 10, score_threshold: float = 0.7, offset: int = 0
+        self,
+        vector: list[float],
+        limit: int = 10,
+        score_threshold: float = 0.7,
+        offset: int = 0,
     ) -> list[dict]:
         """Search for similar vectors with pagination."""
         ...
@@ -68,9 +75,6 @@ class VectorRepository(Protocol):
     ) -> tuple[list[dict], int | None]:
         """Scroll/paginate through results with optional filter. Returns (results, next_offset)."""
         ...
-
-
-class EmbeddingService(Protocol):
 
 
 class EmbeddingService(Protocol):

@@ -36,13 +36,10 @@ func findEnvTestFile() string {
 	return ".env.test"
 }
 
-// TestMain sets up the test database container.
-// Call this from each feature's *_test.go: func TestMain(m *testing.M) { testutil.TestMain(m) }
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
 	os.Setenv("ENV_FILE", findEnvTestFile())
-	// Note: env.Init() should be called by the test if needed
 
 	pgContainer, err := tcpostgres.Run(ctx, "postgres:16-alpine",
 		tcpostgres.WithDatabase("testdb"),
@@ -73,7 +70,6 @@ func SharedDSN() string {
 	return sharedDSN
 }
 
-// MustOpenDB opens a GORM connection to the test database and runs AutoMigrate.
 func MustOpenDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(postgres.Open(sharedDSN), &gorm.Config{})
@@ -93,4 +89,8 @@ func MustOpenDB(t *testing.T) *gorm.DB {
 	}
 
 	return db
+}
+
+func CleanTestDB(db *gorm.DB) error {
+	return db.Exec("TRUNCATE TABLE image_tags, image_metadata, tags, users, audit_entries RESTART IDENTITY CASCADE").Error
 }

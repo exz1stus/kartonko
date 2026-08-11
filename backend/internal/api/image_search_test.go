@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"server/internal/image"
 	tutil "server/internal/testutil/testing"
 )
 
@@ -16,7 +17,7 @@ func TestGetImagesByQuery(t *testing.T) {
 		userID        uint64
 		wantStatus    int
 		expectedCount int
-		checkResponse func(t *testing.T, images []tutil.ImageResponse)
+		checkResponse func(t *testing.T, images []image.ImageResponse)
 	}{
 		{
 			name: "success - no filters",
@@ -29,7 +30,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 3,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 3 {
 					t.Errorf("expected 3 images, got %d", len(images))
 				}
@@ -46,7 +47,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 1,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 1 {
 					t.Errorf("expected 1 image, got %d", len(images))
 				}
@@ -66,7 +67,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 2 {
 					t.Errorf("expected 2 images with cat tag, got %d", len(images))
 				}
@@ -95,7 +96,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 1,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 1 {
 					t.Errorf("expected 1 image with both cat and dog tags, got %d", len(images))
 				}
@@ -115,7 +116,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 2 {
 					t.Errorf("expected 2 images for user 1, got %d", len(images))
 				}
@@ -136,7 +137,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 1,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 1 {
 					t.Errorf("expected 1 image for alice, got %d", len(images))
 				}
@@ -156,7 +157,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 2 {
 					t.Errorf("expected 2 images with limit=2, got %d", len(images))
 				}
@@ -173,7 +174,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 2 {
 					t.Errorf("expected 2 images with cursor=2&limit=2, got %d", len(images))
 				}
@@ -190,7 +191,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []tutil.ImageResponse) {
+			checkResponse: func(t *testing.T, images []image.ImageResponse) {
 				if len(images) != 2 {
 					t.Errorf("expected 2 images, got %d", len(images))
 				}
@@ -246,7 +247,7 @@ func TestGetImagesByQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cleanup := newTestAPI(t)
+			ctx, cleanup := setupContext(t)
 			defer cleanup()
 			tt.setupImages(ctx)
 
@@ -268,7 +269,7 @@ func TestGetImagesByQuery(t *testing.T) {
 }
 
 func TestGetImagesByQuery_EmptyResult(t *testing.T) {
-	ctx, cleanup := newTestAPI(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	rec, images := ctx.QueryImagesWithResponse("", 1)

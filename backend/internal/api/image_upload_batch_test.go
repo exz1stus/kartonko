@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"server/internal/image"
 	tutil "server/internal/testutil/testing"
 )
 
@@ -88,7 +89,7 @@ func TestPostImagesBatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cleanup := newTestAPI(t)
+			ctx, cleanup := setupContext(t)
 			defer cleanup()
 
 			tags := []string{"animal", "cat", "dog"}
@@ -106,7 +107,7 @@ func TestPostImagesBatch(t *testing.T) {
 			ctx.Router.ServeHTTP(rec, req)
 
 			if tt.wantStatus < 400 && tt.wantStatus != 207 {
-				var res tutil.ImagePostBatchResponse
+				var res image.ImagePostBatchResponse
 				if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 					t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 				}
@@ -128,7 +129,7 @@ func TestPostImagesBatch(t *testing.T) {
 }
 
 func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
-	ctx, cleanup := newTestAPI(t)
+	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
 	metadata := `{"data": [{"name":"cat.png"},{"name":"dog.png"},{"name":"cat.png"}]}`
@@ -166,12 +167,12 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 		t.Errorf("got status %d, want %d, body=%s", rec.Code, http.StatusMultiStatus, rec.Body.String())
 	}
 
-	var res tutil.ImagePostBatchResponse
+	var res image.ImagePostBatchResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 		t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 	}
 
-	query := tutil.NewQueryBuilder().Prefix("dog_duplicate.png.png").Build()
+	query := image.NewQueryBuilder().Prefix("dog_duplicate.png.png").Build()
 
 	ctx.AssertImageCount(query, 0)
 
