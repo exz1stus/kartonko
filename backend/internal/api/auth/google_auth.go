@@ -1,11 +1,12 @@
-package api
+package auth
 
 import (
 	"encoding/json"
-	"errors"
+	stderrors "errors"
 	"log"
 	"net/http"
 	"server/internal/env"
+	apierrors "server/internal/errors"
 	"strings"
 	"sync"
 
@@ -47,7 +48,7 @@ func GetGoogleAuthConfig() *oauth2.Config {
 	return googleOauthConfig
 }
 
-func (rh *api) GetGoogleLogin(c *gin.Context) {
+func (h *Handler) GetGoogleLogin(c *gin.Context) {
 	redirect := c.Query("redirect")
 	state := redirect
 	url := GetGoogleAuthConfig().AuthCodeURL(state)
@@ -61,7 +62,7 @@ type UserInfo struct {
 	Picture string `json:"picture"`
 }
 
-func (rh *api) GetGoogleCallback(c *gin.Context) {
+func (h *Handler) GetGoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	redirectURL := state
@@ -70,47 +71,46 @@ func (rh *api) GetGoogleCallback(c *gin.Context) {
 
 	token, err := config.Exchange(c.Request.Context(), code)
 	if err != nil {
-		log.Printf("google token exchange failed: %v (redirect_uri=%q)", err, config.RedirectURL)
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to exchange codes"})
+		c.JSON(http.StatusInternalServerError, apierrors.ErrorResponse{Error: "Failed to exchange codes"})
 		return
 	}
 
 	client := config.Client(c.Request.Context(), token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch user info"})
+		c.JSON(http.StatusInternalServerError, apierrors.ErrorResponse{Error: "Failed to fetch user info"})
 		return
 	}
 
 	defer resp.Body.Close()
 	var userInfo UserInfo
 	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to decode user info"})
+		c.JSON(http.StatusInternalServerError, apierrors.ErrorResponse{Error: "Failed to decode user info"})
 		return
 	}
 
-	user, err := rh.userService.GetByProviderID(userInfo.ID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+	user, err := h.userService.GetByProviderID(userInfo.ID)
+	if err != nil && !stderrors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusBadRequest, apierrors.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		user, err = rh.userService.CreateByGoogle(
+	if stderrors.Is(err, gorm.ErrRecordNotFound) {
+		user, err = h.userService.CreateByGoogle(
 			userInfo.Name,
 			userInfo.Email,
 			userInfo.ID,
 			userInfo.Picture,
 		)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusBadRequest, apierrors.ErrorResponse{Error: err.Error()})
 			return
 		}
 	}
 
 	tokenString, err := GenerateJwtToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate token"})
+		c.JSON(http.StatusInternalServerError, apierrors.ErrorResponse{Error: "failed to generate token"})
 		return
 	}
 

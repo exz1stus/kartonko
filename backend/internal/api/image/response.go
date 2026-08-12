@@ -1,13 +1,10 @@
-package api
+package image
 
 import (
-	"errors"
 	"net/http"
-	"time"
-
 	"server/internal/image"
 	"server/internal/tag"
-	serverrors "server/internal/errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,42 +21,16 @@ func RespondImages(c *gin.Context, images []image.ImageMetadata) {
 	c.JSON(http.StatusOK, response)
 }
 
-func RespondError(c *gin.Context, err error) {
-	status := http.StatusInternalServerError
-	msg := err.Error()
-
-	switch {
-	case errors.Is(err, serverrors.ErrNotFound):
-		status = http.StatusNotFound
-	case errors.Is(err, serverrors.ErrPermissionDenied):
-		status = http.StatusForbidden
-	case errors.Is(err, serverrors.ErrBadRequest):
-		status = http.StatusBadRequest
-	case errors.Is(err, serverrors.ErrUnauthorized):
-		status = http.StatusUnauthorized
-	}
-
-	c.JSON(status, ErrorResponse{Error: msg})
-}
-
 func NewImageResponse(img *image.ImageMetadata) image.ImageResponse {
 	return image.ImageResponse{
 		ID:       img.ID,
 		Hash:     img.Hash,
 		Filename: img.Filename,
-		Tags:     tagNames(img.Tags),
+		Tags:     tag.TagsToStrings(img.Tags),
 		Format:   img.Format,
 		Width:    img.Width,
 		Height:   img.Height,
 		UserID:   img.UserID,
 		Uploaded: img.CreatedAt.Format(time.RFC3339),
 	}
-}
-
-func tagNames(tags []tag.Tag) []string {
-	names := make([]string, len(tags))
-	for i, t := range tags {
-		names[i] = t.Name
-	}
-	return names
 }

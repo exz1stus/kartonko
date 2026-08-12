@@ -1,4 +1,4 @@
-package api
+package image_test
 
 import (
 	"net/http"

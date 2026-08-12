@@ -1,7 +1,8 @@
-package api
+package tag
 
 import (
 	"net/http"
+	"server/internal/api/helpers"
 	"server/internal/errors"
 	"server/internal/tag"
 	"server/internal/user"
@@ -9,9 +10,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (api *api) GetTags(c *gin.Context) {
-	HandleList(c, func(cursor, limit int) ([]tag.TagResponse, error) {
-		tags, err := api.tagService.SearchPrefix("", cursor, limit)
+type Handler struct {
+	tagService tag.TagService
+}
+
+func NewTagHandler(
+	tagService tag.TagService,
+) *Handler {
+	return &Handler{
+		tagService: tagService,
+	}
+}
+
+func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
+	public.GET("/tags", h.GetTags)
+
+	protected.POST("/tag", h.PostTag)
+	protected.POST("/tags/batch", h.PostTagsBatch)
+}
+
+func (h *Handler) GetTags(c *gin.Context) {
+	helpers.HandleList(c, func(cursor, limit int) ([]tag.TagResponse, error) {
+		tags, err := h.tagService.SearchPrefix("", cursor, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -23,25 +43,25 @@ func (api *api) GetTags(c *gin.Context) {
 	}, func(t tag.TagResponse) any { return t })
 }
 
-func (api *api) PostTag(c *gin.Context) {
-	WithUser(c, api, func(usr *user.User) error {
+func (h *Handler) PostTag(c *gin.Context) {
+	helpers.WithUser(c, func(usr *user.User) error {
 		var req tag.PostTagRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			return errors.ErrBadRequest
 		}
 
-		t, err := api.tagService.Create(c.Request.Context(), req.Name, usr)
+		t, err := h.tagService.Create(c.Request.Context(), req.Name, usr)
 		if err != nil {
 			return err
 		}
 
-		RespondCreated(c, tag.TagResponse{ID: t.ID, Name: t.Name})
+		helpers.RespondCreated(c, tag.TagResponse{ID: t.ID, Name: t.Name})
 		return nil
 	})
 }
 
-func (api *api) PostTagsBatch(c *gin.Context) {
-	WithUser(c, api, func(usr *user.User) error {
+func (h *Handler) PostTagsBatch(c *gin.Context) {
+	helpers.WithUser(c, func(usr *user.User) error {
 		var req tag.PostTagsBatchRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			return errors.ErrBadRequest
@@ -54,7 +74,7 @@ func (api *api) PostTagsBatch(c *gin.Context) {
 		}
 
 		for _, name := range req.Names {
-			t, err := api.tagService.Create(c.Request.Context(), name, usr)
+			t, err := h.tagService.Create(c.Request.Context(), name, usr)
 			if err != nil {
 				failures = append(failures, struct {
 					Name  string `json:"name"`
@@ -77,16 +97,16 @@ func (api *api) PostTagsBatch(c *gin.Context) {
 		}
 
 		if len(failures) > 0 && len(results) == 0 {
-			RespondJSON(c, http.StatusBadRequest, response)
+			helpers.RespondJSON(c, http.StatusBadRequest, response)
 			return nil
 		}
 
 		if len(failures) > 0 {
-			RespondMultiStatus(c, response)
+			helpers.RespondMultiStatus(c, response)
 			return nil
 		}
 
-		RespondCreated(c, response)
+		helpers.RespondCreated(c, response)
 		return nil
 	})
 }

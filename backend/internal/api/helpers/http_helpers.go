@@ -1,16 +1,15 @@
-package api
+package helpers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"reflect"
+	"server/internal/api/auth"
 	"server/internal/errors"
-	"server/internal/image"
 	"server/internal/user"
 	"strconv"
 
@@ -36,7 +35,7 @@ func WriteFilePart(w *multipart.Writer, fieldName string, filename string, conte
 	return nil
 }
 
-func wrapBadRequest(err error) error {
+func WrapBadRequest(err error) error {
 	if err == nil {
 		return nil
 	}
@@ -71,41 +70,41 @@ func RespondMultiStatus(c *gin.Context, data any) {
 	RespondJSON(c, http.StatusMultiStatus, data)
 }
 
-func WithUser(c *gin.Context, api *api, fn func(*user.User) error) {
-	user, err := api.GetUserFromContext(c)
+func WithUser(c *gin.Context, fn func(*user.User) error) {
+	user, err := auth.GetUserFromContext(c)
 	if err != nil {
-		RespondError(c, wrapUnauthorized(err))
+		errors.RespondError(c, wrapUnauthorized(err))
 		return
 	}
 	if err := fn(user); err != nil {
-		RespondError(c, err)
+		errors.RespondError(c, err)
 	}
 }
 
 func WithQuery[Q any](c *gin.Context, parseFn func(*gin.Context) (Q, error), fn func(Q) error) {
 	query, err := parseFn(c)
 	if err != nil {
-		RespondError(c, wrapBadRequest(err))
+		errors.RespondError(c, WrapBadRequest(err))
 		return
 	}
 	if err := fn(query); err != nil {
-		RespondError(c, err)
+		errors.RespondError(c, err)
 	}
 }
 
-func WithUserAndQuery[Q any](c *gin.Context, api *api, parseFn func(*gin.Context) (Q, error), fn func(*user.User, Q) error) {
-	user, err := api.GetUserFromContext(c)
+func WithUserAndQuery[Q any](c *gin.Context, parseFn func(*gin.Context) (Q, error), fn func(*user.User, Q) error) {
+	user, err := auth.GetUserFromContext(c)
 	if err != nil {
-		RespondError(c, wrapUnauthorized(err))
+		errors.RespondError(c, wrapUnauthorized(err))
 		return
 	}
 	query, err := parseFn(c)
 	if err != nil {
-		RespondError(c, wrapBadRequest(err))
+		errors.RespondError(c, WrapBadRequest(err))
 		return
 	}
 	if err := fn(user, query); err != nil {
-		RespondError(c, err)
+		errors.RespondError(c, err)
 	}
 }
 
@@ -119,14 +118,14 @@ func GetCursorLimit(c *gin.Context) (cursor, limit int, err error) {
 	if cursorStr != "" {
 		cursor, err = strconv.Atoi(cursorStr)
 		if err != nil {
-			return 0, 0, wrapBadRequest(fmt.Errorf("invalid cursor parameter: %w", err))
+			return 0, 0, WrapBadRequest(fmt.Errorf("invalid cursor parameter: %w", err))
 		}
 	}
 
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			return 0, 0, wrapBadRequest(fmt.Errorf("invalid limit parameter: %w", err))
+			return 0, 0, WrapBadRequest(fmt.Errorf("invalid limit parameter: %w", err))
 		}
 	}
 	return cursor, limit, nil
@@ -134,13 +133,13 @@ func GetCursorLimit(c *gin.Context) (cursor, limit int, err error) {
 
 func GetJSON[T any](c *gin.Context, dst *T, requiredFields ...string) error {
 	if err := c.ShouldBindJSON(dst); err != nil {
-		return wrapBadRequest(err)
+		return WrapBadRequest(err)
 	}
 	v := reflect.ValueOf(dst).Elem()
 	for _, field := range requiredFields {
 		f := v.FieldByName(field)
 		if f.IsValid() && f.Kind() == reflect.String && f.String() == "" {
-			return wrapBadRequest(fmt.Errorf("field %s is required", field))
+			return WrapBadRequest(fmt.Errorf("field %s is required", field))
 		}
 	}
 	return nil
@@ -149,7 +148,7 @@ func GetJSON[T any](c *gin.Context, dst *T, requiredFields ...string) error {
 func HandleGet[T any](c *gin.Context, fetch func() (T, error), toResponse func(T) any) {
 	item, err := fetch()
 	if err != nil {
-		RespondError(c, err)
+		errors.RespondError(c, err)
 		return
 	}
 	RespondJSON(c, http.StatusOK, toResponse(item))
@@ -158,13 +157,13 @@ func HandleGet[T any](c *gin.Context, fetch func() (T, error), toResponse func(T
 func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error), toResponse func(T) any) {
 	cursor, limit, err := GetCursorLimit(c)
 	if err != nil {
-		RespondError(c, err)
+		errors.RespondError(c, err)
 		return
 	}
 
 	items, err := fetch(cursor, limit)
 	if err != nil {
-		RespondError(c, err)
+		errors.RespondError(c, err)
 		return
 	}
 	resp := make([]any, len(items))
@@ -177,7 +176,7 @@ func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error
 func HandleStream(c *gin.Context, fetch func(ctx context.Context) (io.ReadCloser, any, error), contentType func(any) string) {
 	body, meta, err := fetch(c.Request.Context())
 	if err != nil {
-		RespondError(c, err)
+		errors.RespondError(c, err)
 		return
 	}
 	defer body.Close()
@@ -257,76 +256,4 @@ func extractKey(item any) string {
 		}
 	}
 	return ""
-}
-
-func HandleUpload(c *gin.Context, api *api, metadata string, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error) {
-	var postRequest image.ImagePostRequest
-	if err := json.Unmarshal([]byte(metadata), &postRequest); err != nil {
-		return nil, errors.ErrBadRequest
-	}
-
-	if err := isImageRequestValid(&postRequest, fileHeader); err != nil {
-		return nil, wrapBadRequest(err)
-	}
-
-	user, err := api.GetUserFromContext(c)
-	if err != nil {
-		return nil, errors.ErrUnauthorized
-	}
-
-	return api.imageService.Upload(c.Request.Context(), user, &postRequest, fileHeader)
-}
-
-func HandleBatchUpload(c *gin.Context, api *api, metadata string, form *multipart.Form) (*image.ImagePostBatchResponse, error) {
-	var batch image.ImagePostBatchRequest
-	if err := json.Unmarshal([]byte(metadata), &batch); err != nil {
-		return nil, wrapBadRequest(err)
-	}
-
-	files := form.File["files"]
-	if files == nil {
-		return nil, errors.ErrBadRequest
-	}
-
-	if len(batch.Data) != len(files) {
-		return nil, errors.ErrBadRequest
-	}
-
-	user, err := api.GetUserFromContext(c)
-	if err != nil {
-		return nil, errors.ErrUnauthorized
-	}
-
-	response := &image.ImagePostBatchResponse{}
-
-	for i, meta := range batch.Data {
-		if i >= len(files) {
-			response.Failures = append(response.Failures, image.ImageError{
-				Name:  meta.Name,
-				Error: "No file provided for this metadata",
-			})
-			continue
-		}
-
-		if err := isImageRequestValid(&meta, files[i]); err != nil {
-			response.Failures = append(response.Failures, image.ImageError{
-				Name:  meta.Name,
-				Error: wrapBadRequest(err).Error(),
-			})
-			continue
-		}
-
-		img, err := api.imageService.Upload(c.Request.Context(), user, &meta, files[i])
-		if err != nil {
-			response.Failures = append(response.Failures, image.ImageError{
-				Name:  meta.Name,
-				Error: err.Error(),
-			})
-			continue
-		}
-
-		response.Successes = append(response.Successes, NewImageResponse(img))
-	}
-
-	return response, nil
 }

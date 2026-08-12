@@ -1,9 +1,10 @@
-package api
+package auth
 
 import (
 	"fmt"
 	"net/http"
 	"server/internal/env"
+	"server/internal/errors"
 	"server/internal/user"
 	"sync"
 	"time"
@@ -18,7 +19,31 @@ var (
 	jwtCookieMaxAgeOnce sync.Once
 )
 
-func (rh *api) GetUserFromContext(c *gin.Context) (*user.User, error) {
+type Handler struct {
+	userService user.UserService
+	jwtSecret   string
+}
+
+func NewAuthHandler(
+	jwtSecret string,
+	userService user.UserService,
+) *Handler {
+	return &Handler{
+		userService: userService,
+		jwtSecret:   jwtSecret,
+	}
+}
+
+func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
+	public.POST("/login", h.PostLogin)
+	public.POST("/register", h.PostRegister)
+	public.POST("/logout", h.PostLogout)
+
+	public.GET("/google", h.GetGoogleLogin)
+	public.GET("/google/callback", h.GetGoogleCallback)
+}
+
+func GetUserFromContext(c *gin.Context) (*user.User, error) {
 	userInter, exists := c.Get("user")
 	if !exists {
 		return nil, fmt.Errorf("user is not passed in context")
@@ -40,30 +65,30 @@ func (rh *api) GetUserFromContext(c *gin.Context) (*user.User, error) {
 // @Produce  json
 // @Param   body body authRequest true "username and password"
 // @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
 // @Router /auth/login [post]
-func (rh *api) PostLogin(c *gin.Context) {
+func (h *Handler) PostLogin(c *gin.Context) {
 	var input AuthRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprint("invalid input: ", err.Error())})
+		c.JSON(http.StatusBadRequest, errors.ErrorResponse{Error: fmt.Sprint("invalid input: ", err.Error())})
 		return
 	}
 
-	user, err := rh.userService.GetByUsername(input.Username)
+	user, err := h.userService.GetByUsername(input.Username)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid username"})
+		c.JSON(http.StatusBadRequest, errors.ErrorResponse{Error: "invalid username"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid password"})
+		c.JSON(http.StatusBadRequest, errors.ErrorResponse{Error: "invalid password"})
 		return
 	}
 
 	tokenString, err := GenerateJwtToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate token"})
+		c.JSON(http.StatusInternalServerError, errors.ErrorResponse{Error: "failed to generate token"})
 		return
 	}
 
@@ -92,32 +117,32 @@ func GetJWTCookieMaxAge() time.Duration {
 // @Produce  json
 // @Param   body body authRequest true "username and password"
 // @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
 // @Router /auth/register [post]
-func (rh *api) PostRegister(c *gin.Context) {
+func (h *Handler) PostRegister(c *gin.Context) {
 	var input AuthRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid input"})
+		c.JSON(http.StatusBadRequest, errors.ErrorResponse{Error: "Invalid input"})
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to hash password"})
+		c.JSON(http.StatusInternalServerError, errors.ErrorResponse{Error: "failed to hash password"})
 		return
 	}
 
-	user, err := rh.userService.CreateByRegistration(input.Username, string(hashedPassword))
+	user, err := h.userService.CreateByRegistration(input.Username, string(hashedPassword))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: fmt.Sprint("failed to create user: ", err.Error())})
+		c.JSON(http.StatusInternalServerError, errors.ErrorResponse{Error: fmt.Sprint("failed to create user: ", err.Error())})
 		return
 	}
 
 	tokenString, err := GenerateJwtToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate token"})
+		c.JSON(http.StatusInternalServerError, errors.ErrorResponse{Error: "failed to generate token"})
 		return
 	}
 
@@ -134,7 +159,7 @@ func (rh *api) PostRegister(c *gin.Context) {
 // @Produce  json
 // @Success 200 {object} map[string]interface{}
 // @Router /auth/logout [post]
-func (rh *api) PostLogout(c *gin.Context) {
+func (h *Handler) PostLogout(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "jwt",
 		Value:    "",

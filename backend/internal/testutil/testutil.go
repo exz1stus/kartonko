@@ -65,11 +65,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// SharedDSN returns the PostgreSQL DSN for the test container.
-func SharedDSN() string {
-	return sharedDSN
-}
-
 func MustOpenDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := gorm.Open(postgres.Open(sharedDSN), &gorm.Config{})

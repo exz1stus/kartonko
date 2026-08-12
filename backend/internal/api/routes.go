@@ -11,9 +11,12 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func (api *api) initRoutes(authMiddleware gin.HandlerFunc) {
-	r := gin.Default()
+type Handler interface {
+	RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup)
+}
 
+func (api *Api) InitRoutes(authMiddleware gin.HandlerFunc) {
+	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{env.GetEnvString("FRONTEND_ORIGIN")},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
@@ -23,58 +26,28 @@ func (api *api) initRoutes(authMiddleware gin.HandlerFunc) {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	r.Use(func(c *gin.Context) {
-		if c.Request.Method == http.MethodHead {
-			c.Request.Method = http.MethodGet
-		}
-		c.Next()
-	})
+	r.Use(HeadBypassMiddleware)
 
-	r.GET("/health", api.GetHealthCheck)
+	protected := r.Group("/", authMiddleware)
 
-	r.GET("/user/:name", api.GetUserByName)
-	r.GET("/user/id/:id", api.GetUserByID)
-
-	r.GET("/image/:name", api.GetImageByName)
-	r.GET("/image/id/:id", api.GetImageByID)
-	r.GET("/image/hash/:hash", api.GetImageByHash)
-
-	r.GET("/image/raw/hash/:hash", api.GetRawImageByHash)
-	r.GET("/image/thumb/hash/:hash", api.GetRawThumbnailByHash)
-
-	r.GET("/image/raw/:name", api.GetRawImageByName)
-	r.GET("/image/thumb/:name", api.GetRawThumbnailByName)
-
-	r.GET("/image", api.GetImagesByQuery)
-	r.GET("/log", api.GetAuditLogEntries)
-	r.GET("/tags", api.GetTags)
-
-	r.POST("/auth/login", api.PostLogin)
-	r.POST("/auth/register", api.PostRegister)
-	r.POST("/auth/logout", api.PostLogout)
-
-	r.GET("/auth/google", api.GetGoogleLogin)
-	r.GET("/auth/google/callback", api.GetGoogleCallback)
-
-	authGroup := r.Group("/")
-	authGroup.Use(authMiddleware)
-	{
-		authGroup.GET("/me", api.GetMe)
-
-		authGroup.POST("/upload", api.PostImage)
-		authGroup.POST("/upload/batch", api.PostImagesBatch)
-
-		authGroup.POST("/tag", api.PostTag)
-		authGroup.POST("/tags/batch", api.PostTagsBatch)
-
-		authGroup.DELETE("/image", api.DeleteImagesByQuery)
-		authGroup.DELETE("/image/:name", api.DeleteImageByName)
+	registerRoutes := func(location string, h Handler) {
+		public := r.Group(location)
+		protected := protected.Group(location)
+		h.RegisterRoutes(public, protected)
 	}
+
+	registerRoutes("/auth", api.authHandler)
+	registerRoutes("/image", api.imageHandler)
+	registerRoutes("/tags", api.tagHandler)
+	registerRoutes("/user", api.userHandler)
+	registerRoutes("/log", api.logHandler)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, "/swagger/index.html")
 	})
+
+	r.GET("/health", api.GetHealthCheck)
 
 	api.router = r
 }
