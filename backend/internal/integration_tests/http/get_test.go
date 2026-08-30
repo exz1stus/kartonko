@@ -1,4 +1,4 @@
-package image_test
+package http_integration_tests
 
 import (
 	"encoding/json"
@@ -8,14 +8,19 @@ import (
 	"testing"
 
 	"server/internal/image"
-	tutil "server/internal/testutil/testing"
+	"server/internal/testutil"
 )
 
 func TestGetImageByName(t *testing.T) {
 	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
-	img := ctx.SeedImage(`{"name":"test.png","tags":["cat"]}`, "test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 1), 1)
+	tags := []string{"cat"}
+	ctx.SeedTags(tags)
+	img := ctx.SeedImage(image.ImagePostRequest{
+		Name: "test.png",
+		Tags: tags,
+	}, testutil.MakeUniqueTestPNG(t, 10, 10, 1), 1)
 
 	t.Run("success", func(t *testing.T) {
 		rec, resp := ctx.GetImageByName("test.png", 1)
@@ -48,11 +53,16 @@ func TestGetImageByHash(t *testing.T) {
 	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
-	img := ctx.SeedImage(`{"name":"hash_test.png","tags":["dog"]}`, "hash_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 2), 1)
+	tags := []string{"dog"}
+	ctx.SeedTags(tags)
+	img := ctx.SeedImage(image.ImagePostRequest{
+		Name: "hash_test.png",
+		Tags: tags,
+	}, testutil.MakeUniqueTestPNG(t, 10, 10, 2), 1)
 
 	t.Run("success", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/image/hash/"+img.Hash, nil)
-		req = tutil.WithTestUser(req, 1)
+		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)
 
@@ -70,7 +80,7 @@ func TestGetImageByHash(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/image/hash/nonexistenthash", nil)
-		req = tutil.WithTestUser(req, 1)
+		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)
 
@@ -82,11 +92,16 @@ func TestGetImageByID(t *testing.T) {
 	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
-	img := ctx.SeedImage(`{"name":"id_test.png","tags":["bird"]}`, "id_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 3), 1)
+	tags := []string{"bird"}
+	ctx.SeedTags(tags)
+	img := ctx.SeedImage(image.ImagePostRequest{
+		Name: "id_test.png",
+		Tags: tags,
+	}, testutil.MakeUniqueTestPNG(t, 10, 10, 3), 1)
 
 	t.Run("success", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/image/id/%d", img.ID), nil)
-		req = tutil.WithTestUser(req, 1)
+		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)
 
@@ -104,7 +119,7 @@ func TestGetImageByID(t *testing.T) {
 
 	t.Run("invalid id", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/image/id/notanumber", nil)
-		req = tutil.WithTestUser(req, 1)
+		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)
 
@@ -113,7 +128,7 @@ func TestGetImageByID(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/image/id/999999", nil)
-		req = tutil.WithTestUser(req, 1)
+		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)
 
@@ -125,7 +140,12 @@ func TestGetRawImageByName(t *testing.T) {
 	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
-	_ = ctx.SeedImage(`{"name":"raw_test.png","tags":["cat"]}`, "raw_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 4), 1)
+	tags := []string{"cat"}
+	ctx.SeedTags(tags)
+	ctx.SeedImage(image.ImagePostRequest{
+		Name: "raw_test.png",
+		Tags: tags,
+	}, testutil.MakeUniqueTestPNG(t, 10, 10, 4), 1)
 
 	t.Run("success", func(t *testing.T) {
 		rec := ctx.GetRawImage("raw_test.png", 1)
@@ -152,7 +172,12 @@ func TestGetRawThumbnailByName(t *testing.T) {
 	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
-	_ = ctx.SeedImage(`{"name":"thumb_test.png","tags":["dog"]}`, "thumb_test.png", tutil.MakeUniqueTestPNG(t, 10, 10, 5), 1)
+	tags := []string{"dog"}
+	ctx.SeedTags(tags)
+	ctx.SeedImage(image.ImagePostRequest{
+		Name: "thumb_test.png",
+		Tags: tags,
+	}, testutil.MakeUniqueTestPNG(t, 10, 10, 5), 1)
 
 	t.Run("success", func(t *testing.T) {
 		rec := ctx.GetThumbnail("thumb_test.png", 1)

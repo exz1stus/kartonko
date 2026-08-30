@@ -19,7 +19,7 @@ type ObjectService interface {
 	GetRawImageData(ctx context.Context, id uint) (io.ReadCloser, error)
 
 	DeleteImageObjects(ctx context.Context, hash string, format string) error
-	UploadImage(ctx context.Context, hash string, format string, data []byte) error
+	UploadImage(ctx context.Context, hash string, format Format, data []byte) error
 }
 
 type objectService struct {
@@ -107,24 +107,19 @@ func (s *objectService) DeleteImageObjects(ctx context.Context, hash string, for
 	return nil
 }
 
-func (s *objectService) UploadImage(ctx context.Context, hash string, format string, data []byte) error {
-	parsedFormat, err := ParseFormat(format)
-	if err != nil {
-		return fmt.Errorf("invalid format: %w", err)
-	}
-
-	thumb, err := thumbnail.GenerateThumbnail(data, format)
+func (s *objectService) UploadImage(ctx context.Context, hash string, format Format, data []byte) error {
+	thumb, err := thumbnail.GenerateThumbnail(data, format.String())
 	if err != nil {
 		return fmt.Errorf("error generating thumbnail: %w", err)
 	}
 
-	imageKey := storage.ImageKey(hash, format)
-	if err = s.storage.Upload(ctx, imageKey, bytes.NewReader(data), parsedFormat.MIMEType()); err != nil {
+	imageKey := storage.ImageKey(hash, format.String())
+	if err = s.storage.Upload(ctx, imageKey, bytes.NewReader(data), format.MIMEType()); err != nil {
 		return fmt.Errorf("error uploading image: %w", err)
 	}
 
-	thumbKey := storage.ThumbnailKey(hash, format)
-	if err = s.storage.Upload(ctx, thumbKey, bytes.NewReader(thumb), parsedFormat.MIMEType()); err != nil {
+	thumbKey := storage.ThumbnailKey(hash, format.String())
+	if err = s.storage.Upload(ctx, thumbKey, bytes.NewReader(thumb), format.MIMEType()); err != nil {
 		_ = s.storage.Delete(ctx, imageKey)
 		return fmt.Errorf("error uploading thumbnail: %w", err)
 	}

@@ -1,0 +1,36 @@
+template: testify
+packages:
+    server/internal/image:
+        config:
+            dir: "image/mocks"
+            filename: "mocks.go"
+            structname: "Mock{{.InterfaceName}}"
+            all: true
+
+    server/internal/user:
+        config:
+            dir: "user/mocks"
+            filename: "mocks.go"
+            structname: "Mock{{.InterfaceName}}"
+            all: true
+
+    server/internal/tag:
+        config:
+            dir: "tag/mocks"
+            filename: "mocks.go"
+            structname: "Mock{{.InterfaceName}}"
+            all: true
+
+    server/internal/embedding:
+        config:
+            dir: "embedding/mocks"
+            filename: "mocks.go"
+            structname: "Mock{{.InterfaceName}}"
+            all: true
+
+    server/internal/log:
+        config:
+            dir: "log/mocks"
+            filename: "mocks.go"
+            structname: "Mock{{.InterfaceName}}"
+            all: true

@@ -50,6 +50,30 @@ func getRawContentType(meta any) string {
 	return "application/octet-stream"
 }
 
+func getFormatFromHeader(fileHeader *multipart.FileHeader) (image.Format, error) {
+	format, err := image.FormatFromMIME(fileHeader.Header.Get("Content-Type"))
+	if err != nil || !format.IsSupported() {
+		return image.FormatInvalid, errors.ErrUnsupportedFormat
+	}
+
+	return format, nil
+}
+
+func getImageBytesFromHeader(fileHeader *multipart.FileHeader) ([]byte, error) {
+	f, err := fileHeader.Open()
+	if err != nil {
+		return nil, fmt.Errorf("error opening uploaded file: %v", err)
+	}
+	defer f.Close()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("error reading uploaded file: %v", err)
+	}
+
+	return data, nil
+}
+
 func HandleUpload(c *gin.Context, images image.ImageService, metadata string, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error) {
 	var postRequest image.ImagePostRequest
 	if err := json.Unmarshal([]byte(metadata), &postRequest); err != nil {
@@ -64,8 +88,16 @@ func HandleUpload(c *gin.Context, images image.ImageService, metadata string, fi
 	if err != nil {
 		return nil, errors.ErrUnauthorized
 	}
+	format, err := getFormatFromHeader(fileHeader)
+	if err != nil {
+		return nil, err
+	}
+	data, err := getImageBytesFromHeader(fileHeader)
+	if err != nil {
+		return nil, err
+	}
 
-	return images.Upload(c.Request.Context(), user, &postRequest, fileHeader)
+	return images.Upload(c.Request.Context(), user.ID, &postRequest, format, data)
 }
 
 func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata string, form *multipart.Form) (*image.ImagePostBatchResponse, error) {
@@ -107,7 +139,16 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 			continue
 		}
 
-		img, err := images.Upload(c.Request.Context(), user, &meta, files[i])
+		format, err := getFormatFromHeader(files[i])
+		if err != nil {
+			return nil, err
+		}
+		data, err := getImageBytesFromHeader(files[i])
+		if err != nil {
+			return nil, err
+		}
+
+		img, err := images.Upload(c.Request.Context(), user.ID, &meta, format, data)
 		if err != nil {
 			response.Failures = append(response.Failures, image.ImageError{
 				Name:  meta.Name,

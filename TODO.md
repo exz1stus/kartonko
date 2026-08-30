@@ -39,10 +39,13 @@ BACKEND:
 
 - ~~Delete image query~~
 - ~~Rewrite to service/repo~~
+
 - Cover Api with swagger
 - Generate DTOs from swagger
 - Generate Orval api methods from swagger
+- rewrite frontend methods
 - new doc frontend scalar
+
 - From filename to hash identification, optional names
 - Boards system
 - boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
@@ -56,18 +59,30 @@ BACKEND:
 - hashing on pHash
 - comparing for duplicates with CLIP
 - searching pipeline
+- suggest similar images for boards
+
+backend:
+
+- crawling
+- image proccessing (ocr, embeddings, metadata extraction, categorization)
+- searching
 
 TESTS:
 
 - Testing on pre-push
-- Auth tests
-- Repo tests
-- Services tests
 - Backend-Embeddings integration tests
 - Backend-Frontend integration tests
+- Repo tests
+- Services tests
+- Auth tests
 
 TGBOT:
 
 - Rewrite tgbot to use webhooks
 - Save to kartonko on reaction
 - Scan all group for new images and create group board
+
+immich
+Hydrus Network
+gallery-dl
+yt-dlp

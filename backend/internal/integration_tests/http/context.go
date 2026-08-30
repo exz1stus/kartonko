@@ -1,18 +1,17 @@
-package testing
+package http_integration_tests
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	stdimage "image"
 	_ "image/jpeg"
-	"image/png"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"server/internal/image"
 	imgpkg "server/internal/image"
 	"server/internal/storage"
 	"server/internal/tag"
@@ -66,12 +65,6 @@ func NewTestContext(
 	storage storage.TestStorage,
 ) *TestContext {
 	t.Helper()
-
-	mod, err := userSvc.GetByID(1)
-	if err != nil {
-		t.Fatalf("failed getting moderator user: %v", err)
-	}
-	SeedTestTags(t, tagSvc, []string{"animal", "cat", "dog", "bird", "test"}, mod)
 
 	return &TestContext{
 		T:            t,
@@ -133,7 +126,43 @@ func (c *TestContext) AssertImageCount(query *imgpkg.Query, expected int64) {
 	}
 }
 
-func BuildUploadRequest(t *testing.T, url, metadataJSON, filename, contentType string, content []byte) *http.Request {
+func buildUploadRequest(t *testing.T, url string, postMetadata imgpkg.ImagePostRequest, contentType string, content []byte) *http.Request {
+	t.Helper()
+	body := &bytes.Buffer{}
+	w := multipart.NewWriter(body)
+
+	json, err := json.Marshal(postMetadata)
+	jsonString := string(json)
+	if err != nil {
+		t.Fatalf("failed to marshall request metadata: %v", err)
+	}
+
+	if err := w.WriteField("metadata", jsonString); err != nil {
+		t.Fatalf("failed to write metadata field: %v", err)
+	}
+
+	if postMetadata.Name != "" && len(content) > 0 {
+		if err := WriteFilePart(w, "file", postMetadata.Name, contentType, content); err != nil {
+			t.Fatalf("write file part %v", err)
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close multipart writer: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, url, body)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	return req
+}
+
+type TestFileData struct {
+	image   image.ImagePostRequest
+	format  image.Format
+	content []byte
+}
+
+func buildBatchUploadRequest(t *testing.T, url string, metadataJSON string, files []TestFileData) *http.Request {
 	t.Helper()
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
@@ -142,9 +171,9 @@ func BuildUploadRequest(t *testing.T, url, metadataJSON, filename, contentType s
 		t.Fatalf("failed to write metadata field: %v", err)
 	}
 
-	if filename != "" && len(content) > 0 {
-		if err := WriteFilePart(w, "file", filename, contentType, content); err != nil {
-			t.Fatalf("write file part %v", err)
+	for _, file := range files {
+		if err := WriteFilePart(w, "files", file.image.Name, file.format.MIMEType(), file.content); err != nil {
+			t.Fatalf("failed to write file: %v", err)
 		}
 	}
 
@@ -174,9 +203,9 @@ func WriteFilePart(w *multipart.Writer, fieldName, filename, contentType string,
 	return nil
 }
 
-func (c *TestContext) UploadImage(metadata, filename string, content []byte, userID uint64) *httptest.ResponseRecorder {
+func (c *TestContext) UploadImage(postMetadata imgpkg.ImagePostRequest, mimeType string, content []byte, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
-	req := BuildUploadRequest(c.T, "/upload", metadata, filename, "image/png", content)
+	req := buildUploadRequest(c.T, "/image/upload", postMetadata, mimeType, content)
 	if userID != 0 {
 		req = WithTestUser(req, userID)
 	}
@@ -185,9 +214,9 @@ func (c *TestContext) UploadImage(metadata, filename string, content []byte, use
 	return rec
 }
 
-func (c *TestContext) UploadImageWithResponse(metadata, filename string, content []byte, userID uint64) (*httptest.ResponseRecorder, imgpkg.ImageResponse) {
+func (c *TestContext) UploadImageWithResponse(postMetadata imgpkg.ImagePostRequest, mimeType string, content []byte, userID uint64) (*httptest.ResponseRecorder, imgpkg.ImageResponse) {
 	c.T.Helper()
-	rec := c.UploadImage(metadata, filename, content, userID)
+	rec := c.UploadImage(postMetadata, mimeType, content, userID)
 
 	var resp imgpkg.ImageResponse
 	if rec.Code == http.StatusOK {
@@ -196,6 +225,34 @@ func (c *TestContext) UploadImageWithResponse(metadata, filename string, content
 		}
 	}
 	return rec, resp
+}
+
+func (c *TestContext) UploadImageBatch(fileDatas []TestFileData, commonTags []string, userID uint64) *httptest.ResponseRecorder {
+	c.T.Helper()
+
+	data := make([]image.ImagePostRequest, 0, len(fileDatas))
+	for _, img := range fileDatas {
+		data = append(data, img.image)
+	}
+
+	metadata := image.ImagePostBatchRequest{
+		Data:       data,
+		CommonTags: commonTags,
+	}
+
+	metadataJSON, err := json.Marshal(metadata)
+	if err != nil {
+		c.T.Fatalf("failed to marshall request: %v", err)
+	}
+	metadataJSONstr := string(metadataJSON)
+
+	req := buildBatchUploadRequest(c.T, "/image/upload/batch", metadataJSONstr, fileDatas)
+	if userID != 0 {
+		req = WithTestUser(req, userID)
+	}
+	rec := httptest.NewRecorder()
+	c.Router.ServeHTTP(rec, req)
+	return rec
 }
 
 func (c *TestContext) QueryImages(query string, userID uint64) *httptest.ResponseRecorder {
@@ -266,43 +323,28 @@ func (c *TestContext) GetThumbnail(filename string, userID uint64) *httptest.Res
 	return rec
 }
 
-func (c *TestContext) SeedImage(metadata, filename string, content []byte, userID uint64) imgpkg.ImageResponse {
+func (c *TestContext) SeedImage(postMetadata imgpkg.ImagePostRequest, content []byte, userID uint64) imgpkg.ImageResponse {
 	c.T.Helper()
-	rec, resp := c.UploadImageWithResponse(metadata, filename, content, userID)
+	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), content, userID)
 	if rec.Code != http.StatusOK {
-		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", filename, rec.Code, rec.Body.String())
+		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
 	}
 	return resp
 }
 
-func SeedTestTags(t *testing.T, svc tag.TagService, tags []string, usr *userpkg.User) {
-	t.Helper()
+func (c *TestContext) SeedTags(tags []string) {
+	c.T.Helper()
 	for _, tn := range tags {
-		exists, err := svc.Exists(tn)
+		exists, err := c.TagService.Exists(tn)
 		if err != nil {
-			t.Fatalf("failed to check tag %s: %v", tn, err)
+			c.T.Fatalf("failed to check tag %s: %v", tn, err)
 		}
 		if exists {
 			continue
 		}
-		_, err = svc.Create(context.Background(), tn, usr)
+		_, err = c.TagService.Create(context.Background(), tn, 1) //uses uid 1 - moderator user
 		if err != nil {
-			t.Fatalf("failed to seed tag %s: %v", tn, err)
+			c.T.Fatalf("failed to seed tag %s: %v", tn, err)
 		}
 	}
-}
-
-func MakeTestPNG(t *testing.T, w, h int) []byte {
-	t.Helper()
-	img := stdimage.NewRGBA(stdimage.Rect(0, 0, w, h))
-	buf := &bytes.Buffer{}
-	if err := png.Encode(buf, img); err != nil {
-		t.Fatalf("failed to encode test png: %v", err)
-	}
-	return buf.Bytes()
-}
-
-func MakeUniqueTestPNG(t *testing.T, baseW, baseH int, unique int) []byte {
-	t.Helper()
-	return MakeTestPNG(t, baseW+unique*10, baseH+unique*10)
 }

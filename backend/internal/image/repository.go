@@ -2,6 +2,7 @@ package image
 
 import (
 	"fmt"
+	"server/internal/errors"
 	"server/internal/tag"
 
 	"gorm.io/gorm"
@@ -27,7 +28,7 @@ type ImageRepository interface {
 	ExistsByHash(hash string) (bool, error)
 	ExistsByName(name string) (bool, error)
 
-	AttachTags(image *ImageMetadata, tags []tag.Tag) error
+	AttachTags(imageID uint, tags []tag.Tag) error
 }
 
 type imageRepository struct {
@@ -125,7 +126,7 @@ func (r *imageRepository) ExistsByName(name string) (bool, error) {
 	return count > 0, err
 }
 
-func (r *imageRepository) AttachTags(image *ImageMetadata, tags []tag.Tag) error {
+func (r *imageRepository) AttachTags(imageID uint, tags []tag.Tag) error {
 	tagNames := tag.TagsToStrings(tags)
 	if len(tags) == 0 {
 		return nil
@@ -136,9 +137,20 @@ func (r *imageRepository) AttachTags(image *ImageMetadata, tags []tag.Tag) error
 	}
 
 	if len(dbTags) != len(tags) {
-		return fmt.Errorf("not all tags found: expected %d, got %d for tags %v", len(tags), len(dbTags), tagNames)
+		return fmt.Errorf(
+			"%w: not all tags found: expected %d, got %d for tags %v",
+			errors.ErrBadRequest,
+			len(tags),
+			len(dbTags),
+			tagNames,
+		)
 	}
 
+	image := &ImageMetadata{
+		Model: gorm.Model{
+			ID: imageID,
+		},
+	}
 	if err := r.db.Model(image).Association("Tags").Append(&dbTags); err != nil {
 		return fmt.Errorf("failed to associate tags with image: %w", err)
 	}

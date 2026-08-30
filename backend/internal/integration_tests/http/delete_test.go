@@ -1,11 +1,12 @@
-package image_test
+package http_integration_tests
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	tutil "server/internal/testutil/testing"
+	"server/internal/image"
+	"server/internal/testutil"
 )
 
 func buildDeleteRequest(t *testing.T, url, filename string) *http.Request {
@@ -60,7 +61,10 @@ func TestDeleteImage(t *testing.T) {
 			defer cleanup()
 
 			// Seed the image
-			ctx.SeedImage(`{"name": "image.png"}`, "image.png", tutil.MakeTestPNG(t, 5, 5), 2)
+			img := image.ImagePostRequest{
+				Name: "image.png",
+			}
+			ctx.SeedImage(img, testutil.MakeTestPNG(t, 5, 5), 2)
 
 			storeCount, err := ctx.Storage.List(t.Context(), "")
 			if err != nil {
@@ -74,7 +78,7 @@ func TestDeleteImage(t *testing.T) {
 
 			req := buildDeleteRequest(t, "/image", tt.filename)
 			if tt.userID != 0 {
-				req = tutil.WithTestUser(req, tt.userID)
+				req = WithTestUser(req, tt.userID)
 			}
 			rec := httptest.NewRecorder()
 			ctx.Router.ServeHTTP(rec, req)

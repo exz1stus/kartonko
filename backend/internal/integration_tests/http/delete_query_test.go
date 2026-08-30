@@ -1,14 +1,14 @@
-package image_test
+package http_integration_tests
 
 import (
 	"net/http"
 	"net/http/httptest"
+	"server/internal/image"
+	"server/internal/testutil"
 	"testing"
-
-	tutil "server/internal/testutil/testing"
 )
 
-func deleteImagesByQuery(ctx *tutil.TestContext, query string, userID uint64) *httptest.ResponseRecorder {
+func deleteImagesByQuery(ctx *TestContext, query string, userID uint64) *httptest.ResponseRecorder {
 	ctx.T.Helper()
 	url := "/image"
 	if query != "" {
@@ -16,7 +16,7 @@ func deleteImagesByQuery(ctx *tutil.TestContext, query string, userID uint64) *h
 	}
 	req := httptest.NewRequest(http.MethodDelete, url, http.NoBody)
 	if userID != 0 {
-		req = tutil.WithTestUser(req, userID)
+		req = WithTestUser(req, userID)
 	}
 	rec := httptest.NewRecorder()
 	ctx.Router.ServeHTTP(rec, req)
@@ -73,10 +73,36 @@ func TestDeleteImageByQuery(t *testing.T) {
 			ctx, cleanup := setupContext(t)
 			defer cleanup()
 
-			// Seed test images
-			ctx.SeedImage(`{"name": "image.png"}`, "image.png", tutil.MakeTestPNG(t, 5, 5), 1)
-			ctx.SeedImage(`{"name": "image2.png", "tags": ["dog"]}`, "image2.png", tutil.MakeTestPNG(t, 7, 5), 1)
-			ctx.SeedImage(`{"name": "user2_image.png", "tags": ["dog"]}`, "user2_image.png", tutil.MakeTestPNG(t, 5, 6), 2)
+			ctx.SeedTags([]string{"dog"})
+			images := []struct {
+				request image.ImagePostRequest
+				userID  uint64
+			}{
+				{
+					request: image.ImagePostRequest{
+						Name: "image.png",
+					},
+					userID: 1,
+				},
+				{
+					request: image.ImagePostRequest{
+						Name: "image2.png",
+						Tags: []string{"dog"},
+					},
+					userID: 1,
+				},
+				{
+					request: image.ImagePostRequest{
+						Name: "user2_image.png",
+						Tags: []string{"dog"},
+					},
+					userID: 2,
+				},
+			}
+
+			for i, img := range images {
+				ctx.SeedImage(img.request, testutil.MakeUniqueTestPNG(ctx.T, 10, 10, i), img.userID)
+			}
 
 			initialCount64, err := ctx.ImageService.Count(nil)
 			initialCount := int(initialCount64)

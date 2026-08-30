@@ -16,7 +16,9 @@ type Handler interface {
 }
 
 func (api *Api) InitRoutes(authMiddleware gin.HandlerFunc) {
-	r := gin.Default()
+	api.router = gin.Default()
+	r := api.router
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{env.GetEnvString("FRONTEND_ORIGIN")},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
@@ -48,6 +50,4 @@ func (api *Api) InitRoutes(authMiddleware gin.HandlerFunc) {
 	})
 
 	r.GET("/health", api.GetHealthCheck)
-
-	api.router = r
 }

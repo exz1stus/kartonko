@@ -36,7 +36,7 @@ func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
-func MustInitDB() *gorm.DB {
+func MustInitPostgreDB() *gorm.DB {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_USER"),

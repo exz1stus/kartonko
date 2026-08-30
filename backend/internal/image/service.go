@@ -3,8 +3,8 @@ package image
 import (
 	"context"
 	"fmt"
-	"io"
-	"mime/multipart"
+	"server/internal/api/auth"
+	"server/internal/api/transaction"
 	embeddingspkg "server/internal/embedding"
 	"server/internal/errors"
 	"server/internal/log"
@@ -25,7 +25,7 @@ func toServiceError[T any](val T, err error) (T, error) {
 }
 
 type ImageService interface {
-	Upload(ctx context.Context, user *userpkg.User, uploadMetadata *ImagePostRequest, fileHeader *multipart.FileHeader) (*ImageMetadata, error)
+	Upload(ctx context.Context, userID uint, req *ImagePostRequest, format Format, data []byte) (*ImageMetadata, error)
 
 	GetByID(id uint) (*ImageMetadata, error)
 	GetByName(name string) (*ImageMetadata, error)
@@ -48,16 +48,22 @@ type imageService struct {
 	objects    ObjectService
 	embeddings embeddingspkg.EmbeddingsService
 
-	db *gorm.DB
+	transactions transaction.Runner
 }
 
-func NewImageService(db *gorm.DB, images ImageRepository, logs log.LogService, objects ObjectService, embeddings embeddingspkg.EmbeddingsService) ImageService {
+func NewImageService(
+	images ImageRepository,
+	logs log.LogService,
+	objects ObjectService,
+	embeddings embeddingspkg.EmbeddingsService,
+	transactions transaction.Runner,
+) ImageService {
 	return &imageService{
 		images,
 		logs,
 		objects,
 		embeddings,
-		db,
+		transactions,
 	}
 }
 
@@ -98,12 +104,11 @@ func (s *imageService) DeleteByID(ctx context.Context, user *userpkg.User, id ui
 		return fmt.Errorf("failed getting image for deletion: %v", err)
 	}
 
-	allowed := user.Privilege == userpkg.Moderator || user.ID == img.UserID
-	if !allowed {
+	if !auth.CanEdit(user.ID, user.Privilege, img.UserID) {
 		return errors.ErrPermissionDenied
 	}
 
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
 		imagesRepoTx := s.images.WithTx(tx)
 		if err := imagesRepoTx.DeleteByID(id); err != nil {
 			return err
@@ -146,14 +151,14 @@ func (s *imageService) DeleteByQuery(ctx context.Context, user *userpkg.User, qu
 
 	ids := make([]uint, 0, len(imgs))
 	for _, img := range imgs {
-		if !(user.Privilege == userpkg.Moderator || user.ID == img.UserID) {
+		if !auth.CanEdit(user.ID, user.Privilege, img.UserID) {
 			return []error{errors.ErrPermissionDenied}
 		}
 
 		ids = append(ids, img.ID)
 	}
 
-	if err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err = s.transactions.Within(ctx, func(tx *gorm.DB) error {
 		imagesRepoTx := s.images.WithTx(tx)
 		if err := imagesRepoTx.DeleteByIDs(ids); err != nil {
 			return fmt.Errorf("failed deleting images by query %w", err)
@@ -198,48 +203,43 @@ func (s *imageService) DeleteByName(ctx context.Context, user *userpkg.User, nam
 	return s.DeleteByID(ctx, user, img.ID)
 }
 
-func (s *imageService) Upload(ctx context.Context, user *userpkg.User, uploadMetadata *ImagePostRequest, fileHeader *multipart.FileHeader) (*ImageMetadata, error) {
-	format, err := FormatFromMIME(fileHeader.Header.Get("Content-Type"))
+func (s *imageService) validateNewImage(img *ImageMetadata) error {
+	exists, err := s.images.ExistsByHash(img.Hash)
 	if err != nil {
-		return nil, fmt.Errorf("image format parsing error: %v", err)
+		return fmt.Errorf("check duplicate hash: %w", err)
+	}
+	if exists {
+		return fmt.Errorf("duplicate hash: %w", err)
 	}
 
-	f, err := fileHeader.Open()
+	exists, err = s.images.ExistsByName(img.Filename)
 	if err != nil {
-		return nil, fmt.Errorf("error opening uploaded file: %v", err)
+		return fmt.Errorf("check duplicate name: %w", err)
 	}
-	defer f.Close()
-
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return nil, fmt.Errorf("error reading uploaded file: %v", err)
+	if exists {
+		return fmt.Errorf("duplicate name: %w", err)
 	}
 
+	return nil
+}
+
+func (s *imageService) Upload(ctx context.Context, userID uint, req *ImagePostRequest, format Format, data []byte) (*ImageMetadata, error) {
 	imgWidth, imgHeight, err := GetDimensionsBytes(data)
 	if err != nil {
 		return nil, fmt.Errorf("error getting image dimensions: %v", err)
 	}
 
-	img := ConstructImageMetadata(uploadMetadata.Name, uploadMetadata.Tags, format.String(), imgWidth, imgHeight, user.ID)
-	img.Hash = HashBytes(data)
+	img := ConstructImageMetadata(req.Name, HashBytes(data), req.Tags, format, imgWidth, imgHeight, userID)
 
-	exists, err := s.images.ExistsByHash(img.Hash)
-	if err != nil {
-		return nil, fmt.Errorf("check duplicate: %w", err)
-	}
-	if exists {
-		return nil, fmt.Errorf("duplicate image: %w", err)
-	}
-
-	if err := s.objects.UploadImage(ctx, img.Hash, format.String(), data); err != nil {
-		return nil, fmt.Errorf("error uploading image: %w", err)
-	}
-
-	if err := s.embeddings.Upsert(ctx, img.ID, data); err != nil {
+	if err := s.validateNewImage(img); err != nil {
 		return nil, err
 	}
 
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	if err := s.objects.UploadImage(ctx, img.Hash, format, data); err != nil {
+		return nil, fmt.Errorf("error uploading image: %w", err)
+	}
+
+	if err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
 		imgRepoTx := s.images.WithTx(tx)
 
 		// Save tags from upload metadata before clearing
@@ -250,19 +250,25 @@ func (s *imageService) Upload(ctx context.Context, user *userpkg.User, uploadMet
 			return fmt.Errorf("error saving the image to database: %w", err)
 		}
 
-		if err := imgRepoTx.AttachTags(img, tagsToAttach); err != nil {
+		if err := imgRepoTx.AttachTags(img.ID, tagsToAttach); err != nil {
+			return err
+		}
+		img.Tags = tagsToAttach
+
+		if err := s.logs.Log(tx, "create", "image", userID, img.ID, nil); err != nil {
 			return err
 		}
 
-		if err := s.logs.Log(tx, "create", "image", user.ID, img.ID, nil); err != nil {
+		if err := s.embeddings.Upsert(ctx, img.ID, data); err != nil {
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		_ = s.embeddings.Delete(ctx, img.ID)
+		// _ = s.embeddings.Delete(ctx, img.ID)
 		_ = s.objects.DeleteImageObjects(ctx, img.Hash, format.String())
 		return nil, err
 	}
 
-	return img, nil}
+	return img, nil
+}

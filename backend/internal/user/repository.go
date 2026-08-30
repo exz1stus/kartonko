@@ -1,8 +1,6 @@
 package user
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
@@ -35,11 +33,7 @@ func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
 }
 
 func (r *userRepository) Create(user *User) error {
-	if err := r.db.Create(user).Error; err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
-	}
-
-	return nil
+	return r.db.Create(user).Error
 }
 
 func (r *userRepository) GetByID(id uint) (*User, error) {

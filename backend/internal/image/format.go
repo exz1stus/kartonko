@@ -10,9 +10,10 @@ import (
 type Format imaging.Format
 
 const (
-	FormatPNG  Format = Format(imaging.PNG)
-	FormatJPEG Format = Format(imaging.JPEG)
-	FormatGIF  Format = Format(imaging.GIF)
+	FormatInvalid Format = 0
+	FormatPNG     Format = Format(imaging.PNG)
+	FormatJPEG    Format = Format(imaging.JPEG)
+	FormatGIF     Format = Format(imaging.GIF)
 )
 
 var SupportedFormats = []Format{
@@ -23,8 +24,8 @@ var SupportedFormats = []Format{
 
 func FormatFromMIME(mimeType string) (Format, error) {
 	parts := strings.SplitN(mimeType, "/", 2)
-	if len(parts) != 2 || parts[0] != "image" {
-		return 0, fmt.Errorf("invalid MIME type: %s", mimeType)
+	if len(parts) != 2 {
+		return FormatInvalid, fmt.Errorf("invalid MIME type: %s", mimeType)
 	}
 	return FormatFromExtension(parts[1])
 }

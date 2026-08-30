@@ -1,11 +1,10 @@
 package auth
 
 import (
-	"server/internal/image"
-	userpkg "server/internal/user"
+	"server/internal/user"
 )
 
-func CanEdit(user *userpkg.User, img *image.ImageMetadata) bool {
-	return user.Privilege == userpkg.Moderator ||
-		user.ID == img.UserID
+func CanEdit(userID uint, privilege user.Privilege, ownerID uint) bool {
+	return privilege == user.Moderator ||
+		userID == ownerID
 }

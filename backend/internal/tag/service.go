@@ -3,14 +3,14 @@ package tag
 import (
 	"context"
 	"fmt"
+	"server/internal/api/transaction"
 	"server/internal/log"
-	"server/internal/user"
 
 	"gorm.io/gorm"
 )
 
 type TagService interface {
-	Create(ctx context.Context, tag string, user *user.User) (*Tag, error)
+	Create(ctx context.Context, tag string, userID uint) (*Tag, error)
 
 	SearchPrefix(prefix string, cursor int, limit int) ([]Tag, error)
 
@@ -19,19 +19,16 @@ type TagService interface {
 }
 
 type tagService struct {
-	tags TagRepository
-	logs log.LogService
-	db   *gorm.DB
+	tags         TagRepository
+	logs         log.LogService
+	transactions transaction.Runner
 }
 
-func NewTagService(db *gorm.DB, tags TagRepository, logs log.LogService) TagService {
-	return &tagService{tags, logs, db}
+func NewTagService(tags TagRepository, logs log.LogService, transactions transaction.Runner) TagService {
+	return &tagService{tags, logs, transactions}
 }
 
-func (s *tagService) Create(ctx context.Context, tag string, user *user.User) (*Tag, error) {
-	if user == nil {
-		return nil, fmt.Errorf("creating tag: received nil user")
-	}
+func (s *tagService) Create(ctx context.Context, tag string, userID uint) (*Tag, error) {
 	exists, err := s.tags.Exists(tag)
 	if err != nil {
 		return nil, fmt.Errorf("check duplicate: %w", err)
@@ -42,14 +39,14 @@ func (s *tagService) Create(ctx context.Context, tag string, user *user.User) (*
 
 	var createdTag *Tag
 
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = s.transactions.Within(ctx, func(tx *gorm.DB) error {
 		tagsRepoTX := s.tags.WithTx(tx)
 		tag, err := tagsRepoTX.Create(tag)
 		if err != nil {
 			return err
 		}
 
-		if err := s.logs.Log(tx, "create", "tag", user.ID, tag.ID, nil); err != nil {
+		if err := s.logs.Log(tx, "create", "tag", userID, tag.ID, nil); err != nil {
 			return err
 		}
 

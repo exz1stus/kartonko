@@ -18,6 +18,6 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 	protected.POST("/upload", h.PostImage)
 	protected.POST("/upload/batch", h.PostImagesBatch)
 
-	protected.DELETE("/", h.DeleteImagesByQuery)
+	protected.DELETE("", h.DeleteImagesByQuery)
 	protected.DELETE("/:name", h.DeleteImageByName)
 }

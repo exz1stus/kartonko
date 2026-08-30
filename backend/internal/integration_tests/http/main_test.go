@@ -1,42 +1,46 @@
-package image_test
+package http_integration_tests
 
 import (
+	"context"
+	"fmt"
+	"os"
 	"testing"
 
-	rootapi "server/internal/api"
+	"server/internal/api"
+	"server/internal/database"
 	embeddings "server/internal/embedding"
+	"server/internal/integration_tests"
 	"server/internal/storage"
-	testutil "server/internal/testutil"
-	tutil "server/internal/testutil/testing"
 	"server/internal/user"
 
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func setupContext(t *testing.T) (*tutil.TestContext, func()) {
+func setupContext(t *testing.T) (*TestContext, func()) {
 	t.Helper()
 
-	db := testutil.MustOpenDB(t)
+	db, err := database.InitGorm(postgres.Open(integration_tests.SharedDSN), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to init gorm: %s", err.Error())
+	}
 	testStorage := storage.NewMockTestStorage()
-	builder := rootapi.NewApiBuilder(db, testStorage, embeddings.NewMockEmbeddingsClient()).
-		InitRepos().
-		InitServices().
-		InitHandlers("test-secret")
+	app := api.NewApp(db, testStorage, embeddings.NewMockEmbeddingsClient())
+	api := api.NewAPI(app, "test-secret")
+	api.InitRoutes(TestAuthMiddleware(app.UserService))
 
-	createTestUsers(t, db, builder.UserService)
-	server := builder.Build()
-	server.InitRoutes(tutil.TestAuthMiddleware(builder.UserService))
+	createTestUsers(t, db, app.UserService)
 
-	ctx := tutil.NewTestContext(
+	ctx := NewTestContext(
 		t,
-		server.Router(),
-		builder.UserService,
-		builder.ImageService(),
-		builder.TagService(),
+		api.Router(),
+		app.UserService,
+		app.ImageService,
+		app.TagService,
 		testStorage,
 	)
 
-	return ctx, func() { testutil.CleanTestDB(db) }
+	return ctx, func() { integration_tests.CleanTestDB(db) }
 }
 
 func createTestUsers(t *testing.T, db *gorm.DB, userService user.UserService) {
@@ -55,4 +59,16 @@ func createTestUsers(t *testing.T, db *gorm.DB, userService user.UserService) {
 			t.Fatalf("failed creating test user %s: %v", u.Username, err)
 		}
 	}
+}
+
+func TestMain(m *testing.M) {
+	ctx := context.Background()
+	env := integration_tests.FindEnvTestFile()
+	fmt.Printf("Test env: %s\n", env)
+	os.Setenv("ENV_FILE", env)
+
+	pgContainer := integration_tests.MustRunPostgreSQLContainer(ctx)
+	defer pgContainer.Terminate(ctx)
+
+	os.Exit(m.Run())
 }

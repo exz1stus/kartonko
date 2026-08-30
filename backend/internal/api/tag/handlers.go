@@ -23,10 +23,10 @@ func NewTagHandler(
 }
 
 func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
-	public.GET("/tags", h.GetTags)
+	public.GET("", h.GetTags)
 
-	protected.POST("/tag", h.PostTag)
-	protected.POST("/tags/batch", h.PostTagsBatch)
+	protected.POST("", h.PostTag)
+	protected.POST("/batch", h.PostTagsBatch)
 }
 
 func (h *Handler) GetTags(c *gin.Context) {
@@ -50,7 +50,7 @@ func (h *Handler) PostTag(c *gin.Context) {
 			return errors.ErrBadRequest
 		}
 
-		t, err := h.tagService.Create(c.Request.Context(), req.Name, usr)
+		t, err := h.tagService.Create(c.Request.Context(), req.Name, usr.ID)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func (h *Handler) PostTagsBatch(c *gin.Context) {
 		}
 
 		for _, name := range req.Names {
-			t, err := h.tagService.Create(c.Request.Context(), name, usr)
+			t, err := h.tagService.Create(c.Request.Context(), name, usr.ID)
 			if err != nil {
 				failures = append(failures, struct {
 					Name  string `json:"name"`

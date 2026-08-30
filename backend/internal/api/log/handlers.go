@@ -20,7 +20,7 @@ func NewLogHandler(
 }
 
 func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
-	public.GET("/log", h.GetAuditLogEntries)
+	public.GET("", h.GetAuditLogEntries)
 }
 
 func (h *Handler) GetAuditLogEntries(c *gin.Context) {
