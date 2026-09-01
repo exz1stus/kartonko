@@ -7,6 +7,7 @@ import (
 	"net/textproto"
 	"server/internal/api/transaction"
 	"server/internal/image"
+	"server/internal/tag"
 	"server/internal/testutil"
 
 	embeddingMocks "server/internal/embedding/mocks"
@@ -104,7 +105,7 @@ func TestUpload_Success(t *testing.T) {
 	require.Equal(t, format.String(), resImg.Format)
 	require.Equal(t, uint(10), resImg.Width)
 	require.Equal(t, uint(10), resImg.Height)
-	require.Empty(t, resImg.Tags)
+	require.Equal(t, tags, tag.TagsToStrings(resImg.Tags))
 }
 
 func TestUpload_RejectsDuplicateName(t *testing.T) {

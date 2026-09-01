@@ -83,7 +83,7 @@ func TestPostImage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cleanup := setupContext(t)
 			defer cleanup()
-			ctx.SeedTags([]string{"animal"})
+			ctx.SeedTags("animal")
 
 			postMetadata := image.ImagePostRequest{Name: tt.filename, Tags: tt.tags}
 			rec := ctx.UploadImage(postMetadata, tt.mimeType, tt.content, tt.userID)
@@ -101,7 +101,7 @@ func TestPostImage_TagsAdded(t *testing.T) {
 	ctx, cleanup := setupContext(t)
 	defer cleanup()
 
-	ctx.SeedTags([]string{"animal", "cat"})
+	ctx.SeedTags("animal", "cat")
 
 	rec := ctx.UploadImage(
 		image.ImagePostRequest{Name: "tagged.png", Tags: []string{"animal", "cat"}},

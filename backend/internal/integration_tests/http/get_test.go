@@ -16,7 +16,7 @@ func TestGetImageByName(t *testing.T) {
 	defer cleanup()
 
 	tags := []string{"cat"}
-	ctx.SeedTags(tags)
+	ctx.SeedTags(tags...)
 	img := ctx.SeedImage(image.ImagePostRequest{
 		Name: "test.png",
 		Tags: tags,
@@ -54,7 +54,7 @@ func TestGetImageByHash(t *testing.T) {
 	defer cleanup()
 
 	tags := []string{"dog"}
-	ctx.SeedTags(tags)
+	ctx.SeedTags(tags...)
 	img := ctx.SeedImage(image.ImagePostRequest{
 		Name: "hash_test.png",
 		Tags: tags,
@@ -93,7 +93,7 @@ func TestGetImageByID(t *testing.T) {
 	defer cleanup()
 
 	tags := []string{"bird"}
-	ctx.SeedTags(tags)
+	ctx.SeedTags(tags...)
 	img := ctx.SeedImage(image.ImagePostRequest{
 		Name: "id_test.png",
 		Tags: tags,
@@ -141,7 +141,7 @@ func TestGetRawImageByName(t *testing.T) {
 	defer cleanup()
 
 	tags := []string{"cat"}
-	ctx.SeedTags(tags)
+	ctx.SeedTags(tags...)
 	ctx.SeedImage(image.ImagePostRequest{
 		Name: "raw_test.png",
 		Tags: tags,
@@ -173,7 +173,7 @@ func TestGetRawThumbnailByName(t *testing.T) {
 	defer cleanup()
 
 	tags := []string{"dog"}
-	ctx.SeedTags(tags)
+	ctx.SeedTags(tags...)
 	ctx.SeedImage(image.ImagePostRequest{
 		Name: "thumb_test.png",
 		Tags: tags,

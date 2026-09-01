@@ -40,6 +40,9 @@ func setupContext(t *testing.T) (*TestContext, func()) {
 		testStorage,
 	)
 
+	ctx.setupUserID = 1
+	ctx.seededTags = make(map[string]struct{})
+
 	return ctx, func() { integration_tests.CleanTestDB(db) }
 }
 
@@ -51,7 +54,7 @@ func createTestUsers(t *testing.T, db *gorm.DB, userService user.UserService) {
 		{Username: "user1", Email: "user1@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user1"},
 		{Username: "user2", Email: "user2@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user2"},
 		{Username: "alice", Email: "alice@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "alice"},
-		{Username: "user3", Email: "user3@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "user3"},
+		{Username: "bob", Email: "bob@test.com", Privilege: user.Unprivileged, Provider: "test", ProviderID: "bob"},
 	}
 
 	for _, u := range users {

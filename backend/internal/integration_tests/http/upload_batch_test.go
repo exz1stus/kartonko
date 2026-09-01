@@ -51,8 +51,7 @@ func TestPostImagesBatch(t *testing.T) {
 			ctx, cleanup := setupContext(t)
 			defer cleanup()
 
-			tags := []string{"animal", "cat", "dog"}
-			ctx.SeedTags(tags)
+			ctx.SeedTags("animal", "cat", "dog")
 
 			rec := ctx.UploadImageBatch(tt.fileDatas, tt.commonTags, tt.userID)
 

@@ -15,6 +15,7 @@ import (
 	imgpkg "server/internal/image"
 	"server/internal/storage"
 	"server/internal/tag"
+	"server/internal/testutil"
 	userpkg "server/internal/user"
 
 	"github.com/gin-gonic/gin"
@@ -54,6 +55,10 @@ type TestContext struct {
 	TagService   tag.TagService
 	Router       *gin.Engine
 	Storage      storage.TestStorage
+
+	seedImageCount int
+	seededTags     map[string]struct{}
+	setupUserID    uint64
 }
 
 func NewTestContext(
@@ -329,10 +334,49 @@ func (c *TestContext) SeedImage(postMetadata imgpkg.ImagePostRequest, content []
 	if rec.Code != http.StatusOK {
 		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
 	}
+	c.seedImageCount++
 	return resp
 }
 
-func (c *TestContext) SeedTags(tags []string) {
+func (c *TestContext) SeedImageByName(name string) imgpkg.ImageResponse {
+	c.T.Helper()
+	postMetadata := image.ImagePostRequest{
+		Name: name,
+	}
+	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), testutil.MakeUniqueTestPNG(c.T, 10, 10, c.seedImageCount), c.setupUserID)
+	if rec.Code != http.StatusOK {
+		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
+	}
+	c.seedImageCount++
+	return resp
+}
+
+func (c *TestContext) SeedImageByNameAndTags(name string, tags ...string) imgpkg.ImageResponse {
+	c.T.Helper()
+	newTags := make([]string, 0)
+	for _, tag := range tags {
+		if _, exists := c.seededTags[tag]; !exists {
+			newTags = append(newTags, tag)
+			c.seededTags[tag] = struct{}{}
+		}
+	}
+
+	c.SeedTags(newTags...)
+
+	postMetadata := image.ImagePostRequest{
+		Name: name,
+		Tags: tags,
+	}
+
+	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), testutil.MakeUniqueTestPNG(c.T, 10, 10, c.seedImageCount), c.setupUserID)
+	if rec.Code != http.StatusOK {
+		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
+	}
+	c.seedImageCount++
+	return resp
+}
+
+func (c *TestContext) SeedTags(tags ...string) {
 	c.T.Helper()
 	for _, tn := range tags {
 		exists, err := c.TagService.Exists(tn)

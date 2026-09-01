@@ -73,7 +73,7 @@ func TestDeleteImageByQuery(t *testing.T) {
 			ctx, cleanup := setupContext(t)
 			defer cleanup()
 
-			ctx.SeedTags([]string{"dog"})
+			ctx.SeedTags("dog")
 			images := []struct {
 				request image.ImagePostRequest
 				userID  uint64

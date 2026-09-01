@@ -3,7 +3,7 @@ package image
 import "github.com/gin-gonic/gin"
 
 func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
-	public.GET("/", h.GetImagesByQuery)
+	public.GET("", h.GetImagesByQuery)
 
 	public.GET("/:name", h.GetImageByName)
 	public.GET("/id/:id", h.GetImageByID)
