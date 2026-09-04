@@ -93,7 +93,7 @@ func TestUpload_Success(t *testing.T) {
 	resImg, err := service.Upload(
 		context.Background(),
 		userID,
-		&image.ImagePostRequest{Name: name, Tags: tags},
+		image.UploadRequest{Name: name, Tags: tags},
 		format,
 		data,
 	)
@@ -119,7 +119,7 @@ func TestUpload_RejectsDuplicateName(t *testing.T) {
 	img, err := service.Upload(
 		context.Background(),
 		1,
-		&image.ImagePostRequest{Name: name},
+		image.UploadRequest{Name: name},
 		image.FormatPNG,
 		testutil.MakeTestPNG(t, 10, 10),
 	)
@@ -138,7 +138,7 @@ func TestUpload_RejectsDuplicateHash(t *testing.T) {
 	img, err := service.Upload(
 		context.Background(),
 		1,
-		&image.ImagePostRequest{Name: "duplicate.png"},
+		image.UploadRequest{Name: "duplicate.png"},
 		image.FormatPNG,
 		data,
 	)

@@ -2,7 +2,7 @@
 import ImageMetadata from "@/lib/image/dto";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
-import { serverFetch } from "@/lib/serverFetch";
+import { serverFetch } from "@/lib/api/serverMutator";
 import { constructQueryString } from "@/lib/query";
 
 interface Props {

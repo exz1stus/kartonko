@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	imgapi "server/internal/api/image"
 	"server/internal/image"
 	imgpkg "server/internal/image"
 	"server/internal/storage"
@@ -131,7 +132,7 @@ func (c *TestContext) AssertImageCount(query *imgpkg.Query, expected int64) {
 	}
 }
 
-func buildUploadRequest(t *testing.T, url string, postMetadata imgpkg.ImagePostRequest, contentType string, content []byte) *http.Request {
+func buildUploadRequest(t *testing.T, url string, postMetadata imgapi.ImagePostRequest, contentType string, content []byte) *http.Request {
 	t.Helper()
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
@@ -162,7 +163,7 @@ func buildUploadRequest(t *testing.T, url string, postMetadata imgpkg.ImagePostR
 }
 
 type TestFileData struct {
-	image   image.ImagePostRequest
+	image   image.UploadRequest
 	format  image.Format
 	content []byte
 }
@@ -208,7 +209,7 @@ func WriteFilePart(w *multipart.Writer, fieldName, filename, contentType string,
 	return nil
 }
 
-func (c *TestContext) UploadImage(postMetadata imgpkg.ImagePostRequest, mimeType string, content []byte, userID uint64) *httptest.ResponseRecorder {
+func (c *TestContext) UploadImage(postMetadata imgapi.ImagePostRequest, mimeType string, content []byte, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
 	req := buildUploadRequest(c.T, "/image/upload", postMetadata, mimeType, content)
 	if userID != 0 {
@@ -219,11 +220,11 @@ func (c *TestContext) UploadImage(postMetadata imgpkg.ImagePostRequest, mimeType
 	return rec
 }
 
-func (c *TestContext) UploadImageWithResponse(postMetadata imgpkg.ImagePostRequest, mimeType string, content []byte, userID uint64) (*httptest.ResponseRecorder, imgpkg.ImageResponse) {
+func (c *TestContext) UploadImageWithResponse(postMetadata imgapi.ImagePostRequest, mimeType string, content []byte, userID uint64) (*httptest.ResponseRecorder, imgapi.ImageResponse) {
 	c.T.Helper()
 	rec := c.UploadImage(postMetadata, mimeType, content, userID)
 
-	var resp imgpkg.ImageResponse
+	var resp imgapi.ImageResponse
 	if rec.Code == http.StatusOK {
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			c.T.Fatalf("failed to unmarshal response: %v", err)
@@ -235,12 +236,12 @@ func (c *TestContext) UploadImageWithResponse(postMetadata imgpkg.ImagePostReque
 func (c *TestContext) UploadImageBatch(fileDatas []TestFileData, commonTags []string, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
 
-	data := make([]image.ImagePostRequest, 0, len(fileDatas))
+	data := make([]image.UploadRequest, 0, len(fileDatas))
 	for _, img := range fileDatas {
 		data = append(data, img.image)
 	}
 
-	metadata := image.ImagePostBatchRequest{
+	metadata := image.UploadBatchRequest{
 		Data:       data,
 		CommonTags: commonTags,
 	}
@@ -275,11 +276,11 @@ func (c *TestContext) QueryImages(query string, userID uint64) *httptest.Respons
 	return rec
 }
 
-func (c *TestContext) QueryImagesWithResponse(query string, userID uint64) (*httptest.ResponseRecorder, []imgpkg.ImageResponse) {
+func (c *TestContext) QueryImagesWithResponse(query string, userID uint64) (*httptest.ResponseRecorder, []imgapi.ImageResponse) {
 	c.T.Helper()
 	rec := c.QueryImages(query, userID)
 
-	var images []imgpkg.ImageResponse
+	var images []imgapi.ImageResponse
 	if rec.Code == http.StatusOK {
 		if err := json.Unmarshal(rec.Body.Bytes(), &images); err != nil {
 			c.T.Fatalf("failed to unmarshal response: %v", err)
@@ -288,7 +289,7 @@ func (c *TestContext) QueryImagesWithResponse(query string, userID uint64) (*htt
 	return rec, images
 }
 
-func (c *TestContext) GetImageByName(filename string, userID uint64) (*httptest.ResponseRecorder, imgpkg.ImageResponse) {
+func (c *TestContext) GetImageByName(filename string, userID uint64) (*httptest.ResponseRecorder, imgapi.ImageResponse) {
 	c.T.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/image/"+filename, nil)
 	if userID != 0 {
@@ -297,7 +298,7 @@ func (c *TestContext) GetImageByName(filename string, userID uint64) (*httptest.
 	rec := httptest.NewRecorder()
 	c.Router.ServeHTTP(rec, req)
 
-	var resp imgpkg.ImageResponse
+	var resp imgapi.ImageResponse
 	if rec.Code == http.StatusOK {
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			c.T.Fatalf("failed to unmarshal response: %v", err)
@@ -328,7 +329,7 @@ func (c *TestContext) GetThumbnail(filename string, userID uint64) *httptest.Res
 	return rec
 }
 
-func (c *TestContext) SeedImage(postMetadata imgpkg.ImagePostRequest, content []byte, userID uint64) imgpkg.ImageResponse {
+func (c *TestContext) SeedImage(postMetadata imgapi.ImagePostRequest, content []byte, userID uint64) imgapi.ImageResponse {
 	c.T.Helper()
 	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), content, userID)
 	if rec.Code != http.StatusOK {
@@ -338,9 +339,9 @@ func (c *TestContext) SeedImage(postMetadata imgpkg.ImagePostRequest, content []
 	return resp
 }
 
-func (c *TestContext) SeedImageByName(name string) imgpkg.ImageResponse {
+func (c *TestContext) SeedImageByName(name string) imgapi.ImageResponse {
 	c.T.Helper()
-	postMetadata := image.ImagePostRequest{
+	postMetadata := imgapi.ImagePostRequest{
 		Name: name,
 	}
 	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), testutil.MakeUniqueTestPNG(c.T, 10, 10, c.seedImageCount), c.setupUserID)
@@ -351,7 +352,7 @@ func (c *TestContext) SeedImageByName(name string) imgpkg.ImageResponse {
 	return resp
 }
 
-func (c *TestContext) SeedImageByNameAndTags(name string, tags ...string) imgpkg.ImageResponse {
+func (c *TestContext) SeedImageByNameAndTags(name string, tags ...string) imgapi.ImageResponse {
 	c.T.Helper()
 	newTags := make([]string, 0)
 	for _, tag := range tags {
@@ -363,7 +364,7 @@ func (c *TestContext) SeedImageByNameAndTags(name string, tags ...string) imgpkg
 
 	c.SeedTags(newTags...)
 
-	postMetadata := image.ImagePostRequest{
+	postMetadata := imgapi.ImagePostRequest{
 		Name: name,
 		Tags: tags,
 	}

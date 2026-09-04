@@ -1,4 +1,4 @@
-import { serverFetch } from "../serverFetch";
+import { serverFetch } from "../api/serverMutator";
 
 export async function addNewTagServer(tag: string): Promise<void> {
     const res = await serverFetch(`/tag`, {

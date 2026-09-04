@@ -1,42 +1,52 @@
 definitions:
-  auth.AuthRequest:
+  AuthRequest:
     properties:
       password:
         type: string
       username:
         type: string
     type: object
-  auth.LoginResponse:
+  EntryResponse:
     properties:
-      token:
+      action:
         type: string
-      user:
-        $ref: '#/definitions/user.UserDataResponse'
+      affected_obj_id:
+        type: integer
+      created_at:
+        type: string
+      data:
+        type: object
+      id:
+        type: integer
+      object_type:
+        type: string
+      user_id:
+        type: integer
     type: object
-  errors.ErrorResponse:
+  ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  image.ImageError:
+  ImageError:
     properties:
       error:
         type: string
       name:
         type: string
     type: object
-  image.ImagePostBatchResponse:
+  ImagePostBatchResponse:
     properties:
       failures:
         items:
-          $ref: '#/definitions/image.ImageError'
+          $ref: '#/definitions/ImageError'
         type: array
       successes:
         items:
-          $ref: '#/definitions/image.ImageResponse'
+          $ref: '#/definitions/ImageResponse'
         type: array
     type: object
-  image.ImageResponse:
+  ImageResponse:
     properties:
       filename:
         type: string
@@ -59,24 +69,14 @@ definitions:
       width:
         type: integer
     type: object
-  log.EntryResponse:
+  LoginResponse:
     properties:
-      action:
+      token:
         type: string
-      affected_obj_id:
-        type: integer
-      created_at:
-        type: string
-      data:
-        type: object
-      id:
-        type: integer
-      object_type:
-        type: string
-      user_id:
-        type: integer
+      user:
+        $ref: '#/definitions/UserInternalResponse'
     type: object
-  tag.TagBatchResponse:
+  TagBatchResponse:
     properties:
       failures:
         items:
@@ -89,10 +89,10 @@ definitions:
         type: array
       successes:
         items:
-          $ref: '#/definitions/tag.TagResponse'
+          $ref: '#/definitions/TagResponse'
         type: array
     type: object
-  tag.TagPostBatchRequest:
+  TagPostBatchRequest:
     properties:
       names:
         items:
@@ -102,19 +102,19 @@ definitions:
     required:
     - names
     type: object
-  tag.TagPostRequest:
+  TagPostRequest:
     properties:
       name:
         type: string
     type: object
-  tag.TagResponse:
+  TagResponse:
     properties:
       id:
         type: integer
       name:
         type: string
     type: object
-  user.UserDataResponse:
+  UserDataResponse:
     properties:
       id:
         type: integer
@@ -125,6 +125,23 @@ definitions:
       online:
         type: boolean
       picture_url:
+        type: string
+      privilege:
+        type: string
+      username:
+        type: string
+    type: object
+  UserInternalResponse:
+    properties:
+      id:
+        type: integer
+      joinedAt:
+        type: string
+      lastSeen:
+        type: string
+      online:
+        type: boolean
+      pictureURL:
         type: string
       privilege:
         type: string
@@ -148,22 +165,22 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/auth.AuthRequest'
+          $ref: '#/definitions/AuthRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.LoginResponse'
+            $ref: '#/definitions/LoginResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Login a user
       tags:
       - auth
@@ -192,22 +209,22 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/auth.AuthRequest'
+          $ref: '#/definitions/AuthRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.LoginResponse'
+            $ref: '#/definitions/LoginResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Register a user
       tags:
       - auth
@@ -225,7 +242,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Health check
       tags:
       - healthcheck
@@ -258,15 +275,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
       summary: Deletes images by query
@@ -307,12 +324,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/image.ImageResponse'
+              $ref: '#/definitions/ImageResponse'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets images by query
       tags:
       - images
@@ -333,15 +350,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
       summary: Deletes an image by name
@@ -361,11 +378,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/image.ImageResponse'
+            $ref: '#/definitions/ImageResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets image metadata by name
       tags:
       - images
@@ -384,11 +401,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/image.ImageResponse'
+            $ref: '#/definitions/ImageResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets image metadata by its unique hash
       tags:
       - images
@@ -408,11 +425,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/image.ImageResponse'
+            $ref: '#/definitions/ImageResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets image metadata by ID
       tags:
       - images
@@ -435,7 +452,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets raw image by name
       tags:
       - images
@@ -458,7 +475,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets raw image by hash
       tags:
       - images
@@ -481,7 +498,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets raw image thumbnail by name
       tags:
       - images
@@ -504,7 +521,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets raw image thumbnail by hash
       tags:
       - images
@@ -531,19 +548,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/image.ImageResponse'
+            $ref: '#/definitions/ImageResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
       summary: Uploads a single image
@@ -574,19 +591,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/image.ImagePostBatchResponse'
+            $ref: '#/definitions/ImagePostBatchResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
       summary: Uploads multiple images in batch
@@ -612,12 +629,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/log.EntryResponse'
+              $ref: '#/definitions/EntryResponse'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets audit log entries
       tags:
       - log
@@ -641,12 +658,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/tag.TagResponse'
+              $ref: '#/definitions/TagResponse'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets all tags
       tags:
       - tags
@@ -660,26 +677,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/tag.TagPostRequest'
+          $ref: '#/definitions/TagPostRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/tag.TagResponse'
+            $ref: '#/definitions/TagResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
       summary: Creates a new tag
@@ -696,26 +713,26 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/tag.TagPostBatchRequest'
+          $ref: '#/definitions/TagPostBatchRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/tag.TagBatchResponse'
+            $ref: '#/definitions/TagBatchResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
       summary: Creates multiple tags in batch
@@ -736,11 +753,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.UserDataResponse'
+            $ref: '#/definitions/UserDataResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets user by username
       tags:
       - user
@@ -760,15 +777,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.UserDataResponse'
+            $ref: '#/definitions/UserDataResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Gets user by ID
       tags:
       - user
@@ -781,11 +798,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.UserDataResponse'
+            $ref: '#/definitions/UserDataResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/errors.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
       summary: Gets current user profile

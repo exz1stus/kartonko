@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch } from "@/lib/api/clientMutator";
 
 export interface ApiResponse {
     error?: string;

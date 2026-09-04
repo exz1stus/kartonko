@@ -10,7 +10,7 @@ import {
     useContext,
 } from "react";
 import { UserData } from "@/lib/user/user";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch } from "@/lib/api/clientMutator";
 
 interface AuthContextType {
     user: UserData | null;

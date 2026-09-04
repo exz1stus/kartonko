@@ -3,6 +3,7 @@ package http_integration_tests
 import (
 	"encoding/json"
 	"net/http"
+	imgapi "server/internal/api/image"
 	"server/internal/image"
 	"server/internal/tag"
 	"server/internal/testutil"
@@ -85,7 +86,7 @@ func TestPostImage(t *testing.T) {
 			defer cleanup()
 			ctx.SeedTags("animal")
 
-			postMetadata := image.ImagePostRequest{Name: tt.filename, Tags: tt.tags}
+			postMetadata := imgapi.ImagePostRequest{Name: tt.filename, Tags: tt.tags}
 			rec := ctx.UploadImage(postMetadata, tt.mimeType, tt.content, tt.userID)
 			ctx.AssertStatus(rec, tt.wantStatus)
 
@@ -104,7 +105,7 @@ func TestPostImage_TagsAdded(t *testing.T) {
 	ctx.SeedTags("animal", "cat")
 
 	rec := ctx.UploadImage(
-		image.ImagePostRequest{Name: "tagged.png", Tags: []string{"animal", "cat"}},
+		imgapi.ImagePostRequest{Name: "tagged.png", Tags: []string{"animal", "cat"}},
 		image.FormatPNG.MIMEType(),
 		testutil.MakeTestPNG(t, 10, 10),
 		1,
@@ -113,7 +114,7 @@ func TestPostImage_TagsAdded(t *testing.T) {
 	ctx.AssertStatus(rec, http.StatusOK)
 
 	// Verify response contains tags
-	var resp image.ImageResponse
+	var resp imgapi.ImageResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}

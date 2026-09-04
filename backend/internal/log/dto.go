@@ -6,15 +6,14 @@ import (
 	"gorm.io/datatypes"
 )
 
-// swagger:model
 type EntryResponse struct {
-	ID            uint           `json:"id"`
-	CreatedAt     time.Time      `json:"created_at"`
-	Action        string         `json:"action"`
-	ObjectType    string         `json:"object_type"`
-	AffectedObjID uint           `json:"affected_obj_id"`
-	UserID        uint           `json:"user_id"`
-	Data          datatypes.JSON `json:"data" swaggertype:"object"`
+	ID            uint
+	CreatedAt     time.Time
+	Action        string
+	ObjectType    string
+	AffectedObjID uint
+	UserID        uint
+	Data          datatypes.JSON
 }
 
 func NewEntryResponse(entry *AuditEntry) EntryResponse {

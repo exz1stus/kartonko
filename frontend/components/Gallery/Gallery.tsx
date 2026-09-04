@@ -9,7 +9,7 @@ import { useHover } from "@/contexts/HoverContex";
 import Masonry, { MasonryItem } from "@/components/template/Masonry";
 import ImageMetadata from "@/lib/image/image";
 import useUpload from "@/hooks/useUpload";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch } from "@/lib/api/clientMutator";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import { constructQueryString } from "@/lib/query";
 import Loading from "../Loading";

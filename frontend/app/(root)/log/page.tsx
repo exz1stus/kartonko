@@ -4,7 +4,7 @@ import LogEntry from "@/components/Log/LogEntry";
 import AuthGuard from "@/components/AuthGuard";
 import Scrollbar from "@/components/template/Scrollbar";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch } from "@/lib/api/clientMutator";
 import { Loader } from "lucide-react";
 
 interface SearchLogEntriesQuery {}

@@ -2,7 +2,7 @@
 import { useCallback } from "react";
 import { noUse } from "@/app/AudioEffects";
 import useTypingHints from "@/hooks/useTypingHints";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch } from "@/lib/api/clientMutator";
 
 interface Props {
     tags: string[];

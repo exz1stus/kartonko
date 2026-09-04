@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"server/internal/image"
+	imgapi "server/internal/api/image"
 	"server/internal/testutil"
 )
 
@@ -17,7 +17,7 @@ func TestGetImageByName(t *testing.T) {
 
 	tags := []string{"cat"}
 	ctx.SeedTags(tags...)
-	img := ctx.SeedImage(image.ImagePostRequest{
+	img := ctx.SeedImage(imgapi.ImagePostRequest{
 		Name: "test.png",
 		Tags: tags,
 	}, testutil.MakeUniqueTestPNG(t, 10, 10, 1), 1)
@@ -55,7 +55,7 @@ func TestGetImageByHash(t *testing.T) {
 
 	tags := []string{"dog"}
 	ctx.SeedTags(tags...)
-	img := ctx.SeedImage(image.ImagePostRequest{
+	img := ctx.SeedImage(imgapi.ImagePostRequest{
 		Name: "hash_test.png",
 		Tags: tags,
 	}, testutil.MakeUniqueTestPNG(t, 10, 10, 2), 1)
@@ -68,7 +68,7 @@ func TestGetImageByHash(t *testing.T) {
 
 		ctx.AssertStatus(rec, http.StatusOK)
 
-		var resp image.ImageResponse
+		var resp imgapi.ImageResponse
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			t.Fatalf("failed to unmarshal: %v", err)
 		}
@@ -94,7 +94,7 @@ func TestGetImageByID(t *testing.T) {
 
 	tags := []string{"bird"}
 	ctx.SeedTags(tags...)
-	img := ctx.SeedImage(image.ImagePostRequest{
+	img := ctx.SeedImage(imgapi.ImagePostRequest{
 		Name: "id_test.png",
 		Tags: tags,
 	}, testutil.MakeUniqueTestPNG(t, 10, 10, 3), 1)
@@ -107,7 +107,7 @@ func TestGetImageByID(t *testing.T) {
 
 		ctx.AssertStatus(rec, http.StatusOK)
 
-		var resp image.ImageResponse
+		var resp imgapi.ImageResponse
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			t.Fatalf("failed to unmarshal: %v", err)
 		}
@@ -142,7 +142,7 @@ func TestGetRawImageByName(t *testing.T) {
 
 	tags := []string{"cat"}
 	ctx.SeedTags(tags...)
-	ctx.SeedImage(image.ImagePostRequest{
+	ctx.SeedImage(imgapi.ImagePostRequest{
 		Name: "raw_test.png",
 		Tags: tags,
 	}, testutil.MakeUniqueTestPNG(t, 10, 10, 4), 1)
@@ -174,7 +174,7 @@ func TestGetRawThumbnailByName(t *testing.T) {
 
 	tags := []string{"dog"}
 	ctx.SeedTags(tags...)
-	ctx.SeedImage(image.ImagePostRequest{
+	ctx.SeedImage(imgapi.ImagePostRequest{
 		Name: "thumb_test.png",
 		Tags: tags,
 	}, testutil.MakeUniqueTestPNG(t, 10, 10, 5), 1)

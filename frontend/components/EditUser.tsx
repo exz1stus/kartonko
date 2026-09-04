@@ -1,6 +1,6 @@
 "use client";
 import { Trash2 } from "lucide-react";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch } from "@/lib/api/clientMutator";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";

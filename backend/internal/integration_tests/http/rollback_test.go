@@ -3,6 +3,7 @@ package http_integration_tests
 import (
 	"fmt"
 	"net/http"
+	imgapi "server/internal/api/image"
 	"server/internal/image"
 	"server/internal/storage"
 	"server/internal/testutil"
@@ -20,7 +21,7 @@ func TestPostImage_StorageImageUploadFails_NoDBRowAndStorageImageLeft(t *testing
 		return nil
 	}
 
-	rec := ctx.UploadImage(image.ImagePostRequest{Name: "y.png"}, image.FormatPNG.MIMEType(), testutil.MakeTestPNG(t, 5, 5), 1)
+	rec := ctx.UploadImage(imgapi.ImagePostRequest{Name: "y.png"}, image.FormatPNG.MIMEType(), testutil.MakeTestPNG(t, 5, 5), 1)
 
 	ctx.AssertStatus(rec, http.StatusInternalServerError)
 
@@ -40,7 +41,7 @@ func TestPostImage_StorageThumbUploadFails_NoDBRowAndStorageImageLeft(t *testing
 		return nil
 	}
 
-	rec := ctx.UploadImage(image.ImagePostRequest{Name: "y.png"}, image.FormatPNG.MIMEType(), testutil.MakeTestPNG(t, 5, 5), 1)
+	rec := ctx.UploadImage(imgapi.ImagePostRequest{Name: "y.png"}, image.FormatPNG.MIMEType(), testutil.MakeTestPNG(t, 5, 5), 1)
 	ctx.AssertStatus(rec, http.StatusInternalServerError)
 
 	query := image.NewQueryBuilder().Prefix("y.png").Build()

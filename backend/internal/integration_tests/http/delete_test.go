@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"server/internal/image"
+	imgapi "server/internal/api/image"
 	"server/internal/testutil"
 )
 
@@ -61,7 +61,7 @@ func TestDeleteImage(t *testing.T) {
 			defer cleanup()
 
 			// Seed the image
-			img := image.ImagePostRequest{
+			img := imgapi.ImagePostRequest{
 				Name: "image.png",
 			}
 			ctx.SeedImage(img, testutil.MakeTestPNG(t, 5, 5), 2)

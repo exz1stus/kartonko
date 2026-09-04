@@ -1,5 +1,5 @@
 import verifyTurnstile from "@/lib/captcha.server";
-import { serverFetch } from "@/lib/serverFetch";
+import { serverFetch } from "@/lib/api/serverMutator";
 import { addNewTagsBatchServer } from "@/lib/tag/tag.server";
 import { NextRequest, NextResponse } from "next/server";
 

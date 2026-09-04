@@ -1,5 +1,5 @@
 import { UserData } from "@/lib/user/dto";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch } from "@/lib/api/clientMutator";
 
 const userCache = new Map<number, Promise<UserData | null>>(); //TODO add limit
 export async function getUserById(id: number): Promise<UserData | null> {

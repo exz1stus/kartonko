@@ -3,7 +3,7 @@ package http_integration_tests
 import (
 	"net/http"
 	"net/http/httptest"
-	"server/internal/image"
+	imgapi "server/internal/api/image"
 	"server/internal/testutil"
 	"testing"
 )
@@ -75,24 +75,24 @@ func TestDeleteImageByQuery(t *testing.T) {
 
 			ctx.SeedTags("dog")
 			images := []struct {
-				request image.ImagePostRequest
+				request imgapi.ImagePostRequest
 				userID  uint64
 			}{
 				{
-					request: image.ImagePostRequest{
+					request: imgapi.ImagePostRequest{
 						Name: "image.png",
 					},
 					userID: 1,
 				},
 				{
-					request: image.ImagePostRequest{
+					request: imgapi.ImagePostRequest{
 						Name: "image2.png",
 						Tags: []string{"dog"},
 					},
 					userID: 1,
 				},
 				{
-					request: image.ImagePostRequest{
+					request: imgapi.ImagePostRequest{
 						Name: "user2_image.png",
 						Tags: []string{"dog"},
 					},

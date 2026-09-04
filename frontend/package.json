@@ -7,7 +7,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "generate:api": "cp ../backend/docs/openapi.json ./lib && orval"
+        "generate:api": "cp ../backend/docs/openapi.json ./lib/api && orval"
     },
     "dependencies": {
         "@marsidev/react-turnstile": "^1.5.1",

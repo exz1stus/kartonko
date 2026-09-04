@@ -14,15 +14,15 @@ func RespondImage(c *gin.Context, img *image.ImageMetadata) {
 }
 
 func RespondImages(c *gin.Context, images []image.ImageMetadata) {
-	response := make([]image.ImageResponse, len(images))
+	response := make([]ImageResponse, len(images))
 	for i, img := range images {
 		response[i] = NewImageResponse(&img)
 	}
 	c.JSON(http.StatusOK, response)
 }
 
-func NewImageResponse(img *image.ImageMetadata) image.ImageResponse {
-	return image.ImageResponse{
+func NewImageResponse(img *image.ImageMetadata) ImageResponse {
+	return ImageResponse{
 		ID:       img.ID,
 		Hash:     img.Hash,
 		Filename: img.Filename,

@@ -1,26 +1,22 @@
 package tag
 
-// swagger:model
 type TagPostBatchRequest struct {
-	Names []string `json:"names" binding:"required,min=1"`
+	Names []string
 }
 
-// swagger:model
 type TagPostRequest struct {
-	Name string `json:"name"`
+	Name string
 }
 
-// swagger:model
 type TagResponse struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	ID   uint
+	Name string
 }
 
-// swagger:model
 type TagBatchResponse struct {
-	Successes []TagResponse `json:"successes"`
+	Successes []TagResponse
 	Failures  []struct {
-		Name  string `json:"name"`
-		Error string `json:"error"`
-	} `json:"failures,omitempty"`
+		Name  string
+		Error string
+	}
 }

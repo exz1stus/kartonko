@@ -25,7 +25,7 @@ func toServiceError[T any](val T, err error) (T, error) {
 }
 
 type ImageService interface {
-	Upload(ctx context.Context, userID uint, req *ImagePostRequest, format Format, data []byte) (*ImageMetadata, error)
+	Upload(ctx context.Context, userID uint, req UploadRequest, format Format, data []byte) (*ImageMetadata, error)
 
 	GetByID(id uint) (*ImageMetadata, error)
 	GetByName(name string) (*ImageMetadata, error)
@@ -223,7 +223,7 @@ func (s *imageService) validateNewImage(img *ImageMetadata) error {
 	return nil
 }
 
-func (s *imageService) Upload(ctx context.Context, userID uint, req *ImagePostRequest, format Format, data []byte) (*ImageMetadata, error) {
+func (s *imageService) Upload(ctx context.Context, userID uint, req UploadRequest, format Format, data []byte) (*ImageMetadata, error) {
 	imgWidth, imgHeight, err := GetDimensionsBytes(data)
 	if err != nil {
 		return nil, fmt.Errorf("error getting image dimensions: %v", err)

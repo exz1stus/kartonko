@@ -18,13 +18,12 @@ func NewUserResponse(u *User) UserDataResponse {
 	return res
 }
 
-// swagger:model
 type UserDataResponse struct {
-	ID         uint   `json:"id"`
-	Username   string `json:"username"`
-	Privilege  string `json:"privilege"`
-	PictureURL string `json:"picture_url"`
-	JoinedAt   string `json:"joined_at"`
-	LastSeen   string `json:"last_seen"`
-	Online     bool   `json:"online"`
-}
+	ID         uint
+	Username   string
+	Privilege  string
+	PictureURL string
+	JoinedAt   string
+	LastSeen   string
+	Online     bool
+} // @name UserInternalResponse

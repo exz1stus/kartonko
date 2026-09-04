@@ -18,10 +18,9 @@ var (
 	ErrDuplicateHash     = errors.New("hash already exists")
 )
 
-// swagger:model
 type ErrorResponse struct {
 	Error string `json:"error"`
-}
+} // @name ErrorResponse
 
 func RespondError(c *gin.Context, err error) {
 	status := http.StatusInternalServerError

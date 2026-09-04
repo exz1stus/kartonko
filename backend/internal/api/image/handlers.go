@@ -75,7 +75,7 @@ func getImageBytesFromHeader(fileHeader *multipart.FileHeader) ([]byte, error) {
 }
 
 func HandleUpload(c *gin.Context, images image.ImageService, metadata string, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error) {
-	var postRequest image.ImagePostRequest
+	var postRequest ImagePostRequest
 	if err := json.Unmarshal([]byte(metadata), &postRequest); err != nil {
 		return nil, errors.ErrBadRequest
 	}
@@ -97,11 +97,11 @@ func HandleUpload(c *gin.Context, images image.ImageService, metadata string, fi
 		return nil, err
 	}
 
-	return images.Upload(c.Request.Context(), user.ID, &postRequest, format, data)
+	return images.Upload(c.Request.Context(), user.ID, postRequest.ToUploadRequest(), format, data)
 }
 
-func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata string, form *multipart.Form) (*image.ImagePostBatchResponse, error) {
-	var batch image.ImagePostBatchRequest
+func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata string, form *multipart.Form) (*ImagePostBatchResponse, error) {
+	var batch ImagePostBatchRequest
 	if err := json.Unmarshal([]byte(metadata), &batch); err != nil {
 		return nil, helpers.WrapBadRequest(err)
 	}
@@ -120,11 +120,11 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 		return nil, errors.ErrUnauthorized
 	}
 
-	response := &image.ImagePostBatchResponse{}
+	response := &ImagePostBatchResponse{}
 
 	for i, meta := range batch.Data {
 		if i >= len(files) {
-			response.Failures = append(response.Failures, image.ImageError{
+			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
 				Error: "No file provided for this metadata",
 			})
@@ -132,7 +132,7 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 		}
 
 		if err := isImageRequestValid(&meta, files[i]); err != nil {
-			response.Failures = append(response.Failures, image.ImageError{
+			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
 				Error: helpers.WrapBadRequest(err).Error(),
 			})
@@ -148,9 +148,9 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 			return nil, err
 		}
 
-		img, err := images.Upload(c.Request.Context(), user.ID, &meta, format, data)
+		img, err := images.Upload(c.Request.Context(), user.ID, meta.ToUploadRequest(), format, data)
 		if err != nil {
-			response.Failures = append(response.Failures, image.ImageError{
+			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
 				Error: err.Error(),
 			})
@@ -169,7 +169,7 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 // @Tags images
 // @Produce json
 // @Param name path string true "Image name"
-// @Success 200 {object} image.ImageResponse
+// @Success 200 {object} ImageResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/{name} [get]
 func (h *Handler) GetImageByName(c *gin.Context) {
@@ -184,7 +184,7 @@ func (h *Handler) GetImageByName(c *gin.Context) {
 // @Tags images
 // @Produce json
 // @Param hash path string true "Image hash"
-// @Success 200 {object} image.ImageResponse
+// @Success 200 {object} ImageResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/hash/{hash} [get]
 func (h *Handler) GetImageByHash(c *gin.Context) {
@@ -199,7 +199,7 @@ func (h *Handler) GetImageByHash(c *gin.Context) {
 // @Tags images
 // @Produce json
 // @Param id path uint64 true "Image ID"
-// @Success 200 {object} image.ImageResponse
+// @Success 200 {object} ImageResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/id/{id} [get]
 func (h *Handler) GetImageByID(c *gin.Context) {
@@ -297,7 +297,7 @@ func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 // @Param user_id query uint false "Filter by user ID"
 // @Param cursor query string false "Pagination cursor"
 // @Param limit query int false "Limit results" default(20)
-// @Success 200 {array} image.ImageResponse
+// @Success 200 {array} ImageResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Router /image [get]
 func (h *Handler) GetImagesByQuery(c *gin.Context) {
@@ -376,7 +376,7 @@ func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 // @Produce json
 // @Param metadata formData string true "Image metadata (JSON)" Example({"name": "my-image", "tags": ["tag1", "tag2"]})
 // @Param file formData file true "Image file"
-// @Success 200 {object} image.ImageResponse
+// @Success 200 {object} ImageResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
@@ -406,7 +406,7 @@ func (h *Handler) PostImage(c *gin.Context) {
 // @Produce json
 // @Param metadata formData string true "Batch metadata (JSON)" Example({"data": [{"name": "img1", "tags": ["tag1"]}, {"name": "img2", "tags": ["tag2"]}], "common_tags": ["common"]})
 // @Param files formData file true "Image files (multiple)"
-// @Success 200 {object} image.ImagePostBatchResponse
+// @Success 200 {object} ImagePostBatchResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
@@ -432,7 +432,7 @@ func (h *Handler) PostImagesBatch(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func isImageRequestValid(metadata *image.ImagePostRequest, fileHeader *multipart.FileHeader) error {
+func isImageRequestValid(metadata *ImagePostRequest, fileHeader *multipart.FileHeader) error {
 	if len(metadata.Name) == 0 {
 		return errors.ErrBadRequest
 	}

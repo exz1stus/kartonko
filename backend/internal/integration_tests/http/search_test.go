@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"server/internal/image"
+	imgapi "server/internal/api/image"
 	"server/internal/testutil"
 
 	"github.com/stretchr/testify/require"
@@ -19,7 +19,7 @@ func TestGetImagesByQuery(t *testing.T) {
 		userID        uint64
 		wantStatus    int
 		expectedCount int
-		checkResponse func(t *testing.T, images []image.ImageResponse)
+		checkResponse func(t *testing.T, images []imgapi.ImageResponse)
 	}{
 		{
 			name: "success - no filters",
@@ -32,7 +32,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 3,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 3)
 			},
 		},
@@ -47,7 +47,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 1,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 1)
 				require.Equal(t, "cat_image.png", images[0].Filename)
 			},
@@ -63,7 +63,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 2)
 
 				for _, img := range images {
@@ -82,7 +82,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 1,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 1)
 				require.Equal(t, "img.png", images[0].Filename)
 			},
@@ -94,7 +94,7 @@ func TestGetImagesByQuery(t *testing.T) {
 				ctx.SeedImageByNameAndTags("dog_image.png", "dog")
 				ctx.SeedImageByNameAndTags("img.png", "cat", "dog")
 				ctx.SeedImage(
-					image.ImagePostRequest{Name: "user_image.png"},
+					imgapi.ImagePostRequest{Name: "user_image.png"},
 					testutil.MakeUniqueTestPNG(t, 10, 10, 141),
 					2,
 				)
@@ -103,7 +103,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 3,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 3)
 
 				for _, img := range images {
@@ -115,12 +115,12 @@ func TestGetImagesByQuery(t *testing.T) {
 			name: "success - username filter",
 			setupImages: func(ctx *TestContext) {
 				ctx.SeedImage(
-					image.ImagePostRequest{Name: "alice_img.png"},
+					imgapi.ImagePostRequest{Name: "alice_img.png"},
 					testutil.MakeUniqueTestPNG(t, 10, 10, 141),
 					4,
 				)
 				ctx.SeedImage(
-					image.ImagePostRequest{Name: "bob_img.png"},
+					imgapi.ImagePostRequest{Name: "bob_img.png"},
 					testutil.MakeUniqueTestPNG(t, 10, 10, 142),
 					3,
 				)
@@ -129,7 +129,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 1,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 1)
 				require.Equal(t, "alice_img.png", images[0].Filename)
 			},
@@ -148,7 +148,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 2)
 			},
 		},
@@ -166,7 +166,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 2)
 			},
 		},
@@ -176,7 +176,7 @@ func TestGetImagesByQuery(t *testing.T) {
 				ctx.SeedImageByNameAndTags("combo1.png", "cat", "animal")
 				ctx.SeedImageByNameAndTags("combo2.png", "dog", "animal")
 				ctx.SeedImage(
-					image.ImagePostRequest{
+					imgapi.ImagePostRequest{
 						Name: "combo3.png",
 						Tags: []string{"cat"},
 					},
@@ -188,7 +188,7 @@ func TestGetImagesByQuery(t *testing.T) {
 			userID:        1,
 			wantStatus:    http.StatusOK,
 			expectedCount: 2,
-			checkResponse: func(t *testing.T, images []image.ImageResponse) {
+			checkResponse: func(t *testing.T, images []imgapi.ImageResponse) {
 				require.Len(t, images, 2)
 
 				require.ElementsMatch(t,

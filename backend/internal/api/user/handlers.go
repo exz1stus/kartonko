@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"server/internal/api/helpers"
 	"server/internal/errors"
-	"server/internal/user"
 	userpkg "server/internal/user"
 	"strconv"
 
@@ -16,7 +15,7 @@ type Handler struct {
 }
 
 func NewUserHandler(
-	userService user.UserService,
+	userService userpkg.UserService,
 ) *Handler {
 	return &Handler{
 		userService: userService,
@@ -36,13 +35,13 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Tags user
 // @Produce json
 // @Param name path string true "Username"
-// @Success 200 {object} userpkg.UserDataResponse
+// @Success 200 {object} user.UserDataResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /user/{name} [get]
 func (h *Handler) GetUserByName(c *gin.Context) {
 	helpers.HandleGet(c, func() (*userpkg.User, error) {
 		return h.userService.GetByUsername(c.Param("name"))
-	}, func(u *userpkg.User) any { return user.NewUserResponse(u) })
+	}, func(u *userpkg.User) any { return FromServiceUser(u) })
 }
 
 // GetUserByID godoc
@@ -51,7 +50,7 @@ func (h *Handler) GetUserByName(c *gin.Context) {
 // @Tags user
 // @Produce json
 // @Param id path uint64 true "User ID"
-// @Success 200 {object} userpkg.UserDataResponse
+// @Success 200 {object} user.UserDataResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /user/id/{id} [get]
@@ -64,7 +63,7 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 	}
 	helpers.HandleGet(c, func() (*userpkg.User, error) {
 		return h.userService.GetByID(uint(id64))
-	}, func(u *userpkg.User) any { return user.NewUserResponse(u) })
+	}, func(u *userpkg.User) any { return FromServiceUser(u) })
 }
 
 // GetMe godoc
@@ -73,12 +72,12 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 // @Tags user
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {object} userpkg.UserDataResponse
+// @Success 200 {object} user.UserDataResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Router /user/me [get]
 func (h *Handler) GetMe(c *gin.Context) {
 	helpers.WithUser(c, func(u *userpkg.User) error {
-		helpers.RespondJSON(c, http.StatusOK, user.NewUserResponse(u))
+		helpers.RespondJSON(c, http.StatusOK, FromServiceUser(u))
 		return nil
 	})
 }

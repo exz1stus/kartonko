@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import GalleryServer from "@/components/Gallery/GalleryServer";
 import TimeField from "@/components/TimeField";
-import { serverFetch } from "@/lib/serverFetch";
+import { serverFetch } from "@/lib/api/serverMutator";
 import EditUser from "@/components/EditUser";
 import { getLoggedUserServer } from "@/lib/user/user.server";
 

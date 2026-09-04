@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	imgapi "server/internal/api/image"
 	"server/internal/image"
 	"server/internal/testutil"
 
@@ -24,7 +25,7 @@ func TestPostImagesBatch(t *testing.T) {
 			name: "success batch upload",
 			fileDatas: []TestFileData{
 				{
-					image: image.ImagePostRequest{
+					image: image.UploadRequest{
 						Name: "cat.png",
 						Tags: []string{"cat"},
 					},
@@ -32,7 +33,7 @@ func TestPostImagesBatch(t *testing.T) {
 					content: testutil.MakeUniqueTestPNG(t, 10, 10, 0),
 				},
 				{
-					image: image.ImagePostRequest{
+					image: image.UploadRequest{
 						Name: "dog.png",
 						Tags: []string{"dog"},
 					},
@@ -56,7 +57,7 @@ func TestPostImagesBatch(t *testing.T) {
 			rec := ctx.UploadImageBatch(tt.fileDatas, tt.commonTags, tt.userID)
 
 			if tt.wantStatus < 400 && tt.wantStatus != 207 {
-				var res image.ImagePostBatchResponse
+				var res imgapi.ImagePostBatchResponse
 				if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 					t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 				}
@@ -83,14 +84,14 @@ func TestPostImagesBatch_RejectsFewerFilesThanInMetadata(t *testing.T) {
 
 	fileDatas := []TestFileData{
 		{
-			image: image.ImagePostRequest{
+			image: image.UploadRequest{
 				Name: "cat.png",
 			},
 			format:  image.FormatPNG,
 			content: testutil.MakeUniqueTestPNG(t, 10, 10, 0),
 		},
 		{
-			image: image.ImagePostRequest{
+			image: image.UploadRequest{
 				Name: "dog.png",
 			},
 			format:  image.FormatPNG,
@@ -99,7 +100,7 @@ func TestPostImagesBatch_RejectsFewerFilesThanInMetadata(t *testing.T) {
 	}
 
 	failedData := TestFileData{
-		image: image.ImagePostRequest{
+		image: image.UploadRequest{
 			Name: "dog_duplicate.png",
 		},
 		format:  image.FormatPNG,
@@ -124,14 +125,14 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 
 	fileDatas := []TestFileData{
 		{
-			image: image.ImagePostRequest{
+			image: image.UploadRequest{
 				Name: "cat.png",
 			},
 			format:  image.FormatPNG,
 			content: testutil.MakeUniqueTestPNG(t, 10, 10, 0),
 		},
 		{
-			image: image.ImagePostRequest{
+			image: image.UploadRequest{
 				Name: "dog.png",
 			},
 			format:  image.FormatPNG,
@@ -140,7 +141,7 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 	}
 
 	failedData := TestFileData{
-		image: image.ImagePostRequest{
+		image: image.UploadRequest{
 			Name: "dog_duplicate.png",
 		},
 		format:  image.FormatPNG,
@@ -154,7 +155,7 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 	rec := ctx.UploadImageBatch(fileDatas, nil, 1)
 	ctx.AssertStatus(rec, http.StatusMultiStatus)
 
-	var res image.ImagePostBatchResponse
+	var res imgapi.ImagePostBatchResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
 		t.Errorf("failed to deserialize batch upload response: %s", rec.Body.String())
 	}

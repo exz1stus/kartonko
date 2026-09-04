@@ -1,5 +1,5 @@
 import { UserData } from "@/lib/user/user";
-import { serverFetch } from "@/lib/serverFetch";
+import { serverFetch } from "@/lib/api/serverMutator";
 
 export async function getUserByIdServer(id: number): Promise<UserData | null> {
     try {

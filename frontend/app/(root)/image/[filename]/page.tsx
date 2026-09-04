@@ -1,7 +1,7 @@
-import ImageMetadata from "@/lib/image/image";
+import ImageMetadata from "@/lib/api/generated/model/imageImageResponse";
 import ImageContent from "@/components/ImageContent";
 import { notFound } from "next/navigation";
-import { serverFetch } from "@/lib/serverFetch";
+import { serverFetch } from "@/lib/api/serverMutator";
 
 interface Props {
     filename: string;

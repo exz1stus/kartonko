@@ -2,17 +2,17 @@ package log
 
 import (
 	"server/internal/api/helpers"
-	"server/internal/log"
+	logpkg "server/internal/log"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	logService log.LogService
+	logService logpkg.LogService
 }
 
 func NewLogHandler(
-	logService log.LogService,
+	logService logpkg.LogService,
 ) *Handler {
 	return &Handler{
 		logService: logService,
@@ -34,7 +34,11 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Failure 400 {object} errors.ErrorResponse
 // @Router /log [get]
 func (h *Handler) GetAuditLogEntries(c *gin.Context) {
-	helpers.HandleList(c, func(cursor, limit int) ([]log.EntryResponse, error) {
-		return h.logService.GetEntries(cursor, limit)
-	}, func(entry log.EntryResponse) any { return entry })
+	helpers.HandleList(c, func(cursor, limit int) ([]EntryResponse, error) {
+		entries, err := h.logService.GetEntries(cursor, limit)
+		if err != nil {
+			return nil, err
+		}
+		return FromServiceEntries(entries), nil
+	}, func(entry EntryResponse) any { return entry })
 }

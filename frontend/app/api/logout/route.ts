@@ -1,17 +1,12 @@
-import { NextResponse } from "next/server";
+import { postAuthLogout } from "@/lib/api/generated/server";
 
 export async function POST() {
-    const res = await fetch(`${process.env.API_LOCAL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-    });
-
-    const logoutResponse = new NextResponse(res.body, { status: res.status });
+    const res = await postAuthLogout();
 
     const setCookie = res.headers.get("set-cookie");
     if (setCookie) {
-        logoutResponse.headers.set("set-cookie", setCookie);
+        res.headers.set("set-cookie", setCookie);
     }
 
-    return logoutResponse;
+    return res;
 }
