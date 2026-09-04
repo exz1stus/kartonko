@@ -6,6 +6,7 @@ import (
 	"server/internal/env"
 	"server/internal/errors"
 	"server/internal/user"
+	userpkg "server/internal/user"
 	"sync"
 	"time"
 
@@ -60,11 +61,11 @@ func GetUserFromContext(c *gin.Context) (*user.User, error) {
 // PostLogin godoc
 // @Summary Login a user
 // @Description Logs in a user, generating a JWT token.
-// @Tags Auth
+// @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param   body body authRequest true "username and password"
-// @Success 200 {object} map[string]interface{}
+// @Param   body body AuthRequest true "username and password"
+// @Success 200 {object} LoginResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /auth/login [post]
@@ -96,7 +97,7 @@ func (h *Handler) PostLogin(c *gin.Context) {
 
 	res := &LoginResponse{
 		Token: tokenString,
-		User:  *user,
+		User:  userpkg.NewUserResponse(user),
 	}
 
 	c.JSON(http.StatusOK, res)
@@ -112,11 +113,11 @@ func GetJWTCookieMaxAge() time.Duration {
 // PostRegister godoc
 // @Summary Register a user
 // @Description Registers a new user, generating a JWT token.
-// @Tags Auth
+// @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param   body body authRequest true "username and password"
-// @Success 200 {object} map[string]interface{}
+// @Param   body body AuthRequest true "username and password"
+// @Success 200 {object} LoginResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /auth/register [post]
@@ -148,15 +149,19 @@ func (h *Handler) PostRegister(c *gin.Context) {
 
 	setTokenCookie(tokenString, &c.Writer)
 
-	c.JSON(http.StatusOK, gin.H{"register": true})
+	res := &LoginResponse{
+		Token: tokenString,
+		User:  userpkg.NewUserResponse(user),
+	}
+
+	c.JSON(http.StatusOK, res)
 }
 
 // PostLogout godoc
 // @Summary Logout a user
 // @Description Logs out a user, deleting the JWT token.
-// @Tags Auth
+// @Tags auth
 // @Accept  json
-// @Produce  json
 // @Success 200 {object} map[string]interface{}
 // @Router /auth/logout [post]
 func (h *Handler) PostLogout(c *gin.Context) {
@@ -171,7 +176,7 @@ func (h *Handler) PostLogout(c *gin.Context) {
 		SameSite: http.SameSiteDefaultMode,
 	})
 
-	c.JSON(http.StatusOK, gin.H{"logout": true})
+	c.Status(http.StatusOK)
 }
 
 func GenerateJwtToken(userID uint) (string, error) {

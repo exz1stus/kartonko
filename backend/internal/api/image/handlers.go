@@ -163,18 +163,45 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 	return response, nil
 }
 
+// GetImageByName godoc
+// @Summary Gets image metadata by name
+// @Description Returns image metadata by its name
+// @Tags images
+// @Produce json
+// @Param name path string true "Image name"
+// @Success 200 {object} image.ImageResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/{name} [get]
 func (h *Handler) GetImageByName(c *gin.Context) {
 	helpers.HandleGet(c, func() (*image.ImageMetadata, error) {
 		return h.imageService.GetByName(c.Param("name"))
 	}, func(img *image.ImageMetadata) any { return NewImageResponse(img) })
 }
 
+// GetImageByHash godoc
+// @Summary Gets image metadata by its unique hash
+// @Description Returns image metadata by its hash
+// @Tags images
+// @Produce json
+// @Param hash path string true "Image hash"
+// @Success 200 {object} image.ImageResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/hash/{hash} [get]
 func (h *Handler) GetImageByHash(c *gin.Context) {
 	helpers.HandleGet(c, func() (*image.ImageMetadata, error) {
 		return h.imageService.GetByHash(c.Param("hash"))
 	}, func(img *image.ImageMetadata) any { return NewImageResponse(img) })
 }
 
+// GetImageByID godoc
+// @Summary Gets image metadata by ID
+// @Description Returns image metadata by its numeric ID
+// @Tags images
+// @Produce json
+// @Param id path uint64 true "Image ID"
+// @Success 200 {object} image.ImageResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/id/{id} [get]
 func (h *Handler) GetImageByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id64, err := strconv.ParseUint(idStr, 10, strconv.IntSize)
@@ -187,6 +214,15 @@ func (h *Handler) GetImageByID(c *gin.Context) {
 	}, func(img *image.ImageMetadata) any { return NewImageResponse(img) })
 }
 
+// GetRawImageByName godoc
+// @Summary Gets raw image by name
+// @Description Returns the raw image file by its name
+// @Tags images
+// @Produce application/octet-stream
+// @Param name path string true "Image name"
+// @Success 200 {file} binary "Raw image file"
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/raw/{name} [get]
 func (h *Handler) GetRawImageByName(c *gin.Context) {
 	name := c.Param("name")
 	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
@@ -198,6 +234,15 @@ func (h *Handler) GetRawImageByName(c *gin.Context) {
 	}, getRawContentType)
 }
 
+// GetRawThumbnailByName godoc
+// @Summary Gets raw image thumbnail by name
+// @Description Returns the raw thumbnail image file by its name
+// @Tags images
+// @Produce application/octet-stream
+// @Param name path string true "Image thumbnail name"
+// @Success 200 {file} binary "Raw thumbnail image file"
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/thumb/{name} [get]
 func (h *Handler) GetRawThumbnailByName(c *gin.Context) {
 	name := c.Param("name")
 	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
@@ -209,6 +254,15 @@ func (h *Handler) GetRawThumbnailByName(c *gin.Context) {
 	}, getRawContentType)
 }
 
+// GetRawImageByHash godoc
+// @Summary Gets raw image by hash
+// @Description Returns the raw image file by its hash
+// @Tags images
+// @Produce application/octet-stream
+// @Param hash path string true "Image hash"
+// @Success 200 {file} binary "Raw image file"
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/raw/hash/{hash} [get]
 func (h *Handler) GetRawImageByHash(c *gin.Context) {
 	hash := c.Param("hash")
 	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
@@ -216,6 +270,15 @@ func (h *Handler) GetRawImageByHash(c *gin.Context) {
 	}, getRawContentType)
 }
 
+// GetRawThumbnailByHash godoc
+// @Summary Gets raw image thumbnail by hash
+// @Description Returns the raw thumbnail image file by its hash
+// @Tags images
+// @Produce application/octet-stream
+// @Param hash path string true "Image hash"
+// @Success 200 {file} binary "Raw thumbnail image file"
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/thumb/hash/{hash} [get]
 func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 	hash := c.Param("hash")
 	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
@@ -223,6 +286,20 @@ func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 	}, getRawContentType)
 }
 
+// GetImagesByQuery godoc
+// @Summary Gets images by query
+// @Description Returns a list of images matching the query parameters
+// @Tags images
+// @Produce json
+// @Param prefix query string false "Filter by name prefix"
+// @Param tags query string false "JSON array of tags"
+// @Param username query string false "Filter by username"
+// @Param user_id query uint false "Filter by user ID"
+// @Param cursor query string false "Pagination cursor"
+// @Param limit query int false "Limit results" default(20)
+// @Success 200 {array} image.ImageResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Router /image [get]
 func (h *Handler) GetImagesByQuery(c *gin.Context) {
 	helpers.WithQuery(c, h.newQueryFromContext, func(query *image.Query) error {
 		images, err := h.imageService.Search(query)
@@ -234,6 +311,18 @@ func (h *Handler) GetImagesByQuery(c *gin.Context) {
 	})
 }
 
+// DeleteImageByName godoc
+// @Summary Deletes an image by name
+// @Description Deletes an image by its name (requires authentication)
+// @Tags images
+// @Security BearerAuth
+// @Produce json
+// @Param name path string true "Image name"
+// @Success 204 "No Content"
+// @Failure 401 {object} errors.ErrorResponse
+// @Failure 403 {object} errors.ErrorResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/{name} [delete]
 func (h *Handler) DeleteImageByName(c *gin.Context) {
 	name := strings.ToLower(c.Param("name"))
 	helpers.WithUser(c, func(usr *user.User) error {
@@ -241,6 +330,21 @@ func (h *Handler) DeleteImageByName(c *gin.Context) {
 	})
 }
 
+// DeleteImagesByQuery godoc
+// @Summary Deletes images by query
+// @Description Deletes multiple images matching the query parameters (requires authentication)
+// @Tags images
+// @Security BearerAuth
+// @Produce json
+// @Param prefix query string false "Filter by name prefix"
+// @Param tags query string false "JSON array of tags"
+// @Param username query string false "Filter by username"
+// @Param user_id query uint false "Filter by user ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 401 {object} errors.ErrorResponse
+// @Failure 403 {object} errors.ErrorResponse
+// @Router /image [delete]
 func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 	helpers.WithUserAndQuery(c, h.newQueryFromContext, func(usr *user.User, query *image.Query) error {
 		errs := h.imageService.DeleteByQuery(c.Request.Context(), usr, query)
@@ -263,6 +367,20 @@ func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 	})
 }
 
+// PostImage godoc
+// @Summary Uploads a single image
+// @Description Uploads an image with metadata (requires authentication)
+// @Tags images
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param metadata formData string true "Image metadata (JSON)" Example({"name": "my-image", "tags": ["tag1", "tag2"]})
+// @Param file formData file true "Image file"
+// @Success 200 {object} image.ImageResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 401 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
+// @Router /image/upload [post]
 func (h *Handler) PostImage(c *gin.Context) {
 	formData := c.PostForm("metadata")
 	fileHeader, err := c.FormFile("file")
@@ -279,6 +397,20 @@ func (h *Handler) PostImage(c *gin.Context) {
 	RespondImage(c, img)
 }
 
+// PostImagesBatch godoc
+// @Summary Uploads multiple images in batch
+// @Description Uploads multiple images with metadata in a single request (requires authentication)
+// @Tags images
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param metadata formData string true "Batch metadata (JSON)" Example({"data": [{"name": "img1", "tags": ["tag1"]}, {"name": "img2", "tags": ["tag2"]}], "common_tags": ["common"]})
+// @Param files formData file true "Image files (multiple)"
+// @Success 200 {object} image.ImagePostBatchResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 401 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
+// @Router /image/upload/batch [post]
 func (h *Handler) PostImagesBatch(c *gin.Context) {
 	formData := c.PostForm("metadata")
 	form, err := c.MultipartForm()

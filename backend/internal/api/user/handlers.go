@@ -7,7 +7,6 @@ import (
 	"server/internal/user"
 	userpkg "server/internal/user"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,28 +30,31 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 	protected.GET("/me", h.GetMe)
 }
 
-func NewUserResponse(u *userpkg.User) userpkg.UserDataResponse {
-	res := userpkg.UserDataResponse{
-		ID:        u.ID,
-		Username:  u.Username,
-		Privilege: u.Privilege.String(),
-		JoinedAt:  u.CreatedAt.Format(time.DateOnly),
-		LastSeen:  u.LastSeen.Format(time.DateTime),
-	}
-
-	if u.IsOauth() {
-		res.PictureURL = u.PictureURL
-	}
-
-	return res
-}
-
+// GetUserByName godoc
+// @Summary Gets user by username
+// @Description Returns user profile by username
+// @Tags user
+// @Produce json
+// @Param name path string true "Username"
+// @Success 200 {object} userpkg.UserDataResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /user/{name} [get]
 func (h *Handler) GetUserByName(c *gin.Context) {
 	helpers.HandleGet(c, func() (*userpkg.User, error) {
 		return h.userService.GetByUsername(c.Param("name"))
-	}, func(u *userpkg.User) any { return NewUserResponse(u) })
+	}, func(u *userpkg.User) any { return user.NewUserResponse(u) })
 }
 
+// GetUserByID godoc
+// @Summary Gets user by ID
+// @Description Returns user profile by numeric ID
+// @Tags user
+// @Produce json
+// @Param id path uint64 true "User ID"
+// @Success 200 {object} userpkg.UserDataResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /user/id/{id} [get]
 func (h *Handler) GetUserByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id64, err := strconv.ParseUint(idStr, 10, 64)
@@ -62,12 +64,21 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 	}
 	helpers.HandleGet(c, func() (*userpkg.User, error) {
 		return h.userService.GetByID(uint(id64))
-	}, func(u *userpkg.User) any { return NewUserResponse(u) })
+	}, func(u *userpkg.User) any { return user.NewUserResponse(u) })
 }
 
+// GetMe godoc
+// @Summary Gets current user profile
+// @Description Returns the authenticated user's profile (requires authentication)
+// @Tags user
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} userpkg.UserDataResponse
+// @Failure 401 {object} errors.ErrorResponse
+// @Router /user/me [get]
 func (h *Handler) GetMe(c *gin.Context) {
 	helpers.WithUser(c, func(u *userpkg.User) error {
-		helpers.RespondJSON(c, http.StatusOK, NewUserResponse(u))
+		helpers.RespondJSON(c, http.StatusOK, user.NewUserResponse(u))
 		return nil
 	})
 }

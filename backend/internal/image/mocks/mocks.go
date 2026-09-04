@@ -7,7 +7,6 @@ package image
 import (
 	"context"
 	"io"
-	"mime/multipart"
 	"server/internal/image"
 	"server/internal/tag"
 	"server/internal/user"
@@ -1963,8 +1962,8 @@ func (_c *MockImageService_Search_Call) RunAndReturn(run func(query *image.Query
 }
 
 // Upload provides a mock function for the type MockImageService
-func (_mock *MockImageService) Upload(ctx context.Context, userID uint, uploadMetadata *image.ImagePostRequest, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error) {
-	ret := _mock.Called(ctx, userID, uploadMetadata, fileHeader)
+func (_mock *MockImageService) Upload(ctx context.Context, userID uint, req *image.ImagePostRequest, format image.Format, data []byte) (*image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, userID, req, format, data)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Upload")
@@ -1972,18 +1971,18 @@ func (_mock *MockImageService) Upload(ctx context.Context, userID uint, uploadMe
 
 	var r0 *image.ImageMetadata
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, *image.ImagePostRequest, *multipart.FileHeader) (*image.ImageMetadata, error)); ok {
-		return returnFunc(ctx, userID, uploadMetadata, fileHeader)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, *image.ImagePostRequest, image.Format, []byte) (*image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, userID, req, format, data)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, *image.ImagePostRequest, *multipart.FileHeader) *image.ImageMetadata); ok {
-		r0 = returnFunc(ctx, userID, uploadMetadata, fileHeader)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, *image.ImagePostRequest, image.Format, []byte) *image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, userID, req, format, data)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*image.ImageMetadata)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uint, *image.ImagePostRequest, *multipart.FileHeader) error); ok {
-		r1 = returnFunc(ctx, userID, uploadMetadata, fileHeader)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uint, *image.ImagePostRequest, image.Format, []byte) error); ok {
+		r1 = returnFunc(ctx, userID, req, format, data)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1998,13 +1997,14 @@ type MockImageService_Upload_Call struct {
 // Upload is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uint
-//   - uploadMetadata *image.ImagePostRequest
-//   - fileHeader *multipart.FileHeader
-func (_e *MockImageService_Expecter) Upload(ctx any, userID any, uploadMetadata any, fileHeader any) *MockImageService_Upload_Call {
-	return &MockImageService_Upload_Call{Call: _e.mock.On("Upload", ctx, userID, uploadMetadata, fileHeader)}
+//   - req *image.ImagePostRequest
+//   - format image.Format
+//   - data []byte
+func (_e *MockImageService_Expecter) Upload(ctx any, userID any, req any, format any, data any) *MockImageService_Upload_Call {
+	return &MockImageService_Upload_Call{Call: _e.mock.On("Upload", ctx, userID, req, format, data)}
 }
 
-func (_c *MockImageService_Upload_Call) Run(run func(ctx context.Context, userID uint, uploadMetadata *image.ImagePostRequest, fileHeader *multipart.FileHeader)) *MockImageService_Upload_Call {
+func (_c *MockImageService_Upload_Call) Run(run func(ctx context.Context, userID uint, req *image.ImagePostRequest, format image.Format, data []byte)) *MockImageService_Upload_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -2018,15 +2018,20 @@ func (_c *MockImageService_Upload_Call) Run(run func(ctx context.Context, userID
 		if args[2] != nil {
 			arg2 = args[2].(*image.ImagePostRequest)
 		}
-		var arg3 *multipart.FileHeader
+		var arg3 image.Format
 		if args[3] != nil {
-			arg3 = args[3].(*multipart.FileHeader)
+			arg3 = args[3].(image.Format)
+		}
+		var arg4 []byte
+		if args[4] != nil {
+			arg4 = args[4].([]byte)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -2037,7 +2042,7 @@ func (_c *MockImageService_Upload_Call) Return(imageMetadata *image.ImageMetadat
 	return _c
 }
 
-func (_c *MockImageService_Upload_Call) RunAndReturn(run func(ctx context.Context, userID uint, uploadMetadata *image.ImagePostRequest, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error)) *MockImageService_Upload_Call {
+func (_c *MockImageService_Upload_Call) RunAndReturn(run func(ctx context.Context, userID uint, req *image.ImagePostRequest, format image.Format, data []byte) (*image.ImageMetadata, error)) *MockImageService_Upload_Call {
 	_c.Call.Return(run)
 	return _c
 }

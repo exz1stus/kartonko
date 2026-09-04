@@ -60,7 +60,7 @@ func (s *logService) GetEntries(cursor int, limit int) ([]EntryResponse, error) 
 
 	resp := make([]EntryResponse, 0, len(entries))
 	for _, entry := range entries {
-		resp = append(resp, ConstructEntryResponse(&entry))
+		resp = append(resp, NewEntryResponse(&entry))
 	}
 	return resp, nil
 }

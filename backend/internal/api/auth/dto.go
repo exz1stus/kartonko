@@ -8,6 +8,6 @@ type AuthRequest struct {
 }
 
 type LoginResponse struct {
-	Token string    `json:"token"`
-	User  user.User `json:"user"`
+	Token string                `json:"token"`
+	User  user.UserDataResponse `json:"user"`
 }

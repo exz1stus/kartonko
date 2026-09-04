@@ -1,0 +1,16 @@
+{
+    "name": "openapi",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "convert": "swagger2openapi ../../docs/swagger.json -o ../../docs/openapi.json"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "swagger2openapi": "^7.0.8"
+    }
+}

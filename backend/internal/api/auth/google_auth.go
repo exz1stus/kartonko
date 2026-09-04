@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"server/internal/env"
 	apierrors "server/internal/errors"
+	userpkg "server/internal/user"
 	"strings"
 	"sync"
 
@@ -123,7 +124,7 @@ func (h *Handler) GetGoogleCallback(c *gin.Context) {
 
 	res := &LoginResponse{
 		Token: tokenString,
-		User:  *user,
+		User:  userpkg.NewUserResponse(user),
 	}
 
 	c.JSON(http.StatusOK, res)

@@ -1,12 +1,132 @@
 definitions:
-  api.ErrorResponse:
+  auth.AuthRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  auth.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/user.UserDataResponse'
+    type: object
+  errors.ErrorResponse:
     properties:
       error:
         type: string
     type: object
-  api.authRequest:
+  image.ImageError:
     properties:
-      password:
+      error:
+        type: string
+      name:
+        type: string
+    type: object
+  image.ImagePostBatchResponse:
+    properties:
+      failures:
+        items:
+          $ref: '#/definitions/image.ImageError'
+        type: array
+      successes:
+        items:
+          $ref: '#/definitions/image.ImageResponse'
+        type: array
+    type: object
+  image.ImageResponse:
+    properties:
+      filename:
+        type: string
+      format:
+        type: string
+      hash:
+        type: string
+      height:
+        type: integer
+      id:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      uploaded_at:
+        type: string
+      user_id:
+        type: integer
+      width:
+        type: integer
+    type: object
+  log.EntryResponse:
+    properties:
+      action:
+        type: string
+      affected_obj_id:
+        type: integer
+      created_at:
+        type: string
+      data:
+        type: object
+      id:
+        type: integer
+      object_type:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  tag.TagBatchResponse:
+    properties:
+      failures:
+        items:
+          properties:
+            error:
+              type: string
+            name:
+              type: string
+          type: object
+        type: array
+      successes:
+        items:
+          $ref: '#/definitions/tag.TagResponse'
+        type: array
+    type: object
+  tag.TagPostBatchRequest:
+    properties:
+      names:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - names
+    type: object
+  tag.TagPostRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  tag.TagResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  user.UserDataResponse:
+    properties:
+      id:
+        type: integer
+      joined_at:
+        type: string
+      last_seen:
+        type: string
+      online:
+        type: boolean
+      picture_url:
+        type: string
+      privilege:
         type: string
       username:
         type: string
@@ -28,33 +148,30 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.authRequest'
+          $ref: '#/definitions/auth.AuthRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/auth.LoginResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Login a user
       tags:
-      - Auth
+      - auth
   /auth/logout:
     post:
       consumes:
       - application/json
       description: Logs out a user, deleting the JWT token.
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -63,7 +180,7 @@ paths:
             type: object
       summary: Logout a user
       tags:
-      - Auth
+      - auth
   /auth/register:
     post:
       consumes:
@@ -75,26 +192,25 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.authRequest'
+          $ref: '#/definitions/auth.AuthRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/auth.LoginResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Register a user
       tags:
-      - Auth
+      - auth
   /health:
     get:
       description: Returns "ok" if server is up and running
@@ -109,14 +225,132 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Health check
       tags:
-      - HealthCheck
-  /image/{name}:
-    get:
+      - healthcheck
+  /image:
+    delete:
+      description: Deletes multiple images matching the query parameters (requires
+        authentication)
       parameters:
-      - description: name
+      - description: Filter by name prefix
+        in: query
+        name: prefix
+        type: string
+      - description: JSON array of tags
+        in: query
+        name: tags
+        type: string
+      - description: Filter by username
+        in: query
+        name: username
+        type: string
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deletes images by query
+      tags:
+      - images
+    get:
+      description: Returns a list of images matching the query parameters
+      parameters:
+      - description: Filter by name prefix
+        in: query
+        name: prefix
+        type: string
+      - description: JSON array of tags
+        in: query
+        name: tags
+        type: string
+      - description: Filter by username
+        in: query
+        name: username
+        type: string
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Limit results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/image.ImageResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets images by query
+      tags:
+      - images
+  /image/{name}:
+    delete:
+      description: Deletes an image by its name (requires authentication)
+      parameters:
+      - description: Image name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deletes an image by name
+      tags:
+      - images
+    get:
+      description: Returns image metadata by its name
+      parameters:
+      - description: Image name
         in: path
         name: name
         required: true
@@ -127,19 +361,66 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/image.ImageResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Returns imageData by it's unique name
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets image metadata by name
       tags:
-      - Image
+      - images
+  /image/hash/{hash}:
+    get:
+      description: Returns image metadata by its hash
+      parameters:
+      - description: Image hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/image.ImageResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets image metadata by its unique hash
+      tags:
+      - images
+  /image/id/{id}:
+    get:
+      description: Returns image metadata by its numeric ID
+      parameters:
+      - description: Image ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/image.ImageResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets image metadata by ID
+      tags:
+      - images
   /image/raw/{name}:
     get:
+      description: Returns the raw image file by its name
       parameters:
-      - description: name
+      - description: Image name
         in: path
         name: name
         required: true
@@ -148,99 +429,181 @@ paths:
       - application/octet-stream
       responses:
         "200":
-          description: OK
+          description: Raw image file
           schema:
-            additionalProperties: true
-            type: object
+            type: file
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Returns image file by its unique name
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets raw image by name
       tags:
-      - Image
-  /images:
+      - images
+  /image/raw/hash/{hash}:
     get:
-      description: Returns a list of images at "cursor + limit" matching the "query"
+      description: Returns the raw image file by its hash
       parameters:
-      - description: name
-        in: query
+      - description: Image hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets raw image by hash
+      tags:
+      - images
+  /image/thumb/{name}:
+    get:
+      description: Returns the raw thumbnail image file by its name
+      parameters:
+      - description: Image thumbnail name
+        in: path
         name: name
+        required: true
         type: string
-      - description: tags
-        in: query
-        name: tags
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw thumbnail image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets raw image thumbnail by name
+      tags:
+      - images
+  /image/thumb/hash/{hash}:
+    get:
+      description: Returns the raw thumbnail image file by its hash
+      parameters:
+      - description: Image hash
+        in: path
+        name: hash
+        required: true
         type: string
-      - description: cursor
-        in: query
-        name: cursor
-        type: integer
-      - description: limit
-        in: query
-        name: limit
-        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw thumbnail image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets raw image thumbnail by hash
+      tags:
+      - images
+  /image/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads an image with metadata (requires authentication)
+      parameters:
+      - description: Image metadata (JSON)
+        example: '{"name": "my-image", "tags": ["tag1", "tag2"]}'
+        in: formData
+        name: metadata
+        required: true
+        type: string
+      - description: Image file
+        in: formData
+        name: file
+        required: true
+        type: file
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/image.ImageResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Searches images by given query
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Uploads a single image
       tags:
-      - Image
+      - images
+  /image/upload/batch:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads multiple images with metadata in a single request (requires
+        authentication)
+      parameters:
+      - description: Batch metadata (JSON)
+        example: '{"data": [{"name": "img1", "tags": ["tag1"]}, {"name": "img2", "tags":
+          ["tag2"]}], "common_tags": ["common"]}'
+        in: formData
+        name: metadata
+        required: true
+        type: string
+      - description: Image files (multiple)
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/image.ImagePostBatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Uploads multiple images in batch
+      tags:
+      - images
   /log:
     get:
-      description: Returns a list of log entries at "cursor + limit" matching the
-        "query"
+      description: Returns a paginated list of audit log entries
       parameters:
-      - description: cursor
+      - description: Pagination cursor
         in: query
         name: cursor
-        required: true
-        type: string
-      - description: limit
+        type: integer
+      - default: 20
+        description: Limit results
         in: query
         name: limit
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Gets audit log entries by given range
-      tags:
-      - AuditLog
-  /tags:
-    get:
-      description: Returns a list of tags at "cursor + limit" matching the "query"
-      parameters:
-      - description: query
-        in: query
-        name: query
-        required: true
-        type: string
-      - description: limit
-        in: query
-        name: limit
-        required: true
         type: integer
       produces:
       - application/json
@@ -248,52 +611,123 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/log.EntryResponse'
+            type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Searches tags by given query
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets audit log entries
       tags:
-      - Tags
-  /upload:
+      - log
+  /tags:
+    get:
+      description: Returns a paginated list of all tags
+      parameters:
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: integer
+      - default: 20
+        description: Limit results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/tag.TagResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets all tags
+      tags:
+      - tags
     post:
       consumes:
       - application/json
-      - ' multipart/form-data'
-      description: Uploads image, name and hash must be unique
+      description: Creates a new tag (requires authentication)
+      parameters:
+      - description: Tag name
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/tag.TagPostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/tag.TagResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Creates a new tag
+      tags:
+      - tags
+  /tags/batch:
+    post:
+      consumes:
+      - application/json
+      description: Creates multiple tags in a single request (requires authentication)
+      parameters:
+      - description: Tag names
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/tag.TagPostBatchRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/tag.TagBatchResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       security:
-      - BearerToken: []
-      summary: Uploads image
+      - BearerAuth: []
+      summary: Creates multiple tags in batch
       tags:
-      - Image
-  /user/{username}:
+      - tags
+  /user/{name}:
     get:
+      description: Returns user profile by username
       parameters:
-      - description: username
+      - description: Username
         in: path
-        name: username
+        name: name
         required: true
         type: string
       produces:
@@ -302,17 +736,67 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/user.UserDataResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets user by username
+      tags:
+      - user
+  /user/id/{id}:
+    get:
+      description: Returns user profile by numeric ID
+      parameters:
+      - description: User ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserDataResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/api.ErrorResponse'
-      summary: Returns user's data by username
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Gets user by ID
       tags:
-      - User
+      - user
+  /user/me:
+    get:
+      description: Returns the authenticated user's profile (requires authentication)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserDataResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Gets current user profile
+      tags:
+      - user
+schemes:
+- http
+- https
 securityDefinitions:
   BearerAuth:
+    description: Bearer JWT authentication.
     in: cookie
     name: jwt
     type: apiKey

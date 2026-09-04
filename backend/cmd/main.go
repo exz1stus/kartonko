@@ -8,7 +8,11 @@ import (
 //@title kartonko API
 //@version 1.0
 //@description kartonko web server
+//@schemes         http https
+//
 //@securityDefinitions.apikey BearerAuth
+//@name Authorization
+//@description Bearer JWT authentication.
 //@in cookie
 //@name jwt
 
