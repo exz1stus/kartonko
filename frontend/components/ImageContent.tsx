@@ -4,17 +4,18 @@ import React from "react";
 import TagSpan from "./Tags/TagSpan";
 import UserElement from "./UserElement";
 import TimeField from "./TimeField";
-import { getLoggedUserServer, getUserByIdServer } from "@/lib/user/user.server";
 import { isModerator } from "@/lib/user/user";
 import EditImage from "./EditImage";
+import { getUserIdId } from "@/lib/api/generated/server";
+import { getLoggedUser } from "@/lib/user/user.server";
 
 interface Props {
     image: ImageMetadata;
 }
 
 const ImageContent: React.FC<Props> = async ({ image }) => {
-    const user = await getLoggedUserServer();
-    const imageOwner = await getUserByIdServer(image.user_id);
+    const user = await getLoggedUser();
+    const imageOwner = await getUserIdId(image.user_id);
 
     const { filename } = image;
 

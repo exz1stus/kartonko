@@ -9,11 +9,12 @@ import {
     createContext,
     useContext,
 } from "react";
-import { UserData } from "@/lib/user/user";
-import { apiFetch } from "@/lib/api/clientMutator";
+import { UserDataResponse } from "@/lib/api/generated/model/userDataResponse";
+import { getUserMe, postAuthLogout } from "@/lib/api/generated/client";
+import ApiError from "@/lib/api/error";
 
 interface AuthContextType {
-    user: UserData | null;
+    user: UserDataResponse | null;
     login: (redirectPath?: string) => void;
     logout: () => void;
     loading: boolean;
@@ -55,7 +56,7 @@ export const useAuth = () => {
 };
 
 const useProvideAuth = () => {
-    const [user, setUser] = useState<UserData | null>(null);
+    const [user, setUser] = useState<UserDataResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const pathname = usePathname();
@@ -63,25 +64,15 @@ const useProvideAuth = () => {
     const fetchUser = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await apiFetch(`/me`, { credentials: "include" });
-            if (res.status === 401 || res.status === 403) {
+            const user = await getUserMe({ credentials: "include" });
+            setUser(user);
+        } catch (error) {
+            if (error instanceof ApiError && error.status === 401) {
                 setUser(null);
                 return;
             }
 
-            if (!res.ok) {
-                throw new Error(`Request failed: ${res.status}`);
-            }
-
-            const user = await res.json();
-            if (user?.username) {
-                setUser(user);
-            } else {
-                setUser(null);
-            }
-        } catch (err) {
-            console.error("Failed to fetch user:", err);
-            setUser(null);
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -102,7 +93,7 @@ const useProvideAuth = () => {
     };
 
     const logout = async () => {
-        await apiFetch("/auth/logout", { method: "POST" });
+        await postAuthLogout();
         setUser(null);
         router.refresh();
     };

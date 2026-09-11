@@ -74,19 +74,14 @@ func getImageBytesFromHeader(fileHeader *multipart.FileHeader) ([]byte, error) {
 	return data, nil
 }
 
-func HandleUpload(c *gin.Context, images image.ImageService, metadata string, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error) {
-	var postRequest ImagePostRequest
-	if err := json.Unmarshal([]byte(metadata), &postRequest); err != nil {
-		return nil, errors.ErrBadRequest
-	}
-
+func HandleUpload(c *gin.Context, images image.ImageService, postRequest ImagePostRequest, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error) {
 	if err := isImageRequestValid(&postRequest, fileHeader); err != nil {
 		return nil, helpers.WrapBadRequest(err)
 	}
 
 	user, err := auth.GetUserFromContext(c)
 	if err != nil {
-		return nil, errors.ErrUnauthorized
+		return nil, fmt.Errorf("%w: %v", errors.ErrUnauthorized, err)
 	}
 	format, err := getFormatFromHeader(fileHeader)
 	if err != nil {
@@ -108,11 +103,11 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 
 	files := form.File["files"]
 	if files == nil {
-		return nil, errors.ErrBadRequest
+		return nil, helpers.WrapBadRequest(fmt.Errorf("formData: no files attached"))
 	}
 
 	if len(batch.Data) != len(files) {
-		return nil, errors.ErrBadRequest
+		return nil, helpers.WrapBadRequest(fmt.Errorf("files and metadata items lenght are different"))
 	}
 
 	user, err := auth.GetUserFromContext(c)
@@ -206,7 +201,7 @@ func (h *Handler) GetImageByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id64, err := strconv.ParseUint(idStr, 10, strconv.IntSize)
 	if err != nil {
-		errors.RespondError(c, errors.ErrBadRequest)
+		errors.RespondError(c, helpers.WrapBadRequest(err))
 		return
 	}
 	helpers.HandleGet(c, func() (*image.ImageMetadata, error) {
@@ -292,17 +287,17 @@ func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 // @Tags images
 // @Produce json
 // @Param prefix query string false "Filter by name prefix"
-// @Param tags query string false "JSON array of tags"
+// @Param tags query []string false "Comma separated or array" Example:"tags=animal,cat" or "tags=animal&tags=cat"
 // @Param username query string false "Filter by username"
 // @Param user_id query uint false "Filter by user ID"
-// @Param cursor query string false "Pagination cursor"
+// @Param cursor query int false "Pagination cursor"
 // @Param limit query int false "Limit results" default(20)
 // @Success 200 {array} ImageResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Router /image [get]
 func (h *Handler) GetImagesByQuery(c *gin.Context) {
 	helpers.WithQuery(c, h.newQueryFromContext, func(query *image.Query) error {
-		images, err := h.imageService.Search(query)
+		images, err := h.imageService.Search(c.Request.Context(), query)
 		if err != nil {
 			return err
 		}
@@ -374,39 +369,44 @@ func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 // @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
-// @Param metadata formData string true "Image metadata (JSON)" Example({"name": "my-image", "tags": ["tag1", "tag2"]})
+
 // @Param file formData file true "Image file"
-// @Success 200 {object} ImageResponse
+// @Param name formData string true	"Image name"
+// @Param tags []formData string false "Array of tags"
+
+// @Success 201 {object} ImageResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /image/upload [post]
 func (h *Handler) PostImage(c *gin.Context) {
-	formData := c.PostForm("metadata")
+	name := c.PostForm("name")
+	tags := c.PostFormArray("tags")
 	fileHeader, err := c.FormFile("file")
-	if err != nil {
-		errors.RespondError(c, errors.ErrBadRequest)
-		return
-	}
-
-	img, err := HandleUpload(c, h.imageService, formData, fileHeader)
 	if err != nil {
 		errors.RespondError(c, err)
 		return
 	}
-	RespondImage(c, img)
+
+	img, err := HandleUpload(c, h.imageService, ImagePostRequest{name, tags}, fileHeader)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	RespondImageCreated(c, img)
 }
 
 // PostImagesBatch godoc
 // @Summary Uploads multiple images in batch
 // @Description Uploads multiple images with metadata in a single request (requires authentication)
+// @Description !!Swagger to openapi conversion doesn't support file arrays
 // @Tags images
 // @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
 // @Param metadata formData string true "Batch metadata (JSON)" Example({"data": [{"name": "img1", "tags": ["tag1"]}, {"name": "img2", "tags": ["tag2"]}], "common_tags": ["common"]})
-// @Param files formData file true "Image files (multiple)"
-// @Success 200 {object} ImagePostBatchResponse
+// @Param files formData file true "Files to upload"
+// @Success 201 {object} ImagePostBatchResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
@@ -415,7 +415,7 @@ func (h *Handler) PostImagesBatch(c *gin.Context) {
 	formData := c.PostForm("metadata")
 	form, err := c.MultipartForm()
 	if err != nil {
-		errors.RespondError(c, errors.ErrBadRequest)
+		errors.RespondError(c, helpers.WrapBadRequest(err))
 		return
 	}
 
@@ -429,21 +429,21 @@ func (h *Handler) PostImagesBatch(c *gin.Context) {
 		c.JSON(http.StatusMultiStatus, response)
 		return
 	}
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusCreated, response)
 }
 
 func isImageRequestValid(metadata *ImagePostRequest, fileHeader *multipart.FileHeader) error {
 	if len(metadata.Name) == 0 {
-		return errors.ErrBadRequest
+		return fmt.Errorf("metadata empty name")
 	}
 
 	imgFormat, err := image.FormatFromMIME(fileHeader.Header.Get("Content-Type"))
 	if err != nil {
-		return fmt.Errorf("image format parsing error: %v", err)
+		return fmt.Errorf("image format parsing error: %w", err)
 	}
 
 	if !imgFormat.IsSupported() {
-		return fmt.Errorf("unsupported image format: %s", imgFormat)
+		return fmt.Errorf("unsupported image format: %s", imgFormat.String())
 	}
 
 	return nil
@@ -456,7 +456,6 @@ func (h *Handler) newQueryFromContext(c *gin.Context) (*image.Query, error) {
 	}
 
 	prefix := c.Query("prefix")
-	tagsString := c.Query("tags")
 	username := c.Query("username")
 	userIDStr := c.Query("user_id")
 
@@ -465,11 +464,34 @@ func (h *Handler) newQueryFromContext(c *gin.Context) (*image.Query, error) {
 		Cursor(cursor).
 		Limit(limit)
 
-	if tagsString != "" {
-		tags, err := tag.ParseTagsFromJSONString(tagsString)
-		if err != nil {
-			return nil, helpers.WrapBadRequest(err)
+	// Support both comma-separated (CSV) and repeated query parameters
+	// OpenAPI spec specifies collectionFormat: csv for tags parameter
+	tagsParam := c.Query("tags")
+	var tags []string
+	if tagsParam != "" {
+		// Split by comma for CSV format
+		tags = strings.Split(tagsParam, ",")
+		// Trim whitespace from each tag
+		for i := range tags {
+			tags[i] = strings.TrimSpace(tags[i])
 		}
+	} else {
+		// Fallback to repeated query parameters (e.g., ?tags=cat&tags=dog)
+		tags = c.QueryArray("tags")
+	}
+
+	var filtered []string
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+
+		if tag == "" {
+			continue
+		}
+
+		filtered = append(filtered, tag)
+	}
+
+	if len(filtered) > 0 {
 		builder.Tags(tags)
 	}
 

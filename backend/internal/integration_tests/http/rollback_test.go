@@ -27,7 +27,7 @@ func TestPostImage_StorageImageUploadFails_NoDBRowAndStorageImageLeft(t *testing
 
 	query := image.NewQueryBuilder().Prefix("y.png").Build()
 
-	ctx.AssertImageCount(query, 0)
+	ctx.AssertImageCountQuery(query, 0)
 	ctx.AssertStorageCount(0)
 }
 
@@ -46,6 +46,6 @@ func TestPostImage_StorageThumbUploadFails_NoDBRowAndStorageImageLeft(t *testing
 
 	query := image.NewQueryBuilder().Prefix("y.png").Build()
 
-	ctx.AssertImageCount(query, 0)
+	ctx.AssertImageCountQuery(query, 0)
 	ctx.AssertStorageCount(0)
 }

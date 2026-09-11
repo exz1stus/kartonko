@@ -5,15 +5,13 @@ import { SearchQuery, ImageSearch, isQueryEmpty } from "./ImageSearch";
 import { useDebounce } from "use-debounce";
 import Scrollbar from "@/components/template/Scrollbar";
 import DragDropZone from "@/components/UploadImage/DragDropZone";
-import { useHover } from "@/contexts/HoverContex";
 import Masonry, { MasonryItem } from "@/components/template/Masonry";
-import ImageMetadata from "@/lib/image/image";
-import useUpload from "@/hooks/useUpload";
-import { apiFetch } from "@/lib/api/clientMutator";
+import { ImageMetadata } from "@/lib/api/generated/model";
+import usePreUpload from "@/hooks/usePreUpload";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
-import { constructQueryString } from "@/lib/query";
 import Loading from "../Loading";
 import { ImageIcon } from "lucide-react";
+import { getImage } from "@/lib/api/generated/client";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -30,7 +28,7 @@ const Gallery: React.FC<Props> = ({
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery);
     const [debouncedQuery] = useDebounce(searchQuery, 200);
 
-    const { handleUploadFiles } = useUpload();
+    const handleDroppedFiles = usePreUpload();
 
     const fetchImages = useCallback(
         async (
@@ -38,16 +36,11 @@ const Gallery: React.FC<Props> = ({
             cursor: number,
             requestSize: number,
         ): Promise<ImageMetadata[]> => {
-            const queryString = constructQueryString(searchQuery);
-            const cursorParam = `cursor=${cursor}&limit=${requestSize}`;
-            const url = queryString
-                ? `/image?${queryString}&${cursorParam}`
-                : `/image?${cursorParam}`;
-            const response = await apiFetch(url);
-            if (!response.ok) throw new Error("Failed to fetch images");
-
-            const imageData: ImageMetadata[] = await response.json();
-            return imageData;
+            return getImage({
+                ...searchQuery,
+                cursor: cursor,
+                limit: requestSize,
+            });
         },
         [],
     );
@@ -106,7 +99,7 @@ const Gallery: React.FC<Props> = ({
                 className="p-4 border-primary-0 border-b shrink-0"
             />
             <div className="flex-1 overflow-hidden">
-                <DragDropZone onFilesDropped={handleUploadFiles}>
+                <DragDropZone onFilesDropped={handleDroppedFiles}>
                     <div className="flex flex-col h-full">
                         <Scrollbar className="overflow-x-hidden">
                             {content}

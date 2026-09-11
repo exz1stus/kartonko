@@ -34,7 +34,7 @@ class VectorRepository(Protocol):
     """Protocol for vector storage operations."""
 
     @abstractmethod
-    def upsert(self, vector: list[float], id: str, payload: dict | None = None) -> None:
+    def upsert(self, vector: list[float], id: int, payload: dict | None = None) -> None:
         """Insert or update a vector."""
         ...
 
@@ -42,14 +42,14 @@ class VectorRepository(Protocol):
     def upsert_batch(
         self,
         vectors: list[list[float]],
-        ids: list[str],
+        ids: list[int],
         payloads: list[dict] | None = None,
     ) -> None:
         """Batch upsert multiple vectors."""
         ...
 
     @abstractmethod
-    def delete(self, id: str) -> None:
+    def delete(self, id: int) -> None:
         """Delete a vector by ID."""
         ...
 

@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -75,7 +76,7 @@ func (h *httpEmbeddingClient) Embed(ctx context.Context, file io.Reader) (*Embed
 		return nil, fmt.Errorf("failed to close multipart writer: %v", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", h.baseURL+"/embedding", body)
+	req, err := http.NewRequestWithContext(ctx, "POST", h.baseURL+"/embeddings", body)
 	if err != nil {
 		return nil, err
 	}
@@ -106,13 +107,13 @@ func (h *httpEmbeddingClient) EmbedBatch(ctx context.Context, files []io.Reader)
 		return nil, fmt.Errorf("failed to close multipart writer: %v", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", h.baseURL+"/embedding/batch", body)
+	req, err := http.NewRequestWithContext(ctx, "POST", h.baseURL+"/embeddings/batch", body)
 	if err != nil {
 		return nil, err
 	}
 
 	var out []EmbedResponse
-	err = h.do(req, out)
+	err = h.do(req, &out)
 
 	return out, err
 }
@@ -134,10 +135,11 @@ func (h *httpEmbeddingClient) SearchImage(ctx context.Context, file io.Reader, l
 		return nil, fmt.Errorf("failed to close multipart writer: %v", err)
 	}
 
+	searchURL := fmt.Sprintf("%s/search/image?limit=%d&score_threshold=0.7", h.baseURL, limit)
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
-		fmt.Sprintf("%s/search/image", h.baseURL),
+		searchURL,
 		body,
 	)
 	if err != nil {
@@ -158,10 +160,11 @@ func (h *httpEmbeddingClient) SearchVector(ctx context.Context, embedding []floa
 		return nil, err
 	}
 
+	searchURL := fmt.Sprintf("%s/search/vector?limit=%d&score_threshold=0.7", h.baseURL, limit)
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
-		fmt.Sprintf("%s/search/vector", h.baseURL),
+		searchURL,
 		bytes.NewReader(body),
 	)
 	if err != nil {
@@ -198,16 +201,11 @@ func (h *httpEmbeddingClient) Upsert(ctx context.Context, imageID int, embedding
 }
 
 func (h *httpEmbeddingClient) EmbedText(ctx context.Context, text string) (*EmbedResponse, error) {
-	body, err := json.Marshal(map[string]string{"text": text})
+	encodedText := url.QueryEscape(text)
+	req, err := http.NewRequestWithContext(ctx, "POST", h.baseURL+"/embeddings/text?text="+encodedText, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", h.baseURL+"/embedding/text", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
 
 	out := &EmbedResponse{}
 	err = h.do(req, out)
@@ -217,7 +215,7 @@ func (h *httpEmbeddingClient) EmbedText(ctx context.Context, text string) (*Embe
 
 func NewHTTPEmbeddingClient() EmbeddingsClient {
 	return &httpEmbeddingClient{
-		baseURL: fmt.Sprintf("embeddings:%s/api/v1", os.Getenv("EMBEDDINGS_PORT")),
+		baseURL: fmt.Sprintf("http://embeddings:%s/api/v1", os.Getenv("EMBEDDINGS_PORT")),
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},

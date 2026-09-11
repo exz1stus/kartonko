@@ -5,9 +5,9 @@
  * kartonko web server
  * OpenAPI spec version: 1.0
  */
-import type { UserInternalResponse } from './userInternalResponse';
+import type { UserUserResponce } from './userUserResponce';
 
 export interface LoginResponse {
-  token?: string;
-  user?: UserInternalResponse;
+  token: string;
+  user: UserUserResponce;
 }

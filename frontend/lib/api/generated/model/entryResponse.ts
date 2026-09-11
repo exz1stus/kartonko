@@ -8,11 +8,11 @@
 import type { EntryResponseData } from './entryResponseData';
 
 export interface EntryResponse {
-  action?: string;
-  affected_obj_id?: number;
-  created_at?: string;
-  data?: EntryResponseData;
-  id?: number;
-  object_type?: string;
-  user_id?: number;
+  action: string;
+  affected_obj_id: number;
+  created_at: string;
+  data: EntryResponseData;
+  id: number;
+  object_type: string;
+  user_id: number;
 }

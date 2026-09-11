@@ -3,8 +3,7 @@ import Image from "next/image";
 import PerspectiveCard from "./PerspectiveCard";
 import React, { useRef } from "react";
 import { useRouter } from "next/navigation";
-import ImageMetadata from "@/lib/image/image";
-
+import { ImageMetadata } from "@/lib/api/generated/model";
 interface Props {
     image: ImageMetadata;
     className?: string;

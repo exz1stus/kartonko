@@ -1,11 +1,11 @@
+import { getLoggedUser } from "@/lib/user/user.server";
 import MenuButton from "../SideBar/MenuButton";
 import LoginButton from "./LoginButton";
 import Logo from "./Logo";
 import UserProfile from "./UserProfile";
-import { getLoggedUserServer } from "@/lib/user/user.server";
 
 const NavBar = async () => {
-    const user = await getLoggedUserServer();
+    const user = await getLoggedUser();
     const profile = !user ? <LoginButton /> : <UserProfile user={user} />;
 
     return (

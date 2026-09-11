@@ -87,13 +87,13 @@ func TestDeleteImage(t *testing.T) {
 
 			if tt.wantStatus != http.StatusOK {
 				ctx.AssertStorageCount(len(storeCount))
-				ctx.AssertImageCount(nil, dbCount)
+				ctx.AssertImageCount(dbCount)
 
 				return
 			}
 
 			ctx.AssertStorageCount(0)
-			ctx.AssertImageCount(nil, 0)
+			ctx.AssertImageCount(0)
 		})
 	}
 }

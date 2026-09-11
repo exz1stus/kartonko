@@ -164,10 +164,11 @@ services:
             context: ../embeddings
             dockerfile: Dockerfile
         container_name: embeddings
+        gpus: all
+        environment:
+            EMBEDDINGS_PORT: ${EMBEDDINGS_PORT}
         depends_on:
             - qdrant
-        ports:
-            - "${EMBEDDINGS_PORT}:8000"
         networks:
             - ai-network
         restart: always

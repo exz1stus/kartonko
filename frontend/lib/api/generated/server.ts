@@ -5,97 +5,97 @@
  * kartonko web server
  * OpenAPI spec version: 1.0
  */
-import { serverFetch } from '../serverMutator';
+import { serverMutator } from "../serverMutator";
 export interface AuthRequest {
-  password?: string;
-  username?: string;
+    password: string;
+    username: string;
 }
 
 export type EntryResponseData = { [key: string]: unknown };
 
 export interface EntryResponse {
-  action?: string;
-  affected_obj_id?: number;
-  created_at?: string;
-  data?: EntryResponseData;
-  id?: number;
-  object_type?: string;
-  user_id?: number;
+    action: string;
+    affected_obj_id: number;
+    created_at: string;
+    data: EntryResponseData;
+    id: number;
+    object_type: string;
+    user_id: number;
 }
 
 export interface ErrorResponse {
-  error?: string;
+    error: string;
 }
 
 export interface ImageError {
-  error?: string;
-  name?: string;
+    error: string;
+    name: string;
 }
 
-export interface ImageResponse {
-  filename?: string;
-  format?: string;
-  hash?: string;
-  height?: number;
-  id?: number;
-  tags?: string[];
-  uploaded_at?: string;
-  user_id?: number;
-  width?: number;
+export interface ImageMetadata {
+    filename: string;
+    format: string;
+    hash: string;
+    height: number;
+    id: number;
+    tags: string[];
+    uploaded_at: string;
+    user_id: number;
+    width: number;
 }
 
 export interface ImagePostBatchResponse {
-  failures?: ImageError[];
-  successes?: ImageResponse[];
+    failures: ImageError[];
+    successes: ImageMetadata[];
 }
 
-export interface UserInternalResponse {
-  id?: number;
-  joinedAt?: string;
-  lastSeen?: string;
-  online?: boolean;
-  pictureURL?: string;
-  privilege?: string;
-  username?: string;
+export interface UserUserResponce {
+    id?: number;
+    joinedAt?: string;
+    lastSeen?: string;
+    online?: boolean;
+    pictureURL?: string;
+    privilege?: string;
+    username?: string;
 }
 
 export interface LoginResponse {
-  token?: string;
-  user?: UserInternalResponse;
+    token: string;
+    user: UserUserResponce;
 }
 
 export type TagBatchResponseFailuresItem = {
-  error?: string;
-  name?: string;
+    error: string;
+    name: string;
 };
 
 export interface TagResponse {
-  id?: number;
-  name?: string;
+    id: number;
+    name: string;
 }
 
 export interface TagBatchResponse {
-  failures?: TagBatchResponseFailuresItem[];
-  successes?: TagResponse[];
+    failures?: TagBatchResponseFailuresItem[];
+    successes: TagResponse[];
 }
 
 export interface TagPostBatchRequest {
-  /** @minItems 1 */
-  names: string[];
+    /** @minItems 1 */
+    names: string[];
 }
 
 export interface TagPostRequest {
-  name?: string;
+    name: string;
 }
 
 export interface UserDataResponse {
-  id?: number;
-  joined_at?: string;
-  last_seen?: string;
-  online?: boolean;
-  picture_url?: string;
-  privilege?: string;
-  username?: string;
+    id: number;
+    joined_at: string;
+    last_seen: string;
+    online: boolean;
+    picture_url: string;
+    privilege: string;
+    username: string;
 }
 
 /**
@@ -108,1219 +108,602 @@ export type PostAuthLogout200 = { [key: string]: unknown };
 export type GetHealth200 = { [key: string]: unknown };
 
 export type GetImageParams = {
-/**
- * Filter by name prefix
- */
-prefix?: string;
-/**
- * JSON array of tags
- */
-tags?: string;
-/**
- * Filter by username
- */
-username?: string;
-/**
- * Filter by user ID
- */
-user_id?: number;
-/**
- * Pagination cursor
- */
-cursor?: string;
-/**
- * Limit results
- */
-limit?: number;
+    /**
+     * Filter by name prefix
+     */
+    prefix?: string;
+    /**
+     * Comma separated or array
+     */
+    tags?: string[];
+    /**
+     * Filter by username
+     */
+    username?: string;
+    /**
+     * Filter by user ID
+     */
+    user_id?: number;
+    /**
+     * Pagination cursor
+     */
+    cursor?: number;
+    /**
+     * Limit results
+     */
+    limit?: number;
 };
 
 export type DeleteImageParams = {
-/**
- * Filter by name prefix
- */
-prefix?: string;
-/**
- * JSON array of tags
- */
-tags?: string;
-/**
- * Filter by username
- */
-username?: string;
-/**
- * Filter by user ID
- */
-user_id?: number;
-};
-
-export type PostImageUploadBody = {
-  /** Image metadata (JSON) */
-  metadata: string;
-  /** Image file */
-  file: Blob;
+    /**
+     * Filter by name prefix
+     */
+    prefix?: string;
+    /**
+     * JSON array of tags
+     */
+    tags?: string;
+    /**
+     * Filter by username
+     */
+    username?: string;
+    /**
+     * Filter by user ID
+     */
+    user_id?: number;
 };
 
 export type PostImageUploadBatchBody = {
-  /** Batch metadata (JSON) */
-  metadata: string;
-  /** Image files (multiple) */
-  files: Blob;
+    /** Batch metadata (JSON) */
+    metadata: string;
+    /** Files to upload */
+    files: Blob;
 };
 
 export type GetLogParams = {
-/**
- * Pagination cursor
- */
-cursor?: number;
-/**
- * Limit results
- */
-limit?: number;
+    /**
+     * Pagination cursor
+     */
+    cursor?: number;
+    /**
+     * Limit results
+     */
+    limit?: number;
 };
 
 export type GetTagsParams = {
-/**
- * Pagination cursor
- */
-cursor?: number;
-/**
- * Limit results
- */
-limit?: number;
+    /**
+     * Tag name prefix
+     */
+    prefix?: string;
+    /**
+     * Pagination cursor
+     */
+    cursor?: number;
+    /**
+     * Limit results
+     */
+    limit?: number;
 };
-
-export type postAuthLoginResponse200 = {
-  data: LoginResponse
-  status: 200
-}
-
-export type postAuthLoginResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type postAuthLoginResponse500 = {
-  data: ErrorResponse
-  status: 500
-}
-
-export type postAuthLoginResponseSuccess = (postAuthLoginResponse200) & {
-  headers: Headers;
-};
-export type postAuthLoginResponseError = (postAuthLoginResponse400 | postAuthLoginResponse500) & {
-  headers: Headers;
-};
-
-export type postAuthLoginResponse = (postAuthLoginResponseSuccess | postAuthLoginResponseError)
 
 export const getPostAuthLoginUrl = () => {
-
-
-
-
-  return `/auth/login`
-}
+    return `/auth/login`;
+};
 
 /**
  * Logs in a user, generating a JWT token.
  * @summary Login a user
  */
-export const postAuthLogin = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof serverFetch>[1]): Promise<postAuthLoginResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Array.isArray(h)) return Object.fromEntries(h);
-    return h;
-  };
-return serverFetch<postAuthLoginResponse>(getPostAuthLoginUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(authRequestBody)
-  }
-);}
-
-
-
-export type postAuthLogoutResponse200 = {
-  data: PostAuthLogout200
-  status: 200
-}
-
-export type postAuthLogoutResponseSuccess = (postAuthLogoutResponse200) & {
-  headers: Headers;
+export const postAuthLogin = async (
+    authRequestBody: AuthRequestBody,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<LoginResponse> => {
+    const getHeaders = (
+        h?: NonNullable<RequestInit["headers"]>,
+    ): Record<string, string | readonly string[]> => {
+        if (!h) return {};
+        if (h instanceof Headers) return Object.fromEntries(h.entries());
+        if (Array.isArray(h)) return Object.fromEntries(h);
+        return h;
+    };
+    return serverMutator<LoginResponse>(getPostAuthLoginUrl(), {
+        ...options,
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...getHeaders(options?.headers),
+        },
+        body: JSON.stringify(authRequestBody),
+    });
 };
-;
-
-export type postAuthLogoutResponse = (postAuthLogoutResponseSuccess)
 
 export const getPostAuthLogoutUrl = () => {
-
-
-
-
-  return `/auth/logout`
-}
+    return `/auth/logout`;
+};
 
 /**
  * Logs out a user, deleting the JWT token.
  * @summary Logout a user
  */
-export const postAuthLogout = async ( options?: Parameters<typeof serverFetch>[1]): Promise<postAuthLogoutResponse> => {
-
-  return serverFetch<postAuthLogoutResponse>(getPostAuthLogoutUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-export type postAuthRegisterResponse200 = {
-  data: LoginResponse
-  status: 200
-}
-
-export type postAuthRegisterResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type postAuthRegisterResponse500 = {
-  data: ErrorResponse
-  status: 500
-}
-
-export type postAuthRegisterResponseSuccess = (postAuthRegisterResponse200) & {
-  headers: Headers;
+export const postAuthLogout = async (
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<PostAuthLogout200> => {
+    return serverMutator<PostAuthLogout200>(getPostAuthLogoutUrl(), {
+        ...options,
+        method: "POST",
+    });
 };
-export type postAuthRegisterResponseError = (postAuthRegisterResponse400 | postAuthRegisterResponse500) & {
-  headers: Headers;
-};
-
-export type postAuthRegisterResponse = (postAuthRegisterResponseSuccess | postAuthRegisterResponseError)
 
 export const getPostAuthRegisterUrl = () => {
-
-
-
-
-  return `/auth/register`
-}
+    return `/auth/register`;
+};
 
 /**
  * Registers a new user, generating a JWT token.
  * @summary Register a user
  */
-export const postAuthRegister = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof serverFetch>[1]): Promise<postAuthRegisterResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Array.isArray(h)) return Object.fromEntries(h);
-    return h;
-  };
-return serverFetch<postAuthRegisterResponse>(getPostAuthRegisterUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(authRequestBody)
-  }
-);}
-
-
-
-export type getHealthResponse200 = {
-  data: GetHealth200
-  status: 200
-}
-
-export type getHealthResponse500 = {
-  data: ErrorResponse
-  status: 500
-}
-
-export type getHealthResponseSuccess = (getHealthResponse200) & {
-  headers: Headers;
+export const postAuthRegister = async (
+    authRequestBody: AuthRequestBody,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<LoginResponse> => {
+    const getHeaders = (
+        h?: NonNullable<RequestInit["headers"]>,
+    ): Record<string, string | readonly string[]> => {
+        if (!h) return {};
+        if (h instanceof Headers) return Object.fromEntries(h.entries());
+        if (Array.isArray(h)) return Object.fromEntries(h);
+        return h;
+    };
+    return serverMutator<LoginResponse>(getPostAuthRegisterUrl(), {
+        ...options,
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...getHeaders(options?.headers),
+        },
+        body: JSON.stringify(authRequestBody),
+    });
 };
-export type getHealthResponseError = (getHealthResponse500) & {
-  headers: Headers;
-};
-
-export type getHealthResponse = (getHealthResponseSuccess | getHealthResponseError)
 
 export const getGetHealthUrl = () => {
-
-
-
-
-  return `/health`
-}
+    return `/health`;
+};
 
 /**
  * Returns "ok" if server is up and running
  * @summary Health check
  */
-export const getHealth = async ( options?: Parameters<typeof serverFetch>[1]): Promise<getHealthResponse> => {
-
-  return serverFetch<getHealthResponse>(getGetHealthUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getImageResponse200 = {
-  data: ImageResponse[]
-  status: 200
-}
-
-export type getImageResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type getImageResponseSuccess = (getImageResponse200) & {
-  headers: Headers;
-};
-export type getImageResponseError = (getImageResponse400) & {
-  headers: Headers;
+export const getHealth = async (
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<GetHealth200> => {
+    return serverMutator<GetHealth200>(getGetHealthUrl(), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getImageResponse = (getImageResponseSuccess | getImageResponseError)
+export const getGetImageUrl = (params?: GetImageParams) => {
+    const normalizedParams = new URLSearchParams();
 
-export const getGetImageUrl = (params?: GetImageParams,) => {
-  const normalizedParams = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined) {
+            normalizedParams.append(
+                key,
+                value === null ? "null" : String(value),
+            );
+        }
+    });
 
-  Object.entries(params || {}).forEach(([key, value]) => {
+    const stringifiedParams = normalizedParams.toString();
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/image?${stringifiedParams}` : `/image`
-}
+    return stringifiedParams.length > 0
+        ? `/image?${stringifiedParams}`
+        : `/image`;
+};
 
 /**
  * Returns a list of images matching the query parameters
  * @summary Gets images by query
  */
-export const getImage = async (params?: GetImageParams, options?: Parameters<typeof serverFetch>[1]): Promise<getImageResponse> => {
-
-  return serverFetch<getImageResponse>(getGetImageUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type deleteImageResponse204 = {
-  data: void
-  status: 204
-}
-
-export type deleteImageResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type deleteImageResponse401 = {
-  data: ErrorResponse
-  status: 401
-}
-
-export type deleteImageResponse403 = {
-  data: ErrorResponse
-  status: 403
-}
-
-export type deleteImageResponseSuccess = (deleteImageResponse204) & {
-  headers: Headers;
-};
-export type deleteImageResponseError = (deleteImageResponse400 | deleteImageResponse401 | deleteImageResponse403) & {
-  headers: Headers;
+export const getImage = async (
+    params?: GetImageParams,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<ImageMetadata[]> => {
+    return serverMutator<ImageMetadata[]>(getGetImageUrl(params), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type deleteImageResponse = (deleteImageResponseSuccess | deleteImageResponseError)
+export const getDeleteImageUrl = (params?: DeleteImageParams) => {
+    const normalizedParams = new URLSearchParams();
 
-export const getDeleteImageUrl = (params?: DeleteImageParams,) => {
-  const normalizedParams = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined) {
+            normalizedParams.append(
+                key,
+                value === null ? "null" : String(value),
+            );
+        }
+    });
 
-  Object.entries(params || {}).forEach(([key, value]) => {
+    const stringifiedParams = normalizedParams.toString();
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/image?${stringifiedParams}` : `/image`
-}
+    return stringifiedParams.length > 0
+        ? `/image?${stringifiedParams}`
+        : `/image`;
+};
 
 /**
  * Deletes multiple images matching the query parameters (requires authentication)
  * @summary Deletes images by query
  */
-export const deleteImage = async (params?: DeleteImageParams, options?: Parameters<typeof serverFetch>[1]): Promise<deleteImageResponse> => {
-
-  return serverFetch<deleteImageResponse>(getDeleteImageUrl(params),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-export type getImageHashHashResponse200 = {
-  data: ImageResponse
-  status: 200
-}
-
-export type getImageHashHashResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getImageHashHashResponseSuccess = (getImageHashHashResponse200) & {
-  headers: Headers;
-};
-export type getImageHashHashResponseError = (getImageHashHashResponse404) & {
-  headers: Headers;
+export const deleteImage = async (
+    params?: DeleteImageParams,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<void> => {
+    return serverMutator<void>(getDeleteImageUrl(params), {
+        ...options,
+        method: "DELETE",
+    });
 };
 
-export type getImageHashHashResponse = (getImageHashHashResponseSuccess | getImageHashHashResponseError)
-
-export const getGetImageHashHashUrl = (hash: string,) => {
-
-
-
-
-  return `/image/hash/${hash}`
-}
+export const getGetImageHashHashUrl = (hash: string) => {
+    return `/image/hash/${hash}`;
+};
 
 /**
  * Returns image metadata by its hash
  * @summary Gets image metadata by its unique hash
  */
-export const getImageHashHash = async (hash: string, options?: Parameters<typeof serverFetch>[1]): Promise<getImageHashHashResponse> => {
-
-  return serverFetch<getImageHashHashResponse>(getGetImageHashHashUrl(hash),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getImageIdIdResponse200 = {
-  data: ImageResponse
-  status: 200
-}
-
-export type getImageIdIdResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getImageIdIdResponseSuccess = (getImageIdIdResponse200) & {
-  headers: Headers;
-};
-export type getImageIdIdResponseError = (getImageIdIdResponse404) & {
-  headers: Headers;
+export const getImageHashHash = async (
+    hash: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<ImageMetadata> => {
+    return serverMutator<ImageMetadata>(getGetImageHashHashUrl(hash), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getImageIdIdResponse = (getImageIdIdResponseSuccess | getImageIdIdResponseError)
-
-export const getGetImageIdIdUrl = (id: number,) => {
-
-
-
-
-  return `/image/id/${id}`
-}
+export const getGetImageIdIdUrl = (id: number) => {
+    return `/image/id/${id}`;
+};
 
 /**
  * Returns image metadata by its numeric ID
  * @summary Gets image metadata by ID
  */
-export const getImageIdId = async (id: number, options?: Parameters<typeof serverFetch>[1]): Promise<getImageIdIdResponse> => {
-
-  return serverFetch<getImageIdIdResponse>(getGetImageIdIdUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getImageRawHashHashResponse200 = {
-  data: Blob
-  status: 200
-}
-
-export type getImageRawHashHashResponse404 = {
-  data: Blob
-  status: 404
-}
-
-export type getImageRawHashHashResponseSuccess = (getImageRawHashHashResponse200) & {
-  headers: Headers;
-};
-export type getImageRawHashHashResponseError = (getImageRawHashHashResponse404) & {
-  headers: Headers;
+export const getImageIdId = async (
+    id: number,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<ImageMetadata> => {
+    return serverMutator<ImageMetadata>(getGetImageIdIdUrl(id), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getImageRawHashHashResponse = (getImageRawHashHashResponseSuccess | getImageRawHashHashResponseError)
-
-export const getGetImageRawHashHashUrl = (hash: string,) => {
-
-
-
-
-  return `/image/raw/hash/${hash}`
-}
+export const getGetImageRawHashHashUrl = (hash: string) => {
+    return `/image/raw/hash/${hash}`;
+};
 
 /**
  * Returns the raw image file by its hash
  * @summary Gets raw image by hash
  */
-export const getImageRawHashHash = async (hash: string, options?: Parameters<typeof serverFetch>[1]): Promise<getImageRawHashHashResponse> => {
-
-  return serverFetch<getImageRawHashHashResponse>(getGetImageRawHashHashUrl(hash),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getImageRawNameResponse200 = {
-  data: Blob
-  status: 200
-}
-
-export type getImageRawNameResponse404 = {
-  data: Blob
-  status: 404
-}
-
-export type getImageRawNameResponseSuccess = (getImageRawNameResponse200) & {
-  headers: Headers;
-};
-export type getImageRawNameResponseError = (getImageRawNameResponse404) & {
-  headers: Headers;
+export const getImageRawHashHash = async (
+    hash: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<Blob> => {
+    return serverMutator<Blob>(getGetImageRawHashHashUrl(hash), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getImageRawNameResponse = (getImageRawNameResponseSuccess | getImageRawNameResponseError)
-
-export const getGetImageRawNameUrl = (name: string,) => {
-
-
-
-
-  return `/image/raw/${name}`
-}
+export const getGetImageRawNameUrl = (name: string) => {
+    return `/image/raw/${name}`;
+};
 
 /**
  * Returns the raw image file by its name
  * @summary Gets raw image by name
  */
-export const getImageRawName = async (name: string, options?: Parameters<typeof serverFetch>[1]): Promise<getImageRawNameResponse> => {
-
-  return serverFetch<getImageRawNameResponse>(getGetImageRawNameUrl(name),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getImageThumbHashHashResponse200 = {
-  data: Blob
-  status: 200
-}
-
-export type getImageThumbHashHashResponse404 = {
-  data: Blob
-  status: 404
-}
-
-export type getImageThumbHashHashResponseSuccess = (getImageThumbHashHashResponse200) & {
-  headers: Headers;
-};
-export type getImageThumbHashHashResponseError = (getImageThumbHashHashResponse404) & {
-  headers: Headers;
+export const getImageRawName = async (
+    name: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<Blob> => {
+    return serverMutator<Blob>(getGetImageRawNameUrl(name), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getImageThumbHashHashResponse = (getImageThumbHashHashResponseSuccess | getImageThumbHashHashResponseError)
-
-export const getGetImageThumbHashHashUrl = (hash: string,) => {
-
-
-
-
-  return `/image/thumb/hash/${hash}`
-}
+export const getGetImageThumbHashHashUrl = (hash: string) => {
+    return `/image/thumb/hash/${hash}`;
+};
 
 /**
  * Returns the raw thumbnail image file by its hash
  * @summary Gets raw image thumbnail by hash
  */
-export const getImageThumbHashHash = async (hash: string, options?: Parameters<typeof serverFetch>[1]): Promise<getImageThumbHashHashResponse> => {
-
-  return serverFetch<getImageThumbHashHashResponse>(getGetImageThumbHashHashUrl(hash),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getImageThumbNameResponse200 = {
-  data: Blob
-  status: 200
-}
-
-export type getImageThumbNameResponse404 = {
-  data: Blob
-  status: 404
-}
-
-export type getImageThumbNameResponseSuccess = (getImageThumbNameResponse200) & {
-  headers: Headers;
-};
-export type getImageThumbNameResponseError = (getImageThumbNameResponse404) & {
-  headers: Headers;
+export const getImageThumbHashHash = async (
+    hash: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<Blob> => {
+    return serverMutator<Blob>(getGetImageThumbHashHashUrl(hash), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getImageThumbNameResponse = (getImageThumbNameResponseSuccess | getImageThumbNameResponseError)
-
-export const getGetImageThumbNameUrl = (name: string,) => {
-
-
-
-
-  return `/image/thumb/${name}`
-}
+export const getGetImageThumbNameUrl = (name: string) => {
+    return `/image/thumb/${name}`;
+};
 
 /**
  * Returns the raw thumbnail image file by its name
  * @summary Gets raw image thumbnail by name
  */
-export const getImageThumbName = async (name: string, options?: Parameters<typeof serverFetch>[1]): Promise<getImageThumbNameResponse> => {
-
-  return serverFetch<getImageThumbNameResponse>(getGetImageThumbNameUrl(name),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type postImageUploadResponse200 = {
-  data: ImageResponse
-  status: 200
-}
-
-export type postImageUploadResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type postImageUploadResponse401 = {
-  data: ErrorResponse
-  status: 401
-}
-
-export type postImageUploadResponse500 = {
-  data: ErrorResponse
-  status: 500
-}
-
-export type postImageUploadResponseSuccess = (postImageUploadResponse200) & {
-  headers: Headers;
+export const getImageThumbName = async (
+    name: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<Blob> => {
+    return serverMutator<Blob>(getGetImageThumbNameUrl(name), {
+        ...options,
+        method: "GET",
+    });
 };
-export type postImageUploadResponseError = (postImageUploadResponse400 | postImageUploadResponse401 | postImageUploadResponse500) & {
-  headers: Headers;
-};
-
-export type postImageUploadResponse = (postImageUploadResponseSuccess | postImageUploadResponseError)
 
 export const getPostImageUploadUrl = () => {
-
-
-
-
-  return `/image/upload`
-}
-
-/**
- * Uploads an image with metadata (requires authentication)
- * @summary Uploads a single image
- */
-export const postImageUpload = async (postImageUploadBody: PostImageUploadBody, options?: Parameters<typeof serverFetch>[1]): Promise<postImageUploadResponse> => {
-    const formData = new FormData();
-formData.append(`metadata`, postImageUploadBody.metadata);
-formData.append(`file`, postImageUploadBody.file);
-
-  return serverFetch<postImageUploadResponse>(getPostImageUploadUrl(),
-  {
-    ...options,
-    method: 'POST'
-    ,
-    body: formData
-  }
-);}
-
-
-
-export type postImageUploadBatchResponse200 = {
-  data: ImagePostBatchResponse
-  status: 200
-}
-
-export type postImageUploadBatchResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type postImageUploadBatchResponse401 = {
-  data: ErrorResponse
-  status: 401
-}
-
-export type postImageUploadBatchResponse500 = {
-  data: ErrorResponse
-  status: 500
-}
-
-export type postImageUploadBatchResponseSuccess = (postImageUploadBatchResponse200) & {
-  headers: Headers;
-};
-export type postImageUploadBatchResponseError = (postImageUploadBatchResponse400 | postImageUploadBatchResponse401 | postImageUploadBatchResponse500) & {
-  headers: Headers;
+    return `/image/upload`;
 };
 
-export type postImageUploadBatchResponse = (postImageUploadBatchResponseSuccess | postImageUploadBatchResponseError)
+export const postImageUpload = async (
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<ImageMetadata> => {
+    return serverMutator<ImageMetadata>(getPostImageUploadUrl(), {
+        ...options,
+        method: "POST",
+    });
+};
 
 export const getPostImageUploadBatchUrl = () => {
-
-
-
-
-  return `/image/upload/batch`
-}
+    return `/image/upload/batch`;
+};
 
 /**
  * Uploads multiple images with metadata in a single request (requires authentication)
+ * !!Swagger to openapi conversion doesn't support file arrays
  * @summary Uploads multiple images in batch
  */
-export const postImageUploadBatch = async (postImageUploadBatchBody: PostImageUploadBatchBody, options?: Parameters<typeof serverFetch>[1]): Promise<postImageUploadBatchResponse> => {
+export const postImageUploadBatch = async (
+    postImageUploadBatchBody: PostImageUploadBatchBody,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<ImagePostBatchResponse> => {
     const formData = new FormData();
-formData.append(`metadata`, postImageUploadBatchBody.metadata);
-formData.append(`files`, postImageUploadBatchBody.files);
+    formData.append(`metadata`, postImageUploadBatchBody.metadata);
+    formData.append(`files`, postImageUploadBatchBody.files);
 
-  return serverFetch<postImageUploadBatchResponse>(getPostImageUploadBatchUrl(),
-  {
-    ...options,
-    method: 'POST'
-    ,
-    body: formData
-  }
-);}
-
-
-
-export type getImageNameResponse200 = {
-  data: ImageResponse
-  status: 200
-}
-
-export type getImageNameResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getImageNameResponseSuccess = (getImageNameResponse200) & {
-  headers: Headers;
-};
-export type getImageNameResponseError = (getImageNameResponse404) & {
-  headers: Headers;
+    return serverMutator<ImagePostBatchResponse>(getPostImageUploadBatchUrl(), {
+        ...options,
+        method: "POST",
+        body: formData,
+    });
 };
 
-export type getImageNameResponse = (getImageNameResponseSuccess | getImageNameResponseError)
-
-export const getGetImageNameUrl = (name: string,) => {
-
-
-
-
-  return `/image/${name}`
-}
+export const getGetImageNameUrl = (name: string) => {
+    return `/image/${name}`;
+};
 
 /**
  * Returns image metadata by its name
  * @summary Gets image metadata by name
  */
-export const getImageName = async (name: string, options?: Parameters<typeof serverFetch>[1]): Promise<getImageNameResponse> => {
-
-  return serverFetch<getImageNameResponse>(getGetImageNameUrl(name),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type deleteImageNameResponse204 = {
-  data: void
-  status: 204
-}
-
-export type deleteImageNameResponse401 = {
-  data: ErrorResponse
-  status: 401
-}
-
-export type deleteImageNameResponse403 = {
-  data: ErrorResponse
-  status: 403
-}
-
-export type deleteImageNameResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type deleteImageNameResponseSuccess = (deleteImageNameResponse204) & {
-  headers: Headers;
-};
-export type deleteImageNameResponseError = (deleteImageNameResponse401 | deleteImageNameResponse403 | deleteImageNameResponse404) & {
-  headers: Headers;
+export const getImageName = async (
+    name: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<ImageMetadata> => {
+    return serverMutator<ImageMetadata>(getGetImageNameUrl(name), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type deleteImageNameResponse = (deleteImageNameResponseSuccess | deleteImageNameResponseError)
-
-export const getDeleteImageNameUrl = (name: string,) => {
-
-
-
-
-  return `/image/${name}`
-}
+export const getDeleteImageNameUrl = (name: string) => {
+    return `/image/${name}`;
+};
 
 /**
  * Deletes an image by its name (requires authentication)
  * @summary Deletes an image by name
  */
-export const deleteImageName = async (name: string, options?: Parameters<typeof serverFetch>[1]): Promise<deleteImageNameResponse> => {
-
-  return serverFetch<deleteImageNameResponse>(getDeleteImageNameUrl(name),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-export type getLogResponse200 = {
-  data: EntryResponse[]
-  status: 200
-}
-
-export type getLogResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type getLogResponseSuccess = (getLogResponse200) & {
-  headers: Headers;
-};
-export type getLogResponseError = (getLogResponse400) & {
-  headers: Headers;
+export const deleteImageName = async (
+    name: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<void> => {
+    return serverMutator<void>(getDeleteImageNameUrl(name), {
+        ...options,
+        method: "DELETE",
+    });
 };
 
-export type getLogResponse = (getLogResponseSuccess | getLogResponseError)
+export const getGetLogUrl = (params?: GetLogParams) => {
+    const normalizedParams = new URLSearchParams();
 
-export const getGetLogUrl = (params?: GetLogParams,) => {
-  const normalizedParams = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined) {
+            normalizedParams.append(
+                key,
+                value === null ? "null" : String(value),
+            );
+        }
+    });
 
-  Object.entries(params || {}).forEach(([key, value]) => {
+    const stringifiedParams = normalizedParams.toString();
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/log?${stringifiedParams}` : `/log`
-}
+    return stringifiedParams.length > 0 ? `/log?${stringifiedParams}` : `/log`;
+};
 
 /**
  * Returns a paginated list of audit log entries
  * @summary Gets audit log entries
  */
-export const getLog = async (params?: GetLogParams, options?: Parameters<typeof serverFetch>[1]): Promise<getLogResponse> => {
-
-  return serverFetch<getLogResponse>(getGetLogUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getTagsResponse200 = {
-  data: TagResponse[]
-  status: 200
-}
-
-export type getTagsResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type getTagsResponseSuccess = (getTagsResponse200) & {
-  headers: Headers;
-};
-export type getTagsResponseError = (getTagsResponse400) & {
-  headers: Headers;
+export const getLog = async (
+    params?: GetLogParams,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<EntryResponse[]> => {
+    return serverMutator<EntryResponse[]>(getGetLogUrl(params), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getTagsResponse = (getTagsResponseSuccess | getTagsResponseError)
+export const getGetTagsUrl = (params?: GetTagsParams) => {
+    const normalizedParams = new URLSearchParams();
 
-export const getGetTagsUrl = (params?: GetTagsParams,) => {
-  const normalizedParams = new URLSearchParams();
+    Object.entries(params || {}).forEach(([key, value]) => {
+        if (value !== undefined) {
+            normalizedParams.append(
+                key,
+                value === null ? "null" : String(value),
+            );
+        }
+    });
 
-  Object.entries(params || {}).forEach(([key, value]) => {
+    const stringifiedParams = normalizedParams.toString();
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/tags?${stringifiedParams}` : `/tags`
-}
+    return stringifiedParams.length > 0
+        ? `/tags?${stringifiedParams}`
+        : `/tags`;
+};
 
 /**
  * Returns a paginated list of all tags
  * @summary Gets all tags
  */
-export const getTags = async (params?: GetTagsParams, options?: Parameters<typeof serverFetch>[1]): Promise<getTagsResponse> => {
-
-  return serverFetch<getTagsResponse>(getGetTagsUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type postTagsResponse201 = {
-  data: TagResponse
-  status: 201
-}
-
-export type postTagsResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type postTagsResponse401 = {
-  data: ErrorResponse
-  status: 401
-}
-
-export type postTagsResponse500 = {
-  data: ErrorResponse
-  status: 500
-}
-
-export type postTagsResponseSuccess = (postTagsResponse201) & {
-  headers: Headers;
+export const getTags = async (
+    params?: GetTagsParams,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<TagResponse[]> => {
+    return serverMutator<TagResponse[]>(getGetTagsUrl(params), {
+        ...options,
+        method: "GET",
+    });
 };
-export type postTagsResponseError = (postTagsResponse400 | postTagsResponse401 | postTagsResponse500) & {
-  headers: Headers;
-};
-
-export type postTagsResponse = (postTagsResponseSuccess | postTagsResponseError)
 
 export const getPostTagsUrl = () => {
-
-
-
-
-  return `/tags`
-}
+    return `/tags`;
+};
 
 /**
  * Creates a new tag (requires authentication)
  * @summary Creates a new tag
  */
-export const postTags = async (tagPostRequest: TagPostRequest, options?: Parameters<typeof serverFetch>[1]): Promise<postTagsResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Array.isArray(h)) return Object.fromEntries(h);
-    return h;
-  };
-return serverFetch<postTagsResponse>(getPostTagsUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(tagPostRequest)
-  }
-);}
-
-
-
-export type postTagsBatchResponse200 = {
-  data: TagBatchResponse
-  status: 200
-}
-
-export type postTagsBatchResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type postTagsBatchResponse401 = {
-  data: ErrorResponse
-  status: 401
-}
-
-export type postTagsBatchResponse500 = {
-  data: ErrorResponse
-  status: 500
-}
-
-export type postTagsBatchResponseSuccess = (postTagsBatchResponse200) & {
-  headers: Headers;
+export const postTags = async (
+    tagPostRequest: TagPostRequest,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<TagResponse> => {
+    const getHeaders = (
+        h?: NonNullable<RequestInit["headers"]>,
+    ): Record<string, string | readonly string[]> => {
+        if (!h) return {};
+        if (h instanceof Headers) return Object.fromEntries(h.entries());
+        if (Array.isArray(h)) return Object.fromEntries(h);
+        return h;
+    };
+    return serverMutator<TagResponse>(getPostTagsUrl(), {
+        ...options,
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...getHeaders(options?.headers),
+        },
+        body: JSON.stringify(tagPostRequest),
+    });
 };
-export type postTagsBatchResponseError = (postTagsBatchResponse400 | postTagsBatchResponse401 | postTagsBatchResponse500) & {
-  headers: Headers;
-};
-
-export type postTagsBatchResponse = (postTagsBatchResponseSuccess | postTagsBatchResponseError)
 
 export const getPostTagsBatchUrl = () => {
-
-
-
-
-  return `/tags/batch`
-}
+    return `/tags/batch`;
+};
 
 /**
  * Creates multiple tags in a single request (requires authentication)
  * @summary Creates multiple tags in batch
  */
-export const postTagsBatch = async (tagPostBatchRequest: TagPostBatchRequest, options?: Parameters<typeof serverFetch>[1]): Promise<postTagsBatchResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Array.isArray(h)) return Object.fromEntries(h);
-    return h;
-  };
-return serverFetch<postTagsBatchResponse>(getPostTagsBatchUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(tagPostBatchRequest)
-  }
-);}
-
-
-
-export type getUserIdIdResponse200 = {
-  data: UserDataResponse
-  status: 200
-}
-
-export type getUserIdIdResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type getUserIdIdResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getUserIdIdResponseSuccess = (getUserIdIdResponse200) & {
-  headers: Headers;
-};
-export type getUserIdIdResponseError = (getUserIdIdResponse400 | getUserIdIdResponse404) & {
-  headers: Headers;
+export const postTagsBatch = async (
+    tagPostBatchRequest: TagPostBatchRequest,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<TagBatchResponse> => {
+    const getHeaders = (
+        h?: NonNullable<RequestInit["headers"]>,
+    ): Record<string, string | readonly string[]> => {
+        if (!h) return {};
+        if (h instanceof Headers) return Object.fromEntries(h.entries());
+        if (Array.isArray(h)) return Object.fromEntries(h);
+        return h;
+    };
+    return serverMutator<TagBatchResponse>(getPostTagsBatchUrl(), {
+        ...options,
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...getHeaders(options?.headers),
+        },
+        body: JSON.stringify(tagPostBatchRequest),
+    });
 };
 
-export type getUserIdIdResponse = (getUserIdIdResponseSuccess | getUserIdIdResponseError)
-
-export const getGetUserIdIdUrl = (id: number,) => {
-
-
-
-
-  return `/user/id/${id}`
-}
+export const getGetUserIdIdUrl = (id: number) => {
+    return `/user/id/${id}`;
+};
 
 /**
  * Returns user profile by numeric ID
  * @summary Gets user by ID
  */
-export const getUserIdId = async (id: number, options?: Parameters<typeof serverFetch>[1]): Promise<getUserIdIdResponse> => {
-
-  return serverFetch<getUserIdIdResponse>(getGetUserIdIdUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getUserMeResponse200 = {
-  data: UserDataResponse
-  status: 200
-}
-
-export type getUserMeResponse401 = {
-  data: ErrorResponse
-  status: 401
-}
-
-export type getUserMeResponseSuccess = (getUserMeResponse200) & {
-  headers: Headers;
+export const getUserIdId = async (
+    id: number,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<UserDataResponse> => {
+    return serverMutator<UserDataResponse>(getGetUserIdIdUrl(id), {
+        ...options,
+        method: "GET",
+    });
 };
-export type getUserMeResponseError = (getUserMeResponse401) & {
-  headers: Headers;
-};
-
-export type getUserMeResponse = (getUserMeResponseSuccess | getUserMeResponseError)
 
 export const getGetUserMeUrl = () => {
-
-
-
-
-  return `/user/me`
-}
+    return `/user/me`;
+};
 
 /**
  * Returns the authenticated user's profile (requires authentication)
  * @summary Gets current user profile
  */
-export const getUserMe = async ( options?: Parameters<typeof serverFetch>[1]): Promise<getUserMeResponse> => {
-
-  return serverFetch<getUserMeResponse>(getGetUserMeUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export type getUserNameResponse200 = {
-  data: UserDataResponse
-  status: 200
-}
-
-export type getUserNameResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getUserNameResponseSuccess = (getUserNameResponse200) & {
-  headers: Headers;
-};
-export type getUserNameResponseError = (getUserNameResponse404) & {
-  headers: Headers;
+export const getUserMe = async (
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<UserDataResponse> => {
+    return serverMutator<UserDataResponse>(getGetUserMeUrl(), {
+        ...options,
+        method: "GET",
+    });
 };
 
-export type getUserNameResponse = (getUserNameResponseSuccess | getUserNameResponseError)
-
-export const getGetUserNameUrl = (name: string,) => {
-
-
-
-
-  return `/user/${name}`
-}
+export const getGetUserNameUrl = (name: string) => {
+    return `/user/${name}`;
+};
 
 /**
  * Returns user profile by username
  * @summary Gets user by username
  */
-export const getUserName = async (name: string, options?: Parameters<typeof serverFetch>[1]): Promise<getUserNameResponse> => {
-
-  return serverFetch<getUserNameResponse>(getGetUserNameUrl(name),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
+export const getUserName = async (
+    name: string,
+    options?: Parameters<typeof serverMutator>[1],
+): Promise<UserDataResponse> => {
+    return serverMutator<UserDataResponse>(getGetUserNameUrl(name), {
+        ...options,
+        method: "GET",
+    });
+};

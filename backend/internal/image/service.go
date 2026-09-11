@@ -30,7 +30,7 @@ type ImageService interface {
 	GetByID(id uint) (*ImageMetadata, error)
 	GetByName(name string) (*ImageMetadata, error)
 	GetByHash(hash string) (*ImageMetadata, error)
-	Search(query *Query) ([]ImageMetadata, error)
+	Search(ctx context.Context, query *Query) ([]ImageMetadata, error)
 
 	DeleteByID(ctx context.Context, user *userpkg.User, id uint) error
 	DeleteByName(ctx context.Context, user *userpkg.User, name string) error
@@ -79,8 +79,25 @@ func (s *imageService) GetByHash(hash string) (*ImageMetadata, error) {
 	return toServiceError(s.images.GetByHash(hash))
 }
 
-func (s *imageService) Search(query *Query) ([]ImageMetadata, error) {
-	return s.images.Search(query)
+func (s *imageService) Search(ctx context.Context, query *Query) ([]ImageMetadata, error) {
+	if query.Prefix == "" {
+		return s.images.Search(query)
+	}
+
+	ids, err := s.embeddings.Search(ctx, query.Prefix, uint(query.Limit))
+	if err != nil {
+		return nil, fmt.Errorf("failed to search embeddings: %v", err)
+	}
+
+	imgs := make([]ImageMetadata, len(ids), 0)
+	for id := range ids {
+		img, err := s.GetByID(uint(id))
+		if err != nil {
+			continue
+		}
+		imgs = append(imgs, *img)
+	}
+	return imgs, nil
 }
 
 func (s *imageService) Count(query *Query) (int64, error) {

@@ -3,7 +3,6 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,7 +18,6 @@ class Settings(BaseSettings):
 
     # Service
     host: str = "0.0.0.0"
-    port: int = 8000
     log_level: str = "INFO"
 
     # CLIP Model
@@ -51,6 +49,7 @@ def get_device(settings: Settings | None = None) -> str:
     if settings.clip_device == "auto":
         try:
             import torch
+
             return "cuda" if torch.cuda.is_available() else "cpu"
         except ImportError:
             return "cpu"

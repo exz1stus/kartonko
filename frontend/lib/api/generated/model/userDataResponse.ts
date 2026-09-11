@@ -7,11 +7,11 @@
  */
 
 export interface UserDataResponse {
-  id?: number;
-  joined_at?: string;
-  last_seen?: string;
-  online?: boolean;
-  picture_url?: string;
-  privilege?: string;
-  username?: string;
+  id: number;
+  joined_at: string;
+  last_seen: string;
+  online: boolean;
+  picture_url: string;
+  privilege: string;
+  username: string;
 }

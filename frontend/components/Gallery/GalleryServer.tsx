@@ -1,9 +1,9 @@
 "use server";
-import ImageMetadata from "@/lib/image/dto";
+import { ImageMetadata } from "@/lib/api/generated/model";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
-import { serverFetch } from "@/lib/api/serverMutator";
-import { constructQueryString } from "@/lib/query";
+import { getImage } from "@/lib/api/generated/server";
+import ApiError from "@/lib/api/error";
 
 interface Props {
     initialFetchSize?: number;
@@ -12,7 +12,7 @@ interface Props {
 
 const INITIAL_QUERY: SearchQuery = {
     prefix: "",
-    withTags: [],
+    tags: [],
 };
 
 const GalleryServer = async ({
@@ -23,20 +23,18 @@ const GalleryServer = async ({
         intialFetchSize: number,
         initialQuery: SearchQuery,
     ) => {
-        const queryString = constructQueryString(initialQuery);
-        const response = await serverFetch(
-            `/image?${queryString}&limit=${intialFetchSize}`,
+        const response = await getImage(
             {
-                cache: "no-store",
+                ...initialQuery,
+                limit: intialFetchSize,
             },
+            { cache: "no-store" },
         );
 
-        if (!response.ok) throw new Error("Failed to fetch images");
         console.log(
             `server intial fetching cursor ${0} limit ${intialFetchSize}`,
         );
-        const data: ImageMetadata[] = await response.json();
-        return data;
+        return response;
     };
 
     let images: ImageMetadata[] = [];

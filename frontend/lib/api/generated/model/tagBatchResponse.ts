@@ -10,5 +10,5 @@ import type { TagResponse } from './tagResponse';
 
 export interface TagBatchResponse {
   failures?: TagBatchResponseFailuresItem[];
-  successes?: TagResponse[];
+  successes: TagResponse[];
 }

@@ -170,7 +170,7 @@ func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error
 	for i, item := range items {
 		resp[i] = toResponse(item)
 	}
-	RespondJSON(c, http.StatusOK, gin.H{"items": resp})
+	RespondJSON(c, http.StatusOK, resp)
 }
 
 func HandleStream(c *gin.Context, fetch func(ctx context.Context) (io.ReadCloser, any, error), contentType func(any) string) {

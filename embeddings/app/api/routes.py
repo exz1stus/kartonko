@@ -113,7 +113,7 @@ async def generate_embeddings_batch(
 
 @router.put("/vectors/{image_id}")
 async def upsert_embedding(
-    image_id: str,
+    image_id: int,
     embedding: list[float],
     vector_repository: Annotated[VectorRepository, Depends(get_vector_repository)],
 ):
@@ -124,7 +124,7 @@ async def upsert_embedding(
 
 @router.delete("/vectors/{image_id}")
 async def delete_embedding(
-    image_id: str,
+    image_id: int,
     vector_repository: Annotated[VectorRepository, Depends(get_vector_repository)],
 ):
     """Delete embedding from Qdrant."""

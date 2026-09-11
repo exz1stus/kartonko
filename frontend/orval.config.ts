@@ -12,7 +12,10 @@ export default defineConfig({
             override: {
                 mutator: {
                     path: "./lib/api/clientMutator.ts",
-                    name: "clientFetch",
+                    name: "clientMutator",
+                },
+                fetch: {
+                    includeHttpResponseReturnType: false,
                 },
             },
         },
@@ -27,7 +30,10 @@ export default defineConfig({
             override: {
                 mutator: {
                     path: "./lib/api/serverMutator.ts",
-                    name: "serverFetch",
+                    name: "serverMutator",
+                },
+                fetch: {
+                    includeHttpResponseReturnType: false,
                 },
             },
         },

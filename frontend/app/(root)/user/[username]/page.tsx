@@ -1,29 +1,13 @@
 "use server";
-import { isModerator, UserData } from "@/lib/user/user";
-import { notFound } from "next/navigation";
+import { isModerator } from "@/lib/user/user";
+import { forbidden, notFound } from "next/navigation";
 import Image from "next/image";
 import GalleryServer from "@/components/Gallery/GalleryServer";
 import TimeField from "@/components/TimeField";
-import { serverFetch } from "@/lib/api/serverMutator";
 import EditUser from "@/components/EditUser";
-import { getLoggedUserServer } from "@/lib/user/user.server";
-
-const fetchUser = async (username: string): Promise<UserData> => {
-    try {
-        const res = await serverFetch(`/user/${username}`);
-
-        if (!res.ok) return notFound();
-
-        const user = await res.json();
-
-        if (!user) return notFound();
-
-        return user;
-    } catch (err) {
-        console.error("Failed to fetch user:", err);
-        return notFound();
-    }
-};
+import { getUserName } from "@/lib/api/generated/server";
+import { UserDataResponse } from "@/lib/api/generated/model";
+import { getLoggedUser } from "@/lib/user/user.server";
 
 const UserPage = async ({
     params,
@@ -31,9 +15,9 @@ const UserPage = async ({
     params: Promise<{ username: string }>;
 }) => {
     const { username } = await params;
-    ``;
-    let user = await fetchUser(username);
-    let loggedUser = await getLoggedUserServer();
+
+    let user = await getUserName(username);
+    let loggedUser = await getLoggedUser();
 
     let hasEditPermission =
         loggedUser !== null &&
@@ -115,7 +99,7 @@ const UserPage = async ({
                 <div className="flex-3 min-w-0">
                     <GalleryServer
                         initialFetchSize={50}
-                        initialQuery={{ userID: user.id }}
+                        initialQuery={{ user_id: user.id }}
                     />
                 </div>
             </div>

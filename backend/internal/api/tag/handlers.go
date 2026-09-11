@@ -3,7 +3,6 @@ package tag
 import (
 	"net/http"
 	"server/internal/api/helpers"
-	"server/internal/errors"
 	tagpkg "server/internal/tag"
 	"server/internal/user"
 
@@ -34,6 +33,7 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Description Returns a paginated list of all tags
 // @Tags tags
 // @Produce json
+// @Param prefix query string false "Tag name prefix"
 // @Param cursor query int false "Pagination cursor"
 // @Param limit query int false "Limit results" default(20)
 // @Success 200 {array} TagResponse
@@ -41,7 +41,8 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Router /tags [get]
 func (h *Handler) GetTags(c *gin.Context) {
 	helpers.HandleList(c, func(cursor, limit int) ([]TagResponse, error) {
-		tags, err := h.tagService.SearchPrefix("", cursor, limit)
+		prefix := c.Query("prefix")
+		tags, err := h.tagService.SearchPrefix(prefix, cursor, limit)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +67,7 @@ func (h *Handler) PostTag(c *gin.Context) {
 	helpers.WithUser(c, func(usr *user.User) error {
 		var req TagPostRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			return errors.ErrBadRequest
+			return helpers.WrapBadRequest(err)
 		}
 
 		t, err := h.tagService.Create(c.Request.Context(), req.ToServiceCreate(), usr.ID)
@@ -96,7 +97,7 @@ func (h *Handler) PostTagsBatch(c *gin.Context) {
 	helpers.WithUser(c, func(usr *user.User) error {
 		var req TagPostBatchRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			return errors.ErrBadRequest
+			return helpers.WrapBadRequest(err)
 		}
 
 		names := req.ToServiceCreate()

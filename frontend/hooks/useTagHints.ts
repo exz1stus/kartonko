@@ -2,7 +2,7 @@
 import { useCallback } from "react";
 import { noUse } from "@/app/AudioEffects";
 import useTypingHints from "@/hooks/useTypingHints";
-import { apiFetch } from "@/lib/api/clientMutator";
+import { getTags } from "@/lib/api/generated/client";
 
 interface Props {
     tags: string[];
@@ -12,32 +12,21 @@ interface Props {
     onQueryMatchedHint?: () => void;
 }
 
-interface TagHintResponse {
-    tags: { name: string }[];
-}
-
 const useTagHints = ({ tags, query, setQuery, onQueryMatchedHint }: Props) => {
     const FETCH_HINTS_LIMIT = 10;
 
     const fetchTagHint = useCallback(
         async (tagQuery: string) => {
-            try {
-                const response = await apiFetch(
-                    `/tags?query=${tagQuery}&limit=${FETCH_HINTS_LIMIT}`,
-                );
-                if (response.ok) {
-                    const responseJson: TagHintResponse = await response.json();
-                    let parsedTags = responseJson.tags.map((tag) => tag.name);
-                    if (parsedTags.length === 0) return [];
-                    const hints = parsedTags.filter(
-                        (tag) => !tags.some((t) => t === tag),
-                    );
-                    return hints;
-                }
-                return [];
-            } catch (error) {
-                return [];
-            }
+            const res = await getTags({
+                prefix: tagQuery,
+                limit: FETCH_HINTS_LIMIT,
+            });
+            let parsedTags = res.map((tag) => tag.name);
+            if (parsedTags.length === 0) return [];
+            const hints = parsedTags.filter(
+                (tag) => !tags.some((t) => t === tag),
+            );
+            return hints;
         },
         [tags],
     );

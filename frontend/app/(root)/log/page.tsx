@@ -1,11 +1,12 @@
 "use client";
-import { LogEntryData } from "@/lib/log";
 import LogEntry from "@/components/Log/LogEntry";
 import AuthGuard from "@/components/AuthGuard";
 import Scrollbar from "@/components/template/Scrollbar";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
-import { apiFetch } from "@/lib/api/clientMutator";
 import { Loader } from "lucide-react";
+import { getLog } from "@/lib/api/generated/client";
+import { EntryResponse } from "@/lib/api/generated/model/entryResponse";
+import { notFound } from "next/navigation";
 
 interface SearchLogEntriesQuery {}
 
@@ -14,16 +15,13 @@ const Log = () => {
         query: SearchLogEntriesQuery,
         cursor: number,
         limit: number,
-    ) => {
-        const res = await apiFetch(`/log?cursor=${cursor}&limit=${limit}`);
-        const data = await res.json();
-
-        return data;
+    ): Promise<EntryResponse[]> => {
+        return getLog({ cursor, limit });
     };
 
     const { items, loading, reachedEnd, sentinelRef } = useInfiniteScroll<
         SearchLogEntriesQuery,
-        LogEntryData
+        EntryResponse
     >({
         fetchFn: fetchEntries,
         query: {},

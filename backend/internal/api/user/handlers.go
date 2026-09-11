@@ -58,7 +58,7 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id64, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		errors.RespondError(c, errors.ErrBadRequest)
+		errors.RespondError(c, helpers.WrapBadRequest(err))
 		return
 	}
 	helpers.HandleGet(c, func() (*userpkg.User, error) {

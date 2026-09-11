@@ -46,12 +46,9 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app
 
-# Expose port
-EXPOSE 8000
+EXPOSE $EMBEDDINGS_PORT
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/v1/health', timeout=5)"
+    CMD python -c "import httpx; httpx.get('http://localhost:${EMBEDDINGS_PORT}/api/v1/health', timeout=5)"
 
-# Run
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${EMBEDDINGS_PORT}"]

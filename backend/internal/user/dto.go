@@ -2,8 +2,8 @@ package user
 
 import "time"
 
-func NewUserResponse(u *User) UserDataResponse {
-	res := UserDataResponse{
+func NewUserData(u *User) UserResponce {
+	res := UserResponce{
 		ID:        u.ID,
 		Username:  u.Username,
 		Privilege: u.Privilege.String(),
@@ -18,7 +18,7 @@ func NewUserResponse(u *User) UserDataResponse {
 	return res
 }
 
-type UserDataResponse struct {
+type UserResponce struct {
 	ID         uint
 	Username   string
 	Privilege  string
@@ -26,4 +26,4 @@ type UserDataResponse struct {
 	JoinedAt   string
 	LastSeen   string
 	Online     bool
-} // @name UserInternalResponse
+}

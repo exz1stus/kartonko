@@ -2,21 +2,21 @@
 import { LogEntryData } from "@/lib/log";
 import UserElement from "../UserElement";
 import TimeField from "../TimeField";
-import { UserData } from "@/lib/user/user";
-import { getUserById } from "@/lib/user/user.client";
+import { UserDataResponse } from "@/lib/api/generated/model";
 import { useEffect, useState } from "react";
 
 import ImageCreated from "./ImageCreated";
 import ImageDeleted from "./ImageDeleted";
 import TagCreated from "./TagCreated";
 import TagDeleted from "./TagDeleted";
+import { getUserIdId } from "@/lib/api/generated/client";
 
 interface Props {
     data: LogEntryData;
 }
 
 const LogEntry = ({ data }: Props) => {
-    const [user, setUser] = useState<UserData | null>(null);
+    const [user, setUser] = useState<UserDataResponse | null>(null);
     const entryComponents: Record<
         string,
         (data: LogEntryData) => React.JSX.Element
@@ -36,7 +36,7 @@ const LogEntry = ({ data }: Props) => {
     );
 
     const fetchUser = async () => {
-        const user = await getUserById(data.user_id);
+        const user = await getUserIdId(data.user_id);
         setUser(user);
     };
 

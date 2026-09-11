@@ -124,7 +124,7 @@ func (h *Handler) GetGoogleCallback(c *gin.Context) {
 
 	res := &LoginResponse{
 		Token: tokenString,
-		User:  userpkg.NewUserResponse(user),
+		User:  userpkg.NewUserData(user),
 	}
 
 	c.JSON(http.StatusOK, res)

@@ -12,9 +12,9 @@ export type GetImageParams = {
  */
 prefix?: string;
 /**
- * JSON array of tags
+ * Comma separated or array
  */
-tags?: string;
+tags?: string[];
 /**
  * Filter by username
  */
@@ -26,7 +26,7 @@ user_id?: number;
 /**
  * Pagination cursor
  */
-cursor?: string;
+cursor?: number;
 /**
  * Limit results
  */

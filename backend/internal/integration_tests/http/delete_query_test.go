@@ -40,7 +40,7 @@ func TestDeleteImageByQuery(t *testing.T) {
 		},
 		{
 			name:            "moderator delete by tag success",
-			query:           `tags=["dog"]`,
+			query:           `tags=dog`,
 			userID:          1,
 			wantStatus:      http.StatusOK,
 			expectedDeleted: 2,
@@ -61,7 +61,7 @@ func TestDeleteImageByQuery(t *testing.T) {
 		},
 		{
 			name:            "user mixed ownership delete failure",
-			query:           `tags=["dog"]`,
+			query:           `tags=dog`,
 			userID:          2,
 			wantStatus:      http.StatusForbidden,
 			expectedDeleted: 0,
@@ -119,16 +119,9 @@ func TestDeleteImageByQuery(t *testing.T) {
 				t.Errorf("failed retrieving store images count: %v", err)
 			}
 
-			afterDbCount, err := ctx.ImageService.Count(nil)
-			if err != nil {
-				t.Errorf("failed retrieving db images count: %v", err)
-			}
+			expectedRemaining := int64(initialCount - tt.expectedDeleted)
 
-			expectedRemaining := initialCount - tt.expectedDeleted
-
-			if afterDbCount != int64(expectedRemaining) {
-				t.Errorf("expected %d db rows remaining, got %d", expectedRemaining, afterDbCount)
-			}
+			ctx.AssertImageCount(expectedRemaining)
 
 			expectedStoreRemaining := (initialCount - tt.expectedDeleted) * 2
 			if afterStoreCount != expectedStoreRemaining {

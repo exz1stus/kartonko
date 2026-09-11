@@ -63,7 +63,7 @@ class QdrantVectorRepository(VectorRepository):
             logger.info(f"Created collection '{self.settings.qdrant_collection}'")
 
     def upsert(
-        self, vector: list[float], id: str, payload: dict[str, Any] | None = None
+        self, vector: list[float], id: int, payload: dict[str, Any] | None = None
     ) -> None:
         """Insert or update a vector."""
         point = PointStruct(id=id, vector=vector, payload=payload or {"id": id})
@@ -74,7 +74,7 @@ class QdrantVectorRepository(VectorRepository):
     def upsert_batch(
         self,
         vectors: list[list[float]],
-        ids: list[str],
+        ids: list[int],
         payloads: list[dict[str, Any]] | None = None,
     ) -> None:
         """Batch upsert multiple vectors."""
@@ -86,7 +86,7 @@ class QdrantVectorRepository(VectorRepository):
             collection_name=self.settings.qdrant_collection, points=points
         )
 
-    def delete(self, id: str) -> None:
+    def delete(self, id: int) -> None:
         """Delete a vector by ID."""
         self.client.delete(
             collection_name=self.settings.qdrant_collection, points_selector=[id]

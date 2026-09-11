@@ -1,97 +1,45 @@
 "use client";
-import { useState } from "react";
-import { apiFetch } from "@/lib/api/clientMutator";
+import { useRef, useState } from "react";
+import {
+    ImageBatchUploadRequest,
+    ImageUploadRequest,
+    uploadImage,
+    uploadImageBatch,
+} from "@/lib/image/upload";
 
-export interface ApiResponse {
-    error?: string;
-    message?: string;
-}
-
-interface ImageUploadRequest {
-    name: string;
-    tags: string[];
-    newTags: string[];
-}
-
-interface ImageBatchUploadRequest {
-    data: ImageUploadRequest[];
-    common_tags: string[];
-}
-
-const useUploadImage = () => {
+export const useUploadImage = () => {
+    const loadingRef = useRef(false);
     const [loading, setLoading] = useState(false);
 
-    const uploadImage = async (
-        imageMetadata: ImageUploadRequest,
-        file: File,
-        captchaToken: string,
-    ): Promise<boolean> => {
-        if (loading) return false;
+    const runUpload = async <T>(upload: () => Promise<T>): Promise<T> => {
+        if (loadingRef.current) throw new Error("Upload already in progress");
+        loadingRef.current = true;
         setLoading(true);
-
-        const formData = new FormData();
-
-        formData.append("metadata", JSON.stringify(imageMetadata));
-        formData.append("file", file);
-        formData.append("cf-turnstile-response", captchaToken);
-
-        const response = await apiFetch(`/upload`, {
-            method: "POST",
-            body: formData,
-            credentials: "include",
-        });
-
+        let res: T;
         try {
-            setLoading(false);
-            const parsedResponse: ApiResponse = await response.json();
-            if (parsedResponse?.error) {
-                throw new Error(parsedResponse.error);
-            }
-
-            return true;
+            res = await upload();
         } finally {
+            loadingRef.current = false;
             setLoading(false);
         }
+        return res;
     };
 
-    const uploadImageBatch = async (
+    const handleUploadImage = (
+        metadata: ImageUploadRequest,
+        file: File,
+        captchaToken: string,
+    ) => runUpload(() => uploadImage(metadata, file, captchaToken));
+
+    const handleUploadBatch = (
         batchMetadata: ImageBatchUploadRequest,
         files: File[],
         captchaToken: string,
-    ): Promise<boolean> => {
-        if (loading) return false;
-        setLoading(true);
+    ) => runUpload(() => uploadImageBatch(batchMetadata, files, captchaToken));
 
-        const formData = new FormData();
-
-        formData.append("metadata", JSON.stringify(batchMetadata));
-        files.forEach((file) => {
-            formData.append("files", file);
-        });
-        formData.append("cf-turnstile-response", captchaToken);
-
-        try {
-            const response = await apiFetch(`/upload/batch`, {
-                method: "POST",
-                body: formData,
-                credentials: "include",
-            });
-
-            const parsedResponse: ApiResponse = await response.json();
-            if (parsedResponse?.error) {
-                throw new Error(parsedResponse.error);
-            }
-            return true;
-        } finally {
-            setLoading(false);
-        }
+    return {
+        uploadImage: handleUploadImage,
+        uploadImageBatch: handleUploadBatch,
+        loading,
     };
-
-    return { uploadImageBatch, uploadImage, loading };
-};
-
-export {
-    type ImageUploadRequest,
-    type ImageBatchUploadRequest,
-    useUploadImage,
 };

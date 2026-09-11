@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDebounce } from "use-debounce";
 
 export const useTypingHints = (
@@ -62,6 +62,7 @@ export const useTypingHints = (
                 setSelectedIndex(0);
                 setHints(fetchedHints);
             } catch (error) {
+                console.error(error);
                 if (currentRequestId === requestIdRef.current) {
                     hideHint();
                 }
@@ -89,7 +90,7 @@ export const useTypingHints = (
     }, [query]);
 
     useEffect(() => {
-        if (hints.length == 1 && query == hints[0]) onQueryMatchedHint?.();
+        if (hints.length === 1 && query === hints[0]) onQueryMatchedHint?.();
     }, [currentHint, query, onQueryMatchedHint, hints]);
 
     return {

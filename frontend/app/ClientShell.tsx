@@ -16,7 +16,7 @@ const ClientShell = ({ children }: { children: React.ReactNode }) => {
                     <AlertDialogProvider>
                         <body
                             className="grid grid-rows-[auto_1fr] bg-image bg-surface-10 h-screen overflow-hidden"
-                            //TODO: Add bg image
+                            // TODO: Add bg image
                             // style={{
                             //     backgroundImage: `url(${process.env.NEXT_PUBLIC_API_ORIGIN}/image/raw/bg)`,
                             // }}

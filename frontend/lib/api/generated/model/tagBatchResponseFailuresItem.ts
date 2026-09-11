@@ -7,6 +7,6 @@
  */
 
 export type TagBatchResponseFailuresItem = {
-  error?: string;
-  name?: string;
+  error: string;
+  name: string;
 };

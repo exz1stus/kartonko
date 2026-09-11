@@ -13,6 +13,10 @@ func RespondImage(c *gin.Context, img *image.ImageMetadata) {
 	c.JSON(http.StatusOK, NewImageResponse(img))
 }
 
+func RespondImageCreated(c *gin.Context, img *image.ImageMetadata) {
+	c.JSON(http.StatusCreated, NewImageResponse(img))
+}
+
 func RespondImages(c *gin.Context, images []image.ImageMetadata) {
 	response := make([]ImageResponse, len(images))
 	for i, img := range images {

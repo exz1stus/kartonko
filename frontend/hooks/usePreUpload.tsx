@@ -2,75 +2,21 @@
 import { useRouter, usePathname } from "next/navigation";
 import useUploadStore from "./useUploadStore";
 import { getUploadSize } from "./useUploadStore";
-import isAllowed from "@/lib/image/allowedFormats";
 import { toast } from "sonner";
-import { hashFile } from "@/lib/image/image";
-import { existsOnServer } from "@/lib/image/image.client";
 import ProgressBarToast from "@/components/ProgressBarToast";
-import pLimit from "p-limit";
-import { sanitizeName } from "@/lib/sanitizeName";
-import { isUploadSizeValid } from "@/lib/image/imageUpload";
+import { isUploadSizeValid } from "@/lib/image/upload";
 import { useShallow } from "zustand/react/shallow";
+import {
+    checkForHashes,
+    sanitizeFormats,
+    sanitizeNames,
+} from "@/lib/image/uploadPreprocessing";
 
-const useUpload = () => {
+const usePreUpload = () => {
     const { hasFile, addFiles } = useUploadStore((state) => state);
     const storeUploadSize = useUploadStore(useShallow(getUploadSize));
     const router = useRouter();
     const pathname = usePathname();
-
-    const sanitizeNames = (files: File[]): File[] => {
-        return files.map((file) => {
-            const lastDotIndex = file.name.lastIndexOf(".");
-
-            let baseName = file.name;
-            let extension = "";
-
-            if (lastDotIndex > 0) {
-                baseName = file.name.substring(0, lastDotIndex);
-                extension = file.name.substring(lastDotIndex);
-            }
-            const cleanBaseName = sanitizeName(baseName);
-            const cleanName = `${cleanBaseName}${extension}`;
-            if (cleanName === file.name) return file;
-            return new File([file], cleanName, {
-                type: file.type,
-                lastModified: file.lastModified,
-            });
-        });
-    };
-
-    const sanitizeFormats = (files: File[]): File[] =>
-        files.filter((file) => {
-            const format = file.type.split("/")[1];
-            if (!isAllowed(format))
-                toast.error(`format ${format} is not allowed`);
-            return isAllowed(format);
-        });
-
-    const limit = pLimit(10);
-
-    const checkForHashes = async (
-        files: File[],
-        onProgress: (completed: number) => void,
-    ): Promise<File[]> => {
-        let completed = 0;
-
-        const tasks = files.map((file) =>
-            limit(async () => {
-                try {
-                    const hash = await hashFile(file);
-                    const exists = await existsOnServer(hash);
-                    return exists ? null : file;
-                } finally {
-                    completed++;
-                    onProgress(completed);
-                }
-            }),
-        );
-
-        const results = await Promise.all(tasks);
-        return results.filter((f): f is File => f !== null);
-    };
 
     const filterDuplicates = (files: File[]) => {
         return files.filter((incomingFile) => {
@@ -79,7 +25,7 @@ const useUpload = () => {
         });
     };
 
-    const handleUploadFiles = async (files: File[]) => {
+    const handleDroppedFiles = async (files: File[]) => {
         const sanitized = sanitizeNames(sanitizeFormats(files));
         const unique = filterDuplicates(sanitized);
         const batchSize = files.reduce((total, file) => total + file.size, 0);
@@ -140,7 +86,7 @@ const useUpload = () => {
         }
     };
 
-    return { handleUploadFiles };
+    return handleDroppedFiles;
 };
 
-export default useUpload;
+export default usePreUpload;

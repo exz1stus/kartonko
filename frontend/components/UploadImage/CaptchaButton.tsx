@@ -1,42 +1,60 @@
 import { cn } from "@/lib/utils";
 import { Turnstile, TurnstileInstance } from "@marsidev/react-turnstile";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     onVerifySuccess: (token: string) => void;
     verifyingText?: string;
+    resetKey?: number;
 }
 
 const CaptchaButton = ({
     children,
     verifyingText = "Verifying...",
     className,
-    type,
+    type = "button",
     disabled,
     onVerifySuccess,
+    resetKey,
     ...props
 }: Props) => {
-    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const turnstileRef = useRef<TurnstileInstance>(null);
 
-    const handleReset = () => {
-        setCaptchaToken(null);
+    useEffect(() => {
+        reset();
+    }, [resetKey]);
+
+    const reset = () => {
+        setToken(null);
         turnstileRef.current?.reset();
     };
+    const handleReset = () => {
+        reset();
+    };
+    const handleSuccess = (newToken: string) => {
+        setToken(newToken);
+        onVerifySuccess(newToken);
+    };
+    const handleError = () => {
+        reset();
+    };
+    const handleExpire = () => {
+        reset();
+    };
+
     return (
         <div className="flex flex-col items-center gap-4">
             <Turnstile
                 ref={turnstileRef}
-                className={`${captchaToken && "hidden"} flex justify-center`}
+                className={`${token && "hidden"} flex justify-center`}
                 siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                onSuccess={(token) => {
-                    setCaptchaToken(token);
-                    onVerifySuccess(token);
-                }}
-                onExpire={handleReset}
-                onError={handleReset}
+                onSuccess={handleSuccess}
+                onExpire={handleExpire}
+                onError={handleError}
+                onReset={handleReset}
             />
-            {captchaToken && (
+            {token && (
                 <button
                     {...props}
                     className={cn(
@@ -44,7 +62,7 @@ const CaptchaButton = ({
                         className,
                     )}
                     type={type}
-                    disabled={disabled || !captchaToken}
+                    disabled={disabled || !token}
                 >
                     {children}
                 </button>

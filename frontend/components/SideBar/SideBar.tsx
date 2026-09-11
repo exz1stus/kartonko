@@ -1,9 +1,9 @@
 import Dropdown from "@/components/template/Dropdown";
-import { getLoggedUserServer } from "@/lib/user/user.server";
+import { getLoggedUser } from "@/lib/user/user.server";
 import Link from "next/link";
 
 const SideBar: React.FC = async () => {
-    const user = await getLoggedUserServer();
+    const user = await getLoggedUser();
 
     const authed =
         user !== null ? (

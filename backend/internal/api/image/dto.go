@@ -24,7 +24,7 @@ type ImageResponse struct {
 	Height   uint     `json:"height"`
 	UserID   uint     `json:"user_id"`
 	Uploaded string   `json:"uploaded_at"`
-} // @name ImageResponse
+} // @name ImageMetadata
 
 type ImagePostBatchRequest struct {
 	Data       []ImagePostRequest `json:"data"`

@@ -6,9 +6,9 @@
  * OpenAPI spec version: 1.0
  */
 import type { ImageError } from './imageError';
-import type { ImageResponse } from './imageResponse';
+import type { ImageMetadata } from './imageMetadata';
 
 export interface ImagePostBatchResponse {
-  failures?: ImageError[];
-  successes?: ImageResponse[];
+  failures: ImageError[];
+  successes: ImageMetadata[];
 }

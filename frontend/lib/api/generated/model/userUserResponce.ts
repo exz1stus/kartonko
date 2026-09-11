@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface UserInternalResponse {
+export interface UserUserResponce {
   id?: number;
   joinedAt?: string;
   lastSeen?: string;

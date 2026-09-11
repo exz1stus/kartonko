@@ -1,45 +1,31 @@
 "use client";
 import { Trash2 } from "lucide-react";
-import { apiFetch } from "@/lib/api/clientMutator";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { UserData } from "@/lib/user/user";
+import { deleteImage } from "@/lib/api/generated/client";
+import { UserDataResponse } from "@/lib/api/generated/model/userDataResponse";
 
 interface Props {
-    user: UserData;
+    user: UserDataResponse;
     hasPermission: boolean;
-}
-
-interface ApiResponse {
-    error?: string;
-    message?: string;
 }
 
 const EditUser = ({ user, hasPermission }: Props) => {
     const router = useRouter();
-    const fetchDelete = useCallback(async () => {
-        const res = await apiFetch(`/image?user_id=${user.id}`, {
-            method: "DELETE",
-            credentials: "include",
-        });
-        const data: ApiResponse = await res.json();
-        if (data?.error) {
-            throw new Error(data.error);
-        }
-
-        return true;
-    }, [user]);
 
     const deleteUsersImages = useCallback(async () => {
-        toast.promise(fetchDelete, {
-            loading: "Loading...",
-            success: () => {
-                return `user images have been deleted`;
+        toast.promise(
+            deleteImage({ user_id: user.id }, { credentials: "include" }),
+            {
+                loading: "Loading...",
+                success: () => {
+                    return `user images have been deleted`;
+                },
+                error: (error) => error.message,
             },
-            error: (error) => error.message,
-        });
-    }, [fetchDelete, router]);
+        );
+    }, [user.id]);
 
     return (
         <div className="flex flex-col items-center gap-2">

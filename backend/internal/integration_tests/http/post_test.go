@@ -23,11 +23,11 @@ func TestPostImage(t *testing.T) {
 		{
 			name:       "success valid png",
 			filename:   "cat.png",
-			tags:       []string{"animal"},
+			tags:       []string{"animal", "cat", "brown"},
 			content:    testutil.MakeTestPNG(t, 10, 10),
 			mimeType:   "image/png",
 			userID:     1,
-			wantStatus: http.StatusOK,
+			wantStatus: http.StatusCreated,
 		},
 		{
 			name:       "missing name in metadata",
@@ -84,14 +84,14 @@ func TestPostImage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cleanup := setupContext(t)
 			defer cleanup()
-			ctx.SeedTags("animal")
+			ctx.SeedTags("animal", "cat", "brown")
 
 			postMetadata := imgapi.ImagePostRequest{Name: tt.filename, Tags: tt.tags}
 			rec := ctx.UploadImage(postMetadata, tt.mimeType, tt.content, tt.userID)
 			ctx.AssertStatus(rec, tt.wantStatus)
 
 			if tt.wantStatus == http.StatusOK {
-				ctx.AssertImageCount(nil, 1)
+				ctx.AssertImageCount(1)
 				ctx.AssertStorageCount(2)
 			}
 		})
@@ -111,14 +111,14 @@ func TestPostImage_TagsAdded(t *testing.T) {
 		1,
 	)
 
-	ctx.AssertStatus(rec, http.StatusOK)
+	ctx.AssertStatus(rec, http.StatusCreated)
 
 	// Verify response contains tags
 	var resp imgapi.ImageResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
-	AssertTags(t, resp.Tags, []string{"animal", "cat"}, "response")
+	ctx.AssertTags(resp.Tags, []string{"animal", "cat"}, "response")
 
 	// Verify tags are persisted in database
 	img, err := ctx.ImageService.GetByName("tagged.png")
@@ -126,8 +126,8 @@ func TestPostImage_TagsAdded(t *testing.T) {
 		t.Fatalf("failed to get image from DB: %v", err)
 	}
 	dbTags := tag.TagsToStrings(img.Tags)
-	AssertTags(t, dbTags, []string{"animal", "cat"}, "database")
+	ctx.AssertTags(dbTags, []string{"animal", "cat"}, "database")
 
-	ctx.AssertImageCount(nil, 1)
+	ctx.AssertImageCount(1)
 	ctx.AssertStorageCount(2)
 }

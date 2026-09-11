@@ -8,6 +8,10 @@
 
 export type GetTagsParams = {
 /**
+ * Tag name prefix
+ */
+prefix?: string;
+/**
  * Pagination cursor
  */
 cursor?: number;

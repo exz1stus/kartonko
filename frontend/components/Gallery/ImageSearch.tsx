@@ -1,19 +1,18 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import TagSelector, { TagSelectorRef } from "@/components/Tags/TagSelector";
-import { useHover } from "@/contexts/HoverContex";
 import { SearchQuery } from "@/lib/query";
 import NameField from "../NameField";
 import { useDebouncedCallback } from "use-debounce";
 
 export function isQueryEmpty(query: SearchQuery) {
-    return query.prefix === "" && query.withTags?.length === 0;
+    return query.prefix === "" && query.tags?.length === 0;
 }
 
 export function isQueriesEqual(query1: SearchQuery, query2: SearchQuery) {
     return (
         query1.prefix === query2.prefix &&
-        JSON.stringify(query1.withTags) === JSON.stringify(query2.withTags)
+        JSON.stringify(query1.tags) === JSON.stringify(query2.tags)
     );
 }
 
@@ -40,7 +39,7 @@ const ImageSearch: React.FC<Props> = ({
     const ref = useRef<HTMLDivElement>(null);
     const tagSelectorRef = React.useRef<TagSelectorRef>(null);
 
-    const [tags, setTags] = useState<string[]>(initialQuery?.withTags || []);
+    const [tags, setTags] = useState<string[]>(initialQuery?.tags || []);
     const [name, setName] = useState(initialQuery?.prefix ?? "");
 
     const userID = initialQuery?.userID;
@@ -53,7 +52,7 @@ const ImageSearch: React.FC<Props> = ({
         () =>
             onQueryChange({
                 prefix: name,
-                withTags: tags,
+                tags: tags,
                 userID,
             }),
         200,

@@ -6,7 +6,7 @@ import React, {
     useRef,
     useState,
 } from "react";
-import useTagHints from "./useTagHints";
+import useTagHints from "../../hooks/useTagHints";
 import TagSpan from "./TagSpan";
 import { cn } from "@/lib/utils";
 import { sanitizeName } from "@/lib/sanitizeName";

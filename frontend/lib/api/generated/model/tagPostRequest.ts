@@ -7,5 +7,5 @@
  */
 
 export interface TagPostRequest {
-  name?: string;
+  name: string;
 }

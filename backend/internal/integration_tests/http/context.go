@@ -20,6 +20,7 @@ import (
 	userpkg "server/internal/user"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 const testAuthHeader = "X-Test-User-ID"
@@ -84,28 +85,19 @@ func NewTestContext(
 
 func (c *TestContext) AssertStatus(rec *httptest.ResponseRecorder, wantStatus int) {
 	c.T.Helper()
-	if rec.Code != wantStatus {
-		c.T.Errorf("got status %d, want %d, body=%s", rec.Code, wantStatus, rec.Body.String())
-	}
+	require.Equalf(c.T, wantStatus, rec.Code, "got status %d, want %d, body=%s", rec.Code, wantStatus, rec.Body.String())
 }
 
 func (c *TestContext) AssertStorageCount(expected int) {
 	c.T.Helper()
 	files, err := c.Storage.List(c.T.Context(), "")
-	if err != nil {
-		c.T.Errorf("failed retrieving store count: %v", err)
-	}
-	if len(files) != expected {
-		c.T.Errorf("expected %d stored objects, got %d", expected, len(files))
-	}
+	require.NoErrorf(c.T, err, "failed retrieving store count: %v", err)
+	require.Equalf(c.T, expected, len(files), "expected %d stored objects, got %d", expected, len(files))
 }
 
-func AssertTags(t *testing.T, got, expected []string, context string) {
-	t.Helper()
-	if len(got) != len(expected) {
-		t.Errorf("%s: expected %d tags, got %d: %v", context, len(expected), len(got), got)
-		return
-	}
+func (c *TestContext) AssertTags(got, expected []string, context string) {
+	c.T.Helper()
+	require.Equal(c.T, got, expected)
 	for _, exp := range expected {
 		found := false
 		for _, g := range got {
@@ -114,22 +106,21 @@ func AssertTags(t *testing.T, got, expected []string, context string) {
 				break
 			}
 		}
-		if !found {
-			t.Errorf("%s: expected tag %q, got %v", context, exp, got)
-		}
+
+		require.Equal(c.T, found, true)
 	}
 }
 
-func (c *TestContext) AssertImageCount(query *imgpkg.Query, expected int64) {
+func (c *TestContext) AssertImageCount(expected int64) {
+	c.T.Helper()
+	c.AssertImageCountQuery(nil, expected)
+}
+
+func (c *TestContext) AssertImageCountQuery(query *imgpkg.Query, expected int64) {
 	c.T.Helper()
 	count, err := c.ImageService.Count(query)
-	if err != nil {
-		c.T.Errorf("failed counting images: %v", err)
-		return
-	}
-	if count != expected {
-		c.T.Errorf("expected %d images, got %d", expected, count)
-	}
+	require.NoError(c.T, err)
+	require.Equal(c.T, count, expected)
 }
 
 func buildUploadRequest(t *testing.T, url string, postMetadata imgapi.ImagePostRequest, contentType string, content []byte) *http.Request {
@@ -137,19 +128,19 @@ func buildUploadRequest(t *testing.T, url string, postMetadata imgapi.ImagePostR
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
 
-	json, err := json.Marshal(postMetadata)
-	jsonString := string(json)
-	if err != nil {
-		t.Fatalf("failed to marshall request metadata: %v", err)
-	}
-
-	if err := w.WriteField("metadata", jsonString); err != nil {
-		t.Fatalf("failed to write metadata field: %v", err)
-	}
-
-	if postMetadata.Name != "" && len(content) > 0 {
+	if len(content) > 0 && postMetadata.Name != "" {
 		if err := WriteFilePart(w, "file", postMetadata.Name, contentType, content); err != nil {
 			t.Fatalf("write file part %v", err)
+		}
+	}
+
+	if err := w.WriteField("name", postMetadata.Name); err != nil {
+		t.Fatalf("failed to write name field: %v", err)
+	}
+
+	for _, tag := range postMetadata.Tags {
+		if err := w.WriteField("tags", tag); err != nil {
+			t.Fatalf("failed to write tag field: %v", err)
 		}
 	}
 
@@ -225,7 +216,7 @@ func (c *TestContext) UploadImageWithResponse(postMetadata imgapi.ImagePostReque
 	rec := c.UploadImage(postMetadata, mimeType, content, userID)
 
 	var resp imgapi.ImageResponse
-	if rec.Code == http.StatusOK {
+	if rec.Code == http.StatusCreated {
 		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 			c.T.Fatalf("failed to unmarshal response: %v", err)
 		}
@@ -332,9 +323,7 @@ func (c *TestContext) GetThumbnail(filename string, userID uint64) *httptest.Res
 func (c *TestContext) SeedImage(postMetadata imgapi.ImagePostRequest, content []byte, userID uint64) imgapi.ImageResponse {
 	c.T.Helper()
 	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), content, userID)
-	if rec.Code != http.StatusOK {
-		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
-	}
+	require.Equal(c.T, rec.Code, http.StatusCreated, "seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
 	c.seedImageCount++
 	return resp
 }
@@ -345,9 +334,7 @@ func (c *TestContext) SeedImageByName(name string) imgapi.ImageResponse {
 		Name: name,
 	}
 	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), testutil.MakeUniqueTestPNG(c.T, 10, 10, c.seedImageCount), c.setupUserID)
-	if rec.Code != http.StatusOK {
-		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
-	}
+	require.Equal(c.T, rec.Code, http.StatusCreated, "seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
 	c.seedImageCount++
 	return resp
 }
@@ -370,9 +357,7 @@ func (c *TestContext) SeedImageByNameAndTags(name string, tags ...string) imgapi
 	}
 
 	rec, resp := c.UploadImageWithResponse(postMetadata, image.FormatPNG.MIMEType(), testutil.MakeUniqueTestPNG(c.T, 10, 10, c.seedImageCount), c.setupUserID)
-	if rec.Code != http.StatusOK {
-		c.T.Fatalf("seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
-	}
+	require.Equal(c.T, rec.Code, http.StatusCreated, "seedImage(%s) failed: status=%d body=%s", postMetadata.Name, rec.Code, rec.Body.String())
 	c.seedImageCount++
 	return resp
 }

@@ -10,17 +10,14 @@ import useUploadStore, {
 import { ArrowLeft, ArrowRight, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import useUpload from "@/hooks/useUpload";
-import {
-    ImageBatchUploadRequest,
-    ImageUploadRequest,
-    useUploadImage,
-} from "@/hooks/useUploadImage";
+import usePreUpload from "@/hooks/usePreUpload";
+import { useUploadImage } from "@/hooks/useUploadImage";
 import { toast } from "sonner";
 import CaptchaButton from "@/components/UploadImage/CaptchaButton";
 import { useShallow } from "zustand/react/shallow";
 import ImageCarousel from "@/components/UploadImage/ImageCarousel";
 import { cn } from "@/lib/utils";
+import ApiError from "@/lib/api/error";
 
 const UploadPage = () => {
     const {
@@ -34,13 +31,14 @@ const UploadPage = () => {
 
     const [imageIndex, setImageIndex] = useState(0);
     const [imageUrl, setImageUrl] = useState("");
-    // const [previousName, setPreviousName] = useState("");
 
     const prevLengthRef = useRef(storeImages.length);
 
     const { uploadImage, uploadImageBatch, loading } = useUploadImage();
-    const [captchaToken, setCaptchaToken] = useState<string | null>();
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+
+    const [captchaToken, setCaptchaToken] = useState<string | null>();
+    const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
     const globalNewTags = useUploadStore(useShallow(selectGlobalNewTags));
 
@@ -65,7 +63,7 @@ const UploadPage = () => {
         });
     };
 
-    const { handleUploadFiles } = useUpload();
+    const handleDroppedFiles = usePreUpload();
     const onSubmitCurrentImage = () => {
         removeCurrentImage();
     };
@@ -175,7 +173,7 @@ const UploadPage = () => {
                 multiple
                 accept="image/*"
                 onChange={(e) =>
-                    handleUploadFiles(Array.from(e.target.files || []))
+                    handleDroppedFiles(Array.from(e.target.files || []))
                 }
             />
         </label>
@@ -196,25 +194,60 @@ const UploadPage = () => {
 
         toast.promise(uploadImageBatch(data, files, captchaToken ?? ""), {
             loading: `Uploading batch of ${files.length} images...`,
-            success: () => {
+            success: (res) => {
                 clearStore();
-                setCaptchaToken(null);
-                return "All files uploaded successfully!";
+                if (res?.failures) {
+                    res.failures.forEach((err) =>
+                        toast.error(err.name + ": " + err.error),
+                    );
+                }
+                if (res?.successes) {
+                    return `${res?.successes.length} files uploaded successfully!`;
+                } else {
+                    toast.error(`upload failed`);
+                }
+                return "";
             },
-            error: (error) => error.message || "Batch upload failed",
+            error: (error: ApiError) => {
+                const message =
+                    typeof error.data === "object" &&
+                    error.data !== null &&
+                    "error" in error.data
+                        ? JSON.stringify(error.data.error)
+                        : error.message;
+
+                return message;
+            },
+            finally: () => {
+                setCaptchaToken(null);
+                setCaptchaResetKey((x) => x + 1);
+            },
         });
     };
 
     const submitImage = async (data: ImageUploadRequest, file: File) => {
         if (loading) return;
 
-        toast.promise<boolean>(uploadImage(data, file, captchaToken ?? ""), {
+        toast.promise(uploadImage(data, file, captchaToken ?? ""), {
             loading: "Loading...",
-            success: () => {
+            success: (res) => {
                 onSubmitCurrentImage();
-                return `image has been uploaded`;
+                return `${res.filename} has been uploaded`;
             },
-            error: (error) => error.message,
+            error: (error: ApiError) => {
+                const message =
+                    typeof error.data === "object" &&
+                    error.data !== null &&
+                    "error" in error.data
+                        ? JSON.stringify(error.data.error)
+                        : error.message;
+
+                return message;
+            },
+            finally: () => {
+                setCaptchaToken(null);
+                setCaptchaResetKey((x) => x + 1);
+            },
         });
     };
 
@@ -283,6 +316,7 @@ const UploadPage = () => {
                     onClick={onUpload}
                     disabled={loading}
                     onVerifySuccess={setCaptchaToken}
+                    resetKey={captchaResetKey}
                 >
                     {loading ? "Uploading..." : `Upload ${uploadBtnText}`}
                 </CaptchaButton>
@@ -391,7 +425,7 @@ const UploadPage = () => {
     return (
         <AuthGuard>
             <title>upload</title>
-            <DragDropZone onFilesDropped={(files) => handleUploadFiles(files)}>
+            <DragDropZone onFilesDropped={(files) => handleDroppedFiles(files)}>
                 {content}
             </DragDropZone>
         </AuthGuard>

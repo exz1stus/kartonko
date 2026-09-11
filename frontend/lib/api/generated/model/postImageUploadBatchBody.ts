@@ -9,6 +9,6 @@
 export type PostImageUploadBatchBody = {
   /** Batch metadata (JSON) */
   metadata: string;
-  /** Image files (multiple) */
+  /** Files to upload */
   files: Blob;
 };

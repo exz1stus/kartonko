@@ -5,6 +5,9 @@ definitions:
         type: string
       username:
         type: string
+    required:
+    - password
+    - username
     type: object
   EntryResponse:
     properties:
@@ -22,11 +25,21 @@ definitions:
         type: string
       user_id:
         type: integer
+    required:
+    - action
+    - affected_obj_id
+    - created_at
+    - data
+    - id
+    - object_type
+    - user_id
     type: object
   ErrorResponse:
     properties:
       error:
         type: string
+    required:
+    - error
     type: object
   ImageError:
     properties:
@@ -34,19 +47,11 @@ definitions:
         type: string
       name:
         type: string
+    required:
+    - error
+    - name
     type: object
-  ImagePostBatchResponse:
-    properties:
-      failures:
-        items:
-          $ref: '#/definitions/ImageError'
-        type: array
-      successes:
-        items:
-          $ref: '#/definitions/ImageResponse'
-        type: array
-    type: object
-  ImageResponse:
+  ImageMetadata:
     properties:
       filename:
         type: string
@@ -68,13 +73,40 @@ definitions:
         type: integer
       width:
         type: integer
+    required:
+    - filename
+    - format
+    - hash
+    - height
+    - id
+    - tags
+    - uploaded_at
+    - user_id
+    - width
+    type: object
+  ImagePostBatchResponse:
+    properties:
+      failures:
+        items:
+          $ref: '#/definitions/ImageError'
+        type: array
+      successes:
+        items:
+          $ref: '#/definitions/ImageMetadata'
+        type: array
+    required:
+    - failures
+    - successes
     type: object
   LoginResponse:
     properties:
       token:
         type: string
       user:
-        $ref: '#/definitions/UserInternalResponse'
+        $ref: '#/definitions/user.UserResponce'
+    required:
+    - token
+    - user
     type: object
   TagBatchResponse:
     properties:
@@ -85,12 +117,17 @@ definitions:
               type: string
             name:
               type: string
+          required:
+          - error
+          - name
           type: object
         type: array
       successes:
         items:
           $ref: '#/definitions/TagResponse'
         type: array
+    required:
+    - successes
     type: object
   TagPostBatchRequest:
     properties:
@@ -106,6 +143,8 @@ definitions:
     properties:
       name:
         type: string
+    required:
+    - name
     type: object
   TagResponse:
     properties:
@@ -113,6 +152,9 @@ definitions:
         type: integer
       name:
         type: string
+    required:
+    - id
+    - name
     type: object
   UserDataResponse:
     properties:
@@ -130,8 +172,16 @@ definitions:
         type: string
       username:
         type: string
+    required:
+    - id
+    - joined_at
+    - last_seen
+    - online
+    - picture_url
+    - privilege
+    - username
     type: object
-  UserInternalResponse:
+  user.UserResponce:
     properties:
       id:
         type: integer
@@ -296,10 +346,13 @@ paths:
         in: query
         name: prefix
         type: string
-      - description: JSON array of tags
+      - collectionFormat: csv
+        description: Comma separated or array
         in: query
+        items:
+          type: string
         name: tags
-        type: string
+        type: array
       - description: Filter by username
         in: query
         name: username
@@ -311,7 +364,7 @@ paths:
       - description: Pagination cursor
         in: query
         name: cursor
-        type: string
+        type: integer
       - default: 20
         description: Limit results
         in: query
@@ -324,7 +377,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/ImageResponse'
+              $ref: '#/definitions/ImageMetadata'
             type: array
         "400":
           description: Bad Request
@@ -378,7 +431,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ImageResponse'
+            $ref: '#/definitions/ImageMetadata'
         "404":
           description: Not Found
           schema:
@@ -401,7 +454,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ImageResponse'
+            $ref: '#/definitions/ImageMetadata'
         "404":
           description: Not Found
           schema:
@@ -425,7 +478,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ImageResponse'
+            $ref: '#/definitions/ImageMetadata'
         "404":
           description: Not Found
           schema:
@@ -527,28 +580,11 @@ paths:
       - images
   /image/upload:
     post:
-      consumes:
-      - multipart/form-data
-      description: Uploads an image with metadata (requires authentication)
-      parameters:
-      - description: Image metadata (JSON)
-        example: '{"name": "my-image", "tags": ["tag1", "tag2"]}'
-        in: formData
-        name: metadata
-        required: true
-        type: string
-      - description: Image file
-        in: formData
-        name: file
-        required: true
-        type: file
-      produces:
-      - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
-            $ref: '#/definitions/ImageResponse'
+            $ref: '#/definitions/ImageMetadata'
         "400":
           description: Bad Request
           schema:
@@ -561,17 +597,13 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Uploads a single image
-      tags:
-      - images
   /image/upload/batch:
     post:
       consumes:
       - multipart/form-data
-      description: Uploads multiple images with metadata in a single request (requires
-        authentication)
+      description: |-
+        Uploads multiple images with metadata in a single request (requires authentication)
+        !!Swagger to openapi conversion doesn't support file arrays
       parameters:
       - description: Batch metadata (JSON)
         example: '{"data": [{"name": "img1", "tags": ["tag1"]}, {"name": "img2", "tags":
@@ -580,7 +612,7 @@ paths:
         name: metadata
         required: true
         type: string
-      - description: Image files (multiple)
+      - description: Files to upload
         in: formData
         name: files
         required: true
@@ -588,8 +620,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/ImagePostBatchResponse'
         "400":
@@ -642,6 +674,10 @@ paths:
     get:
       description: Returns a paginated list of all tags
       parameters:
+      - description: Tag name prefix
+        in: query
+        name: prefix
+        type: string
       - description: Pagination cursor
         in: query
         name: cursor

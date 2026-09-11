@@ -166,11 +166,16 @@
                         }
                     },
                     {
-                        "description": "JSON array of tags",
+                        "description": "Comma separated or array",
                         "name": "tags",
                         "in": "query",
+                        "style": "form",
+                        "explode": false,
                         "schema": {
-                            "type": "string"
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     },
                     {
@@ -194,7 +199,7 @@
                         "name": "cursor",
                         "in": "query",
                         "schema": {
-                            "type": "string"
+                            "type": "integer"
                         }
                     },
                     {
@@ -215,7 +220,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/ImageResponse"
+                                        "$ref": "#/components/schemas/ImageMetadata"
                                     }
                                 }
                             }
@@ -339,7 +344,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ImageResponse"
+                                    "$ref": "#/components/schemas/ImageMetadata"
                                 }
                             }
                         }
@@ -382,7 +387,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ImageResponse"
+                                    "$ref": "#/components/schemas/ImageMetadata"
                                 }
                             }
                         }
@@ -574,49 +579,13 @@
         },
         "/image/upload": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Uploads an image with metadata (requires authentication)",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Uploads a single image",
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "metadata": {
-                                        "description": "Image metadata (JSON)",
-                                        "example": "{\"name\": \"my-image\", \"tags\": [\"tag1\", \"tag2\"]}",
-                                        "type": "string"
-                                    },
-                                    "file": {
-                                        "description": "Image file",
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                },
-                                "required": [
-                                    "metadata",
-                                    "file"
-                                ]
-                            }
-                        }
-                    },
-                    "required": true
-                },
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "content": {
-                            "application/json": {
+                            "*/*": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ImageResponse"
+                                    "$ref": "#/components/schemas/ImageMetadata"
                                 }
                             }
                         }
@@ -624,7 +593,7 @@
                     "400": {
                         "description": "Bad Request",
                         "content": {
-                            "application/json": {
+                            "*/*": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ErrorResponse"
                                 }
@@ -634,7 +603,7 @@
                     "401": {
                         "description": "Unauthorized",
                         "content": {
-                            "application/json": {
+                            "*/*": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ErrorResponse"
                                 }
@@ -644,7 +613,7 @@
                     "500": {
                         "description": "Internal Server Error",
                         "content": {
-                            "application/json": {
+                            "*/*": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ErrorResponse"
                                 }
@@ -661,7 +630,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Uploads multiple images with metadata in a single request (requires authentication)",
+                "description": "Uploads multiple images with metadata in a single request (requires authentication)\n!!Swagger to openapi conversion doesn't support file arrays",
                 "tags": [
                     "images"
                 ],
@@ -678,7 +647,7 @@
                                         "type": "string"
                                     },
                                     "files": {
-                                        "description": "Image files (multiple)",
+                                        "description": "Files to upload",
                                         "type": "string",
                                         "format": "binary"
                                     }
@@ -693,8 +662,8 @@
                     "required": true
                 },
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -760,7 +729,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ImageResponse"
+                                    "$ref": "#/components/schemas/ImageMetadata"
                                 }
                             }
                         }
@@ -897,6 +866,14 @@
                 ],
                 "summary": "Gets all tags",
                 "parameters": [
+                    {
+                        "description": "Tag name prefix",
+                        "name": "prefix",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "description": "Pagination cursor",
                         "name": "cursor",
@@ -1231,6 +1208,10 @@
         "schemas": {
             "AuthRequest": {
                 "type": "object",
+                "required": [
+                    "password",
+                    "username"
+                ],
                 "properties": {
                     "password": {
                         "type": "string"
@@ -1242,6 +1223,15 @@
             },
             "EntryResponse": {
                 "type": "object",
+                "required": [
+                    "action",
+                    "affected_obj_id",
+                    "created_at",
+                    "data",
+                    "id",
+                    "object_type",
+                    "user_id"
+                ],
                 "properties": {
                     "action": {
                         "type": "string"
@@ -1268,6 +1258,9 @@
             },
             "ErrorResponse": {
                 "type": "object",
+                "required": [
+                    "error"
+                ],
                 "properties": {
                     "error": {
                         "type": "string"
@@ -1276,6 +1269,10 @@
             },
             "ImageError": {
                 "type": "object",
+                "required": [
+                    "error",
+                    "name"
+                ],
                 "properties": {
                     "error": {
                         "type": "string"
@@ -1285,25 +1282,19 @@
                     }
                 }
             },
-            "ImagePostBatchResponse": {
+            "ImageMetadata": {
                 "type": "object",
-                "properties": {
-                    "failures": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/ImageError"
-                        }
-                    },
-                    "successes": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/ImageResponse"
-                        }
-                    }
-                }
-            },
-            "ImageResponse": {
-                "type": "object",
+                "required": [
+                    "filename",
+                    "format",
+                    "hash",
+                    "height",
+                    "id",
+                    "tags",
+                    "uploaded_at",
+                    "user_id",
+                    "width"
+                ],
                 "properties": {
                     "filename": {
                         "type": "string"
@@ -1337,24 +1328,56 @@
                     }
                 }
             },
+            "ImagePostBatchResponse": {
+                "type": "object",
+                "required": [
+                    "failures",
+                    "successes"
+                ],
+                "properties": {
+                    "failures": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ImageError"
+                        }
+                    },
+                    "successes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ImageMetadata"
+                        }
+                    }
+                }
+            },
             "LoginResponse": {
                 "type": "object",
+                "required": [
+                    "token",
+                    "user"
+                ],
                 "properties": {
                     "token": {
                         "type": "string"
                     },
                     "user": {
-                        "$ref": "#/components/schemas/UserInternalResponse"
+                        "$ref": "#/components/schemas/user.UserResponce"
                     }
                 }
             },
             "TagBatchResponse": {
                 "type": "object",
+                "required": [
+                    "successes"
+                ],
                 "properties": {
                     "failures": {
                         "type": "array",
                         "items": {
                             "type": "object",
+                            "required": [
+                                "error",
+                                "name"
+                            ],
                             "properties": {
                                 "error": {
                                     "type": "string"
@@ -1390,6 +1413,9 @@
             },
             "TagPostRequest": {
                 "type": "object",
+                "required": [
+                    "name"
+                ],
                 "properties": {
                     "name": {
                         "type": "string"
@@ -1398,6 +1424,10 @@
             },
             "TagResponse": {
                 "type": "object",
+                "required": [
+                    "id",
+                    "name"
+                ],
                 "properties": {
                     "id": {
                         "type": "integer"
@@ -1409,6 +1439,15 @@
             },
             "UserDataResponse": {
                 "type": "object",
+                "required": [
+                    "id",
+                    "joined_at",
+                    "last_seen",
+                    "online",
+                    "picture_url",
+                    "privilege",
+                    "username"
+                ],
                 "properties": {
                     "id": {
                         "type": "integer"
@@ -1433,7 +1472,7 @@
                     }
                 }
             },
-            "UserInternalResponse": {
+            "user.UserResponce": {
                 "type": "object",
                 "properties": {
                     "id": {

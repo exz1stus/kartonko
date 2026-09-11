@@ -9,6 +9,8 @@ import (
 
 	imgapi "server/internal/api/image"
 	"server/internal/testutil"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetImageByName(t *testing.T) {
@@ -27,15 +29,9 @@ func TestGetImageByName(t *testing.T) {
 
 		ctx.AssertStatus(rec, http.StatusOK)
 
-		if resp.ID != img.ID {
-			t.Errorf("expected ID %d, got %d", img.ID, resp.ID)
-		}
-		if resp.Filename != "test.png" {
-			t.Errorf("expected filename test.png, got %s", resp.Filename)
-		}
-		if resp.Hash != img.Hash {
-			t.Errorf("expected hash %s, got %s", img.Hash, resp.Hash)
-		}
+		require.Equal(ctx.T, img.ID, resp.ID)
+		require.Equal(ctx.T, "test.png", resp.Filename)
+		require.Equal(ctx.T, img.Hash, resp.Hash)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -73,9 +69,7 @@ func TestGetImageByHash(t *testing.T) {
 			t.Fatalf("failed to unmarshal: %v", err)
 		}
 
-		if resp.Hash != img.Hash {
-			t.Errorf("expected hash %s, got %s", img.Hash, resp.Hash)
-		}
+		require.Equal(ctx.T, img.Hash, resp.Hash)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -112,9 +106,7 @@ func TestGetImageByID(t *testing.T) {
 			t.Fatalf("failed to unmarshal: %v", err)
 		}
 
-		if resp.ID != img.ID {
-			t.Errorf("expected ID %d, got %d", img.ID, resp.ID)
-		}
+		require.Equal(ctx.T, img.ID, resp.ID)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
@@ -153,13 +145,8 @@ func TestGetRawImageByName(t *testing.T) {
 		ctx.AssertStatus(rec, http.StatusOK)
 
 		contentType := rec.Header().Get("Content-Type")
-		if contentType != "image/png" {
-			t.Errorf("expected content-type image/png, got %s", contentType)
-		}
-
-		if rec.Body.Len() == 0 {
-			t.Error("expected non-empty image body")
-		}
+		require.Equal(ctx.T, contentType, "image/png")
+		require.Greater(ctx.T, rec.Body.Len(), 0, "expected non-empty image body")
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -181,12 +168,8 @@ func TestGetRawThumbnailByName(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		rec := ctx.GetThumbnail("thumb_test.png", 1)
-
 		ctx.AssertStatus(rec, http.StatusOK)
-
-		if rec.Body.Len() == 0 {
-			t.Error("expected non-empty thumbnail body")
-		}
+		require.Greater(ctx.T, rec.Body.Len(), 0, "expected non-empty thumb body")
 	})
 
 	t.Run("not found", func(t *testing.T) {

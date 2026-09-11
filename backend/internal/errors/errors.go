@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	ErrInternalServer   = errors.New("internal server error")
 	ErrPermissionDenied = errors.New("permission denied")
 	ErrNotFound         = errors.New("not found")
 	ErrBadRequest       = errors.New("bad request")
@@ -27,6 +28,9 @@ func RespondError(c *gin.Context, err error) {
 	msg := err.Error()
 
 	switch {
+	case errors.Is(err, ErrInternalServer):
+		status = http.StatusInternalServerError
+
 	case errors.Is(err, ErrNotFound):
 		status = http.StatusNotFound
 

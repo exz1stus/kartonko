@@ -34,7 +34,7 @@ const TagElement: React.FC<Props> = ({ tag, removeTag, className }) => {
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
         };
-    }, []);
+    }, [interactive]);
 
     return (
         <div

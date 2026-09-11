@@ -7,6 +7,6 @@
  */
 
 export interface ImageError {
-  error?: string;
-  name?: string;
+  error: string;
+  name: string;
 }

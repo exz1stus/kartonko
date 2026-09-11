@@ -1,25 +1,16 @@
-import { cookies } from "next/headers";
+import ApiError from "./error";
+import parseResponse from "./parseResponse";
+import { serverFetch } from "./serverFetch";
 
-export async function serverFetch(url: string, options?: RequestInit) {
-    const cookieStore = await cookies();
-
-    const cookieHeader = cookieStore
-        .getAll()
-        .map((cookie) => `${cookie.name}=${cookie.value}`)
-        .join("; ");
-
-    const res = await fetch(`${process.env.API_LOCAL}${url}`, {
-        ...options,
-        headers: {
-            ...options?.headers,
-            Cookie: cookieHeader,
-        },
-        cache: "no-store",
-    });
-
-    if (!res.ok) {
-        throw new Error(`API request failed: ${res.status}`);
+export async function serverMutator<T>(
+    url: string,
+    options?: RequestInit,
+): Promise<T> {
+    const response = await serverFetch(url, options);
+    if (!response.ok) {
+        const data = await parseResponse(response);
+        throw new ApiError(response.status, data);
     }
 
-    return res.json();
+    return parseResponse<T>(response);
 }

@@ -43,7 +43,7 @@ func TestPostImagesBatch(t *testing.T) {
 			},
 			commonTags: []string{"animal"},
 			userID:     1,
-			wantStatus: http.StatusOK,
+			wantStatus: http.StatusCreated,
 		},
 	}
 
@@ -162,7 +162,7 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 
 	query := image.NewQueryBuilder().Prefix("dog_duplicate.png.png").Build()
 
-	ctx.AssertImageCount(query, 0)
+	ctx.AssertImageCountQuery(query, 0)
 
 	if len(res.Successes) != successCount {
 		t.Errorf("expected %d successes , got %d", successCount, len(res.Successes))

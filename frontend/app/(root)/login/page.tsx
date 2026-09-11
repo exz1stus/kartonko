@@ -15,7 +15,7 @@ export default function LoginPage() {
         if (!loading && !user) {
             login(redirectTo || undefined);
         }
-    }, [user, loading, login]);
+    }, [user, loading, login, redirectTo]);
 
     if (loading) {
         return <Loading />;
