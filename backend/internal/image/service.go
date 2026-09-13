@@ -9,6 +9,7 @@ import (
 	"server/internal/errors"
 	"server/internal/log"
 	userpkg "server/internal/user"
+	"strconv"
 
 	"gorm.io/gorm"
 )
@@ -80,24 +81,102 @@ func (s *imageService) GetByHash(hash string) (*ImageMetadata, error) {
 }
 
 func (s *imageService) Search(ctx context.Context, query *Query) ([]ImageMetadata, error) {
-	if query.Prefix == "" {
+	if !query.Semantic || query.Prefix == "" {
 		return s.images.Search(query)
 	}
 
-	ids, err := s.embeddings.Search(ctx, query.Prefix, uint(query.Limit))
+	// Fetch enough candidates to apply relational filters locally and then apply
+	// cursor pagination without changing the filename search semantics.
+	limit := query.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	results, err := s.embeddings.Search(ctx, query.Prefix, uint(limit+query.Cursor))
 	if err != nil {
-		return nil, fmt.Errorf("failed to search embeddings: %v", err)
+		return nil, fmt.Errorf("failed to search embeddings: %w", err)
 	}
 
-	imgs := make([]ImageMetadata, len(ids), 0)
-	for id := range ids {
-		img, err := s.GetByID(uint(id))
+	imgs := make([]ImageMetadata, 0, limit)
+	skipped := 0
+	for _, result := range results {
+		id, err := parseSearchResultID(result)
 		if err != nil {
 			continue
 		}
+		img, err := s.GetByID(id)
+		if err != nil {
+			continue
+		}
+		if !matchesSemanticFilters(img, query) {
+			continue
+		}
+		if skipped < query.Cursor {
+			skipped++
+			continue
+		}
 		imgs = append(imgs, *img)
+		if len(imgs) == limit {
+			break
+		}
 	}
 	return imgs, nil
+}
+
+func parseSearchResultID(result embeddingspkg.SearchResult) (uint, error) {
+	if id, ok := result.Payload["image_id"]; ok {
+		return parseImageID(id)
+	}
+	return parseImageID(result.ID)
+}
+
+func parseImageID(value any) (uint, error) {
+	switch id := value.(type) {
+	case float64:
+		if id < 0 || id != float64(uint(id)) {
+			return 0, fmt.Errorf("invalid image ID %v", value)
+		}
+		return uint(id), nil
+	case float32:
+		if id < 0 || id != float32(uint(id)) {
+			return 0, fmt.Errorf("invalid image ID %v", value)
+		}
+		return uint(id), nil
+	case int:
+		if id < 0 {
+			return 0, fmt.Errorf("invalid image ID %d", id)
+		}
+		return uint(id), nil
+	case uint:
+		return id, nil
+	case string:
+		parsed, err := strconv.ParseUint(id, 10, 0)
+		if err != nil {
+			return 0, fmt.Errorf("invalid image ID %q: %w", id, err)
+		}
+		return uint(parsed), nil
+	default:
+		return 0, fmt.Errorf("invalid image ID type %T", value)
+	}
+}
+
+func matchesSemanticFilters(img *ImageMetadata, query *Query) bool {
+	if query.User != nil && img.UserID != query.User.ID {
+		return false
+	}
+	if len(query.Tags) == 0 {
+		return true
+	}
+
+	imageTags := make(map[string]struct{}, len(img.Tags))
+	for _, tag := range img.Tags {
+		imageTags[tag.Name] = struct{}{}
+	}
+	for _, wanted := range query.Tags {
+		if _, ok := imageTags[wanted]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *imageService) Count(query *Query) (int64, error) {
@@ -202,6 +281,7 @@ func (s *imageService) DeleteByQuery(ctx context.Context, user *userpkg.User, qu
 		if err := s.objects.DeleteImageObjects(ctx, img.Hash, format.String()); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting image: %w", err))
 		}
+		// TODO: delete embeddings
 	}
 
 	if len(errs) > 0 {

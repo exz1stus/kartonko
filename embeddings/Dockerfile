@@ -38,7 +38,8 @@ COPY app ./app
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app && \
-    chown -R app:app /app
+    mkdir -p /home/app/.cache/clip && \
+    chown -R app:app /home/app /app
 USER app
 
 # Environment

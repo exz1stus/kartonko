@@ -38,6 +38,7 @@ const Gallery: React.FC<Props> = ({
         ): Promise<ImageMetadata[]> => {
             return getImage({
                 ...searchQuery,
+                semantic: true,
                 cursor: cursor,
                 limit: requestSize,
             });

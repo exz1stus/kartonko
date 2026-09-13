@@ -72,10 +72,17 @@ class ClipClient:
         self, images: list[Image.Image]
     ) -> list[list[float]]:
         """Generate normalized embeddings for multiple images."""
-        embeddings = []
-        for image in images:
-            embeddings.append(self.get_image_embedding(image))
-        return embeddings
+        if not images:
+            return []
+
+        image_input = torch.cat(
+            [self.preprocess_image(image) for image in images], dim=0
+        )
+        with torch.inference_mode():
+            image_features = self.model.encode_image(image_input)
+            image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+
+        return image_features.cpu().float().tolist()
 
     def get_text_embedding(self, text: str) -> list[float]:
         """Generate normalized embedding for a text query."""

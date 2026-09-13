@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/textproto"
 	"server/internal/api/transaction"
+	"server/internal/embedding"
 	"server/internal/image"
 	"server/internal/tag"
 	"server/internal/testutil"
@@ -145,4 +146,35 @@ func TestUpload_RejectsDuplicateHash(t *testing.T) {
 
 	require.Nil(t, img)
 	require.ErrorContains(t, err, "duplicate hash")
+}
+
+func TestSearch_SemanticUsesVectorResultIDsInRankOrder(t *testing.T) {
+	imageRepo := imageMocks.NewMockImageRepository(t)
+	imageRepo.EXPECT().
+		GetByID(uint(42)).
+		Return(&image.ImageMetadata{Model: gorm.Model{ID: 42}, Filename: "dog.png"}, nil).
+		Once()
+	imageRepo.EXPECT().
+		GetByID(uint(7)).
+		Return(&image.ImageMetadata{Model: gorm.Model{ID: 7}, Filename: "cat.png"}, nil).
+		Once()
+
+	embeddingsService := embeddingMocks.NewMockEmbeddingsService(t)
+	embeddingsService.EXPECT().
+		Search(context.Background(), "a playful pet", uint(2)).
+		Return([]embeddings.SearchResult{
+			{ID: float64(42)},
+			{ID: float64(7)},
+		}, nil).
+		Once()
+
+	service := image.NewImageService(imageRepo, nil, nil, embeddingsService, nil)
+	results, err := service.Search(context.Background(), image.NewQueryBuilder().
+		Prefix("a playful pet").
+		Semantic(true).
+		Limit(2).
+		Build())
+
+	require.NoError(t, err)
+	require.Equal(t, []uint{42, 7}, []uint{results[0].ID, results[1].ID})
 }

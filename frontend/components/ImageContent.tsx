@@ -46,7 +46,7 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                         <span className="text-3xl">
                             {image.filename}.{image.format}
                         </span>
-                        <span className="text-l text-secondary shrink-0">
+                        <span className="text-l text-secondary shrink-0 overflow-">
                             {image.hash}
                         </span>
                         <span className="text-l">

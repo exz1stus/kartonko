@@ -1,6 +1,7 @@
 """API route definitions and dependency injection."""
 
 import logging
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -18,15 +19,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# Dependency providers
-def get_clip_client(settings: Annotated[Settings, Depends(get_settings)]) -> ClipClient:
-    return ClipClient(settings)
+# Dependency providers. FastAPI calls dependencies for every request, so these
+# must be process-scoped: constructing a ClipClient per request makes its lazy
+# model load happen per request as well.
+@lru_cache(maxsize=1)
+def get_clip_client() -> ClipClient:
+    return ClipClient(get_settings())
 
 
+@lru_cache(maxsize=1)
 def get_vector_repository(
-    settings: Annotated[Settings, Depends(get_settings)],
 ) -> VectorRepository:
-    return QdrantVectorRepository(settings)
+    return QdrantVectorRepository(get_settings())
 
 
 def get_embedding_service(
@@ -137,7 +141,7 @@ async def search_by_vector(
     embedding: list[float],
     search_service: Annotated[SearchService, Depends(get_search_service)],
     limit: int = 10,
-    score_threshold: float = 0.7,
+    score_threshold: float = 0.2,
 ):
     """Search for similar images by embedding vector."""
     results = await search_service.search_by_vector(embedding, limit, score_threshold)

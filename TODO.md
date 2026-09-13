@@ -40,15 +40,18 @@ BACKEND:
 - ~~Delete image query~~
 - ~~Rewrite to service/repo~~
 
-- Cover Api with swagger
-- Generate DTOs from swagger
-- Generate Orval api methods from swagger
-- rewrite frontend methods
-- new doc frontend scalar
+- ~~Cover Api with swagger~~
+- ~~Generate DTOs from swagger~~
+- ~~Generate Orval api methods from swagger~~
+- ~~new doc frontend scalar~~
+
+-
+
+- rabbit mq upload events
+- fast upload route
 
 - From filename to hash identification, optional names
 - Boards system
-- boards references - each image has origin board - add image to board: upload as primary, add reference, add filter query
 - Api token for frontend and telegram
 - Rate limiting
     - No limits for moderator users

@@ -58,7 +58,7 @@ class VectorRepository(Protocol):
         self,
         vector: list[float],
         limit: int = 10,
-        score_threshold: float = 0.7,
+        score_threshold: float = 0.2,
         offset: int = 0,
     ) -> list[dict]:
         """Search for similar vectors with pagination."""
@@ -101,7 +101,7 @@ class SearchService(Protocol):
 
     @abstractmethod
     async def search_by_vector(
-        self, vector: list[float], limit: int = 10, score_threshold: float = 0.7
+        self, vector: list[float], limit: int = 10, score_threshold: float = 0.2
     ) -> list[dict]:
         """Search by embedding vector."""
         ...

@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 [build]
 cmd = "go build -o ./tmp/main ./cmd"
 entrypoint = "tmp/main"
-exclude_dir = ["tmp", "vendor"]
+exclude_dir = ["tmp", "vendor", "tools"]
 
 [log]
 time = true

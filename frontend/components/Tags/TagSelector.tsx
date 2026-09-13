@@ -229,10 +229,10 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                     className={cn(
                         "border-invisible inline-flex flex-wrap items-center gap-2 border w-full text-lg",
                         inputStyle,
-                        active && "bg-neutral-900 ",
+                        active && "",
                         !showList
-                            ? "rounded-md border-surface-10"
-                            : " rounded-t-md",
+                            ? " rounded-md border-surface-10"
+                            : " rounded-t-md bg-neutral-900 ",
                     )}
                 >
                     <TagSpan

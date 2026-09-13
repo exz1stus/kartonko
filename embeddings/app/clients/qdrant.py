@@ -96,20 +96,20 @@ class QdrantVectorRepository(VectorRepository):
         self,
         vector: list[float],
         limit: int = 10,
-        score_threshold: float = 0.7,
+        score_threshold: float = 0.2,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         """Search for similar vectors with pagination."""
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=self.settings.qdrant_collection,
-            query_vector=vector,
+            query=vector,
             limit=limit,
             score_threshold=score_threshold,
             offset=offset,
         )
         return [
             {"id": hit.id, "score": hit.score, "payload": hit.payload}
-            for hit in results
+            for hit in results.points
         ]
 
     def scroll(

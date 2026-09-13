@@ -22,7 +22,7 @@ class ClipSearchService(SearchService):
         self.vector_repository = vector_repository
 
     async def search_by_vector(
-        self, vector: list[float], limit: int = 10, score_threshold: float = 0.7
+        self, vector: list[float], limit: int = 10, score_threshold: float = 0.2
     ) -> list[dict]:
         """Search by embedding vector."""
         try:

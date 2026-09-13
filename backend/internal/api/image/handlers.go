@@ -287,6 +287,7 @@ func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 // @Tags images
 // @Produce json
 // @Param prefix query string false "Filter by name prefix"
+// @Param semantic query bool false "Interpret prefix as a natural-language semantic query"O
 // @Param tags query []string false "Comma separated or array" Example:"tags=animal,cat" or "tags=animal&tags=cat"
 // @Param username query string false "Filter by username"
 // @Param user_id query uint false "Filter by user ID"
@@ -342,6 +343,7 @@ func (h *Handler) DeleteImageByName(c *gin.Context) {
 // @Router /image [delete]
 func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 	helpers.WithUserAndQuery(c, h.newQueryFromContext, func(usr *user.User, query *image.Query) error {
+		query.Limit = 0
 		errs := h.imageService.DeleteByQuery(c.Request.Context(), usr, query)
 		if errs != nil {
 			hasPermissionError := false
@@ -456,11 +458,16 @@ func (h *Handler) newQueryFromContext(c *gin.Context) (*image.Query, error) {
 	}
 
 	prefix := c.Query("prefix")
+	semantic, err := strconv.ParseBool(c.DefaultQuery("semantic", "false"))
+	if err != nil {
+		return nil, helpers.WrapBadRequest(fmt.Errorf("invalid semantic value: %w", err))
+	}
 	username := c.Query("username")
 	userIDStr := c.Query("user_id")
 
 	builder := image.NewQueryBuilder().
 		Prefix(prefix).
+		Semantic(semantic).
 		Cursor(cursor).
 		Limit(limit)
 

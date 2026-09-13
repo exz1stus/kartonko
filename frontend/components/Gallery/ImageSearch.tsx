@@ -42,7 +42,7 @@ const ImageSearch: React.FC<Props> = ({
     const [tags, setTags] = useState<string[]>(initialQuery?.tags || []);
     const [name, setName] = useState(initialQuery?.prefix ?? "");
 
-    const userID = initialQuery?.userID;
+    const userID = initialQuery?.user_id;
 
     const removeTag = (tag: string) => {
         setTags(tags.filter((t) => t !== tag));
@@ -53,7 +53,7 @@ const ImageSearch: React.FC<Props> = ({
             onQueryChange({
                 prefix: name,
                 tags: tags,
-                userID,
+                user_id: userID,
             }),
         200,
     );

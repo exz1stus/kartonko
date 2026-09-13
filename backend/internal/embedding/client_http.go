@@ -160,7 +160,12 @@ func (h *httpEmbeddingClient) SearchVector(ctx context.Context, embedding []floa
 		return nil, err
 	}
 
-	searchURL := fmt.Sprintf("%s/search/vector?limit=%d&score_threshold=0.7", h.baseURL, limit)
+	// Text-to-image CLIP similarities are much lower than near-duplicate
+	// image-to-image similarities. SearchVector is used for semantic text
+	// search; keep SearchImage at its stricter 0.7 threshold.
+	scoreThreshold := 0.1
+
+	searchURL := fmt.Sprintf("%s/search/vector?limit=%d&score_threshold=%g", h.baseURL, limit, scoreThreshold)
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
@@ -170,6 +175,7 @@ func (h *httpEmbeddingClient) SearchVector(ctx context.Context, embedding []floa
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	out := &SearchResponse{}
 	if err := h.do(req, out); err != nil {

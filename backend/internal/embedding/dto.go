@@ -12,7 +12,9 @@ type SearchRequest struct {
 }
 
 type SearchResult struct {
-	ID      string                 `json:"id"`
+	// Qdrant accepts both integer and UUID point IDs. Use any so the HTTP
+	// client can decode the integer IDs used by this application.
+	ID      any                    `json:"id"`
 	Score   float32                `json:"score"`
 	Payload map[string]interface{} `json:"payload"`
 }

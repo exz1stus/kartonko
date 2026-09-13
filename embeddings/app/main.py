@@ -6,55 +6,32 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import router
-from app.clients.clip import ClipClient
-from app.clients.qdrant import QdrantVectorRepository
+from app.api.routes import get_clip_client, get_vector_repository, router
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-# Module-level clients for lifespan management
-_clip_client: ClipClient | None = None
-_vector_repo: QdrantVectorRepository | None = None
-
-
-def get_clip_client_instance() -> ClipClient:
-    global _clip_client
-    if _clip_client is None:
-        _clip_client = ClipClient(get_settings())
-    return _clip_client
-
-
-def get_vector_repo_instance() -> QdrantVectorRepository:
-    global _vector_repo
-    if _vector_repo is None:
-        _vector_repo = QdrantVectorRepository(get_settings())
-    return _vector_repo
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global _clip_client, _vector_repo
-
-    settings = get_settings()
-
-    # Startup
+    # Create the same cached dependencies used by request handlers and warm the
+    # model once. This moves the unavoidable CUDA/model initialization cost out
+    # of the first upload request.
     logger.info("Starting CLIP Embedding Service...")
-    _clip_client = ClipClient(settings)
-    _vector_repo = QdrantVectorRepository(settings)
+    clip_client = get_clip_client()
+    vector_repo = get_vector_repository()
+    _ = clip_client.model
+    _ = vector_repo.client
     logger.info("Service started")
 
     yield
 
     # Shutdown
     logger.info("Shutting down CLIP Embedding Service...")
-    if _clip_client:
-        _clip_client.close()
-    if _vector_repo:
-        _vector_repo.close()
-    _clip_client = None
-    _vector_repo = None
+    clip_client.close()
+    vector_repo.close()
+    get_clip_client.cache_clear()
+    get_vector_repository.cache_clear()
     logger.info("Service stopped")
 
 

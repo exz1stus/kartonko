@@ -6,11 +6,12 @@ import (
 
 // Query represents an image search query
 type Query struct {
-	Prefix string
-	Tags   []string
-	User   *user.User
-	Cursor int
-	Limit  int
+	Prefix   string
+	Semantic bool
+	Tags     []string
+	User     *user.User
+	Cursor   int
+	Limit    int
 }
 
 // QueryBuilder builds image queries
@@ -29,6 +30,13 @@ func NewQueryBuilder() *QueryBuilder {
 
 func (b *QueryBuilder) Prefix(prefix string) *QueryBuilder {
 	b.query.Prefix = prefix
+	return b
+}
+
+// Semantic makes Prefix a natural-language CLIP query rather than a filename
+// prefix. It is opt-in to preserve the existing filename-search API.
+func (b *QueryBuilder) Semantic(semantic bool) *QueryBuilder {
+	b.query.Semantic = semantic
 	return b
 }
 

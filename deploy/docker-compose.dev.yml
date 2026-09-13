@@ -167,6 +167,13 @@ services:
         gpus: all
         environment:
             EMBEDDINGS_PORT: ${EMBEDDINGS_PORT}
+            PYTHONDONTWRITEBYTECODE: "1"
+        # Mount only application code: installed CUDA/PyTorch dependencies stay
+        # in the image, while Python changes trigger a Uvicorn reload.
+        volumes:
+            - ../embeddings/app:/app/app
+            - clipcache:/home/app/.cache/clip
+        command: uvicorn app.main:app --host 0.0.0.0 --port ${EMBEDDINGS_PORT} --reload --reload-dir /app/app
         depends_on:
             - qdrant
         networks:
@@ -187,6 +194,7 @@ volumes:
     pgdata:
     garagedata:
     qdrantdata:
+    clipcache:
 
 networks:
     public:
