@@ -27,9 +27,9 @@ const Masonry: React.FC<Props> = ({
     maxCols = 0,
     minCols = 1,
     colWidthPx = 200,
+    gap = 16,
 }: Props) => {
     const [columns, setColumns] = useState<Column[]>([]);
-    const [maxWidth, setMaxWidth] = useState<number>();
     const containerRef = useRef<HTMLDivElement>(null);
 
     const childrenArray = useMemo(
@@ -40,14 +40,14 @@ const Masonry: React.FC<Props> = ({
     const createColumns = (
         items: MasonryItem[],
         count: number,
-        width: number,
+        columnWidth: number,
     ) => {
         const cols = Array.from({ length: count }, () => ({
             items: [] as MasonryItem[],
             height: 0,
         }));
         items.forEach((item) => {
-            const h = item.ratio * width;
+            const h = item.ratio * columnWidth;
             const targetCol = cols.reduce(
                 (min, c) => (c.height < min.height ? c : min),
                 cols[0],
@@ -63,46 +63,42 @@ const Masonry: React.FC<Props> = ({
 
         const observer = new ResizeObserver((entries) => {
             const width = entries[0].contentRect.width;
-            if (!width) return;
-            const cols = Math.ceil(width / colWidthPx);
-            const clamped = maxCols === 0 ? cols : Math.min(cols, maxCols);
-            const finalCount = Math.min(
-                Math.max(minCols, clamped),
-                childrenArray.length,
+            if (!width || childrenArray.length === 0) {
+                setColumns([]);
+                return;
+            }
+
+            // colWidthPx is the preferred minimum width. Include the gap when
+            // deciding how many columns fit in the available content width.
+            const preferredCols = Math.floor(
+                (width + gap) / (colWidthPx + gap),
             );
-            setColumns(createColumns(childrenArray, finalCount, width));
-            setMaxWidth(width / finalCount);
-            console.log(width / finalCount);
+            const cappedCols =
+                maxCols > 0 ? Math.min(preferredCols, maxCols) : preferredCols;
+            const finalCount = Math.min(
+                childrenArray.length,
+                Math.max(1, minCols, cappedCols),
+            );
+            const columnWidth = (width - gap * (finalCount - 1)) / finalCount;
+
+            setColumns(createColumns(childrenArray, finalCount, columnWidth));
         });
 
         if (containerRef.current) observer.observe(containerRef.current);
         return () => observer.disconnect();
-    }, [childrenArray, colWidthPx, maxCols, minCols]);
-
-    const maxWidthStyle = `${maxWidth}px`;
+    }, [childrenArray, colWidthPx, gap, maxCols, minCols]);
 
     return (
         <div
             ref={containerRef}
-            className={ec(
-                "flex-row justify-center flex gap-4 w-full h-full",
-                className,
-            )}
-            style={
-                {
-                    // maxWidth: maxWidthStyle,
-                }
-            }
+            className={ec("grid w-full h-full", className)}
+            style={{
+                columnGap: `${gap}px`,
+                gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
+            }}
         >
             {columns.map((column, i) => (
-                <div
-                    key={i}
-                    className={`flex flex-col gap-5 lg:max-w-[25vw]`}
-                    style={{
-                        width: `${colWidthPx}px`,
-                        maxWidth: maxWidthStyle,
-                    }}
-                >
+                <div key={i} className="flex flex-col gap-5 min-w-0">
                     {column.items.map((item) => (
                         <React.Fragment key={item.key}>
                             {item.item}

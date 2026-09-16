@@ -76,8 +76,8 @@ const Gallery: React.FC<Props> = ({
                 <Masonry
                     className="p-4"
                     items={masonryItems}
-                    colWidthPx={250}
-                    minCols={1}
+                    colWidthPx={200}
+                    minCols={2}
                 />
             </div>
             {!reachedEnd && <div ref={sentinelRef} />}
