@@ -3,7 +3,6 @@ import { ImageMetadata } from "@/lib/api/generated/model";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
 import { getImage } from "@/lib/api/generated/server";
-import ApiError from "@/lib/api/error";
 
 interface Props {
     initialFetchSize?: number;

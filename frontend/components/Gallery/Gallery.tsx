@@ -36,9 +36,9 @@ const Gallery: React.FC<Props> = ({
             cursor: number,
             requestSize: number,
         ): Promise<ImageMetadata[]> => {
-            return getImage({
+            return await getImage({
                 ...searchQuery,
-                semantic: true,
+                // semantic: true,
                 cursor: cursor,
                 limit: requestSize,
             });
@@ -77,6 +77,7 @@ const Gallery: React.FC<Props> = ({
                     className="p-4"
                     items={masonryItems}
                     colWidthPx={250}
+                    minCols={1}
                 />
             </div>
             {!reachedEnd && <div ref={sentinelRef} />}

@@ -45,10 +45,10 @@ BACKEND:
 - ~~Generate Orval api methods from swagger~~
 - ~~new doc frontend scalar~~
 
--
-
-- rabbit mq upload events
+- add boards
+- move to rabbit mq events
 - fast upload route
+- remake log
 
 - From filename to hash identification, optional names
 - Boards system
