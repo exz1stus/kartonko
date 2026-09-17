@@ -20,4 +20,5 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 
 	protected.DELETE("", h.DeleteImagesByQuery)
 	protected.DELETE("/:name", h.DeleteImageByName)
+	protected.DELETE("/id/:id", h.DeleteImageByID)
 }

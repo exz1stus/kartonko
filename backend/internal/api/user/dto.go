@@ -16,7 +16,7 @@ type UserDataResponse struct {
 	Online     bool   `json:"online"`
 } // @name UserDataResponse
 
-func FromServiceUser(u *user.User) UserDataResponse {
+func NewUserDataResponse(u *user.User) UserDataResponse {
 	res := UserDataResponse{
 		ID:        u.ID,
 		Username:  u.Username,

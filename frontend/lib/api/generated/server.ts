@@ -5,97 +5,123 @@
  * kartonko web server
  * OpenAPI spec version: 1.0
  */
-import { serverMutator } from "../serverMutator";
+import { serverMutator } from '../serverMutator';
 export interface AuthRequest {
-    password: string;
-    username: string;
+  password: string;
+  username: string;
+}
+
+export interface BoardItemPatchRequest { [key: string]: unknown }
+
+export interface BoardItemPostRequest {
+  image_id: number;
+}
+
+export interface ImageMetadata {
+  filename: string;
+  format: string;
+  hash: string;
+  height: number;
+  id: number;
+  tags: string[];
+  uploaded_at: string;
+  user_id: number;
+  width: number;
+}
+
+export interface BoardItemResponse {
+  added: string;
+  image_metadata: ImageMetadata;
+}
+
+export interface BoardResponse {
+  description: string;
+  name: string;
 }
 
 export type EntryResponseData = { [key: string]: unknown };
 
 export interface EntryResponse {
-    action: string;
-    affected_obj_id: number;
-    created_at: string;
-    data: EntryResponseData;
-    id: number;
-    object_type: string;
-    user_id: number;
+  action: string;
+  affected_obj_id: number;
+  created_at: string;
+  data: EntryResponseData;
+  id: number;
+  object_type: string;
+  user_id: number;
 }
 
 export interface ErrorResponse {
-    error: string;
+  error: string;
 }
 
 export interface ImageError {
-    error: string;
-    name: string;
-}
-
-export interface ImageMetadata {
-    filename: string;
-    format: string;
-    hash: string;
-    height: number;
-    id: number;
-    tags: string[];
-    uploaded_at: string;
-    user_id: number;
-    width: number;
+  error: string;
+  name: string;
 }
 
 export interface ImagePostBatchResponse {
-    failures: ImageError[];
-    successes: ImageMetadata[];
+  failures: ImageError[];
+  successes: ImageMetadata[];
 }
 
 export interface UserUserResponce {
-    id?: number;
-    joinedAt?: string;
-    lastSeen?: string;
-    online?: boolean;
-    pictureURL?: string;
-    privilege?: string;
-    username?: string;
+  id?: number;
+  joinedAt?: string;
+  lastSeen?: string;
+  online?: boolean;
+  pictureURL?: string;
+  privilege?: string;
+  username?: string;
 }
 
 export interface LoginResponse {
-    token: string;
-    user: UserUserResponce;
+  token: string;
+  user: UserUserResponce;
 }
 
 export type TagBatchResponseFailuresItem = {
-    error: string;
-    name: string;
+  error: string;
+  name: string;
 };
 
 export interface TagResponse {
-    id: number;
-    name: string;
+  id: number;
+  name: string;
 }
 
 export interface TagBatchResponse {
-    failures?: TagBatchResponseFailuresItem[];
-    successes: TagResponse[];
+  failures?: TagBatchResponseFailuresItem[];
+  successes: TagResponse[];
 }
 
 export interface TagPostBatchRequest {
-    /** @minItems 1 */
-    names: string[];
+  /** @minItems 1 */
+  names: string[];
 }
 
 export interface TagPostRequest {
-    name: string;
+  name: string;
 }
 
 export interface UserDataResponse {
-    id: number;
-    joined_at: string;
-    last_seen: string;
-    online: boolean;
-    picture_url: string;
-    privilege: string;
-    username: string;
+  id: number;
+  joined_at: string;
+  last_seen: string;
+  online: boolean;
+  picture_url: string;
+  privilege: string;
+  username: string;
+}
+
+export interface BoardBoardCreateRequest {
+  description: string;
+  name: string;
+}
+
+export interface BoardBoardPatchRequest {
+  description: string;
+  name: string;
 }
 
 /**
@@ -105,605 +131,1025 @@ export type AuthRequestBody = AuthRequest;
 
 export type PostAuthLogout200 = { [key: string]: unknown };
 
+export type GetBoardParams = {
+/**
+ * Pagination cursor
+ */
+cursor?: number;
+/**
+ * Limit results
+ */
+limit?: number;
+};
+
+export type GetBoardIdImageParams = {
+/**
+ * Pagination cursor
+ */
+cursor?: number;
+/**
+ * Limit results
+ */
+limit?: number;
+};
+
 export type GetHealth200 = { [key: string]: unknown };
 
 export type GetImageParams = {
-    /**
-     * Filter by name prefix
-     */
-    prefix?: string;
-    /**
-     * Comma separated or array
-     */
-    tags?: string[];
-    /**
-     * Filter by username
-     */
-    username?: string;
-    /**
-     * Filter by user ID
-     */
-    user_id?: number;
-    /**
-     * Pagination cursor
-     */
-    cursor?: number;
-    /**
-     * Limit results
-     */
-    limit?: number;
+/**
+ * Filter by name prefix
+ */
+prefix?: string;
+/**
+ * Interpret prefix as a natural-language semantic query
+ */
+semantic?: boolean;
+/**
+ * Comma separated or array
+ */
+tags?: string[];
+/**
+ * Filter by username
+ */
+username?: string;
+/**
+ * Filter by user ID
+ */
+user_id?: number;
+/**
+ * Pagination cursor
+ */
+cursor?: number;
+/**
+ * Limit results
+ */
+limit?: number;
 };
 
 export type DeleteImageParams = {
-    /**
-     * Filter by name prefix
-     */
-    prefix?: string;
-    /**
-     * JSON array of tags
-     */
-    tags?: string;
-    /**
-     * Filter by username
-     */
-    username?: string;
-    /**
-     * Filter by user ID
-     */
-    user_id?: number;
+/**
+ * Filter by name prefix
+ */
+prefix?: string;
+/**
+ * JSON array of tags
+ */
+tags?: string;
+/**
+ * Filter by username
+ */
+username?: string;
+/**
+ * Filter by user ID
+ */
+user_id?: number;
 };
 
 export type PostImageUploadBatchBody = {
-    /** Batch metadata (JSON) */
-    metadata: string;
-    /** Files to upload */
-    files: Blob;
+  /** Batch metadata (JSON) */
+  metadata: string;
+  /** Files to upload */
+  files: Blob;
 };
 
 export type GetLogParams = {
-    /**
-     * Pagination cursor
-     */
-    cursor?: number;
-    /**
-     * Limit results
-     */
-    limit?: number;
+/**
+ * Pagination cursor
+ */
+cursor?: number;
+/**
+ * Limit results
+ */
+limit?: number;
 };
 
 export type GetTagsParams = {
-    /**
-     * Tag name prefix
-     */
-    prefix?: string;
-    /**
-     * Pagination cursor
-     */
-    cursor?: number;
-    /**
-     * Limit results
-     */
-    limit?: number;
+/**
+ * Tag name prefix
+ */
+prefix?: string;
+/**
+ * Pagination cursor
+ */
+cursor?: number;
+/**
+ * Limit results
+ */
+limit?: number;
 };
 
 export const getPostAuthLoginUrl = () => {
-    return `/auth/login`;
-};
+
+
+
+
+  return `/auth/login`
+}
 
 /**
  * Logs in a user, generating a JWT token.
  * @summary Login a user
  */
-export const postAuthLogin = async (
-    authRequestBody: AuthRequestBody,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<LoginResponse> => {
-    const getHeaders = (
-        h?: NonNullable<RequestInit["headers"]>,
-    ): Record<string, string | readonly string[]> => {
-        if (!h) return {};
-        if (h instanceof Headers) return Object.fromEntries(h.entries());
-        if (Array.isArray(h)) return Object.fromEntries(h);
-        return h;
-    };
-    return serverMutator<LoginResponse>(getPostAuthLoginUrl(), {
-        ...options,
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...getHeaders(options?.headers),
-        },
-        body: JSON.stringify(authRequestBody),
-    });
-};
+export const postAuthLogin = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof serverMutator>[1]): Promise<LoginResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<LoginResponse>(getPostAuthLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authRequestBody)
+  }
+);}
+
+
 
 export const getPostAuthLogoutUrl = () => {
-    return `/auth/logout`;
-};
+
+
+
+
+  return `/auth/logout`
+}
 
 /**
  * Logs out a user, deleting the JWT token.
  * @summary Logout a user
  */
-export const postAuthLogout = async (
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<PostAuthLogout200> => {
-    return serverMutator<PostAuthLogout200>(getPostAuthLogoutUrl(), {
-        ...options,
-        method: "POST",
-    });
-};
+export const postAuthLogout = async ( options?: Parameters<typeof serverMutator>[1]): Promise<PostAuthLogout200> => {
+
+  return serverMutator<PostAuthLogout200>(getPostAuthLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
 
 export const getPostAuthRegisterUrl = () => {
-    return `/auth/register`;
-};
+
+
+
+
+  return `/auth/register`
+}
 
 /**
  * Registers a new user, generating a JWT token.
  * @summary Register a user
  */
-export const postAuthRegister = async (
-    authRequestBody: AuthRequestBody,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<LoginResponse> => {
-    const getHeaders = (
-        h?: NonNullable<RequestInit["headers"]>,
-    ): Record<string, string | readonly string[]> => {
-        if (!h) return {};
-        if (h instanceof Headers) return Object.fromEntries(h.entries());
-        if (Array.isArray(h)) return Object.fromEntries(h);
-        return h;
-    };
-    return serverMutator<LoginResponse>(getPostAuthRegisterUrl(), {
-        ...options,
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...getHeaders(options?.headers),
-        },
-        body: JSON.stringify(authRequestBody),
-    });
-};
+export const postAuthRegister = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof serverMutator>[1]): Promise<LoginResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<LoginResponse>(getPostAuthRegisterUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authRequestBody)
+  }
+);}
+
+
+
+export const getGetBoardUrl = (params?: GetBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/board?${stringifiedParams}` : `/board`
+}
+
+/**
+ * Returns a slice of list of boards
+ * @summary List boards
+ */
+export const getBoard = async (params?: GetBoardParams, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse[]> => {
+
+  return serverMutator<BoardResponse[]>(getGetBoardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPostBoardUrl = () => {
+
+
+
+
+  return `/board`
+}
+
+/**
+ * @summary Creates new board
+ */
+export const postBoard = async (boardBoardCreateRequest: BoardBoardCreateRequest, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<BoardResponse>(getPostBoardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardBoardCreateRequest)
+  }
+);}
+
+
+
+export const getGetBoardIdUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}`
+}
+
+/**
+ * @summary Gets board metadata by id
+ */
+export const getBoardId = async (id: number, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
+
+  return serverMutator<BoardResponse>(getGetBoardIdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteBoardIdUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}`
+}
+
+/**
+ * @summary Delete board by id
+ */
+export const deleteBoardId = async (id: number, options?: Parameters<typeof serverMutator>[1]): Promise<void> => {
+
+  return serverMutator<void>(getDeleteBoardIdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPatchBoardIdUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}`
+}
+
+/**
+ * @summary Patches existing board by id
+ */
+export const patchBoardId = async (id: number,
+    boardBoardPatchRequest: BoardBoardPatchRequest, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<BoardResponse>(getPatchBoardIdUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardBoardPatchRequest)
+  }
+);}
+
+
+
+export const getGetBoardIdImageUrl = (id: number,
+    params?: GetBoardIdImageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/board/${id}/image?${stringifiedParams}` : `/board/${id}/image`
+}
+
+/**
+ * Returns a slice of board's items
+ * @summary List board items
+ */
+export const getBoardIdImage = async (id: number,
+    params?: GetBoardIdImageParams, options?: Parameters<typeof serverMutator>[1]): Promise<BoardItemResponse[]> => {
+
+  return serverMutator<BoardItemResponse[]>(getGetBoardIdImageUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPostBoardIdImageUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}/image`
+}
+
+/**
+ * @summary Adds image to a board
+ */
+export const postBoardIdImage = async (id: number,
+    boardItemPostRequest: BoardItemPostRequest, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<BoardResponse>(getPostBoardIdImageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardItemPostRequest)
+  }
+);}
+
+
+
+export const getGetBoardIdImageImageIDUrl = (id: number,
+    imageID: number,) => {
+
+
+
+
+  return `/board/${id}/image/${imageID}`
+}
+
+/**
+ * @summary Gets image from the board
+ */
+export const getBoardIdImageImageID = async (id: number,
+    imageID: number, options?: Parameters<typeof serverMutator>[1]): Promise<BoardItemResponse> => {
+
+  return serverMutator<BoardItemResponse>(getGetBoardIdImageImageIDUrl(id,imageID),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteBoardIdImageImageIDUrl = (id: number,
+    imageID: number,) => {
+
+
+
+
+  return `/board/${id}/image/${imageID}`
+}
+
+/**
+ * @summary Removes image from board by id
+ */
+export const deleteBoardIdImageImageID = async (id: number,
+    imageID: number, options?: Parameters<typeof serverMutator>[1]): Promise<void> => {
+
+  return serverMutator<void>(getDeleteBoardIdImageImageIDUrl(id,imageID),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPatchBoardIdImageImageIDUrl = (id: number,
+    imageID: number,) => {
+
+
+
+
+  return `/board/${id}/image/${imageID}`
+}
+
+/**
+ * @summary Patches existing board image
+ */
+export const patchBoardIdImageImageID = async (id: number,
+    imageID: number,
+    boardItemPatchRequest: BoardItemPatchRequest, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<BoardResponse>(getPatchBoardIdImageImageIDUrl(id,imageID),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardItemPatchRequest)
+  }
+);}
+
+
 
 export const getGetHealthUrl = () => {
-    return `/health`;
-};
+
+
+
+
+  return `/health`
+}
 
 /**
  * Returns "ok" if server is up and running
  * @summary Health check
  */
-export const getHealth = async (
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<GetHealth200> => {
-    return serverMutator<GetHealth200>(getGetHealthUrl(), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getHealth = async ( options?: Parameters<typeof serverMutator>[1]): Promise<GetHealth200> => {
 
-export const getGetImageUrl = (params?: GetImageParams) => {
-    const normalizedParams = new URLSearchParams();
+  return serverMutator<GetHealth200>(getGetHealthUrl(),
+  {
+    ...options,
+    method: 'GET'
 
-    Object.entries(params || {}).forEach(([key, value]) => {
-        if (value !== undefined) {
-            normalizedParams.append(
-                key,
-                value === null ? "null" : String(value),
-            );
-        }
-    });
 
-    const stringifiedParams = normalizedParams.toString();
+  }
+);}
 
-    return stringifiedParams.length > 0
-        ? `/image?${stringifiedParams}`
-        : `/image`;
-};
+
+
+export const getGetImageUrl = (params?: GetImageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/image?${stringifiedParams}` : `/image`
+}
 
 /**
  * Returns a list of images matching the query parameters
  * @summary Gets images by query
  */
-export const getImage = async (
-    params?: GetImageParams,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<ImageMetadata[]> => {
-    return serverMutator<ImageMetadata[]>(getGetImageUrl(params), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImage = async (params?: GetImageParams, options?: Parameters<typeof serverMutator>[1]): Promise<ImageMetadata[]> => {
 
-export const getDeleteImageUrl = (params?: DeleteImageParams) => {
-    const normalizedParams = new URLSearchParams();
+  return serverMutator<ImageMetadata[]>(getGetImageUrl(params),
+  {
+    ...options,
+    method: 'GET'
 
-    Object.entries(params || {}).forEach(([key, value]) => {
-        if (value !== undefined) {
-            normalizedParams.append(
-                key,
-                value === null ? "null" : String(value),
-            );
-        }
-    });
 
-    const stringifiedParams = normalizedParams.toString();
+  }
+);}
 
-    return stringifiedParams.length > 0
-        ? `/image?${stringifiedParams}`
-        : `/image`;
-};
+
+
+export const getDeleteImageUrl = (params?: DeleteImageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/image?${stringifiedParams}` : `/image`
+}
 
 /**
  * Deletes multiple images matching the query parameters (requires authentication)
  * @summary Deletes images by query
  */
-export const deleteImage = async (
-    params?: DeleteImageParams,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<void> => {
-    return serverMutator<void>(getDeleteImageUrl(params), {
-        ...options,
-        method: "DELETE",
-    });
-};
+export const deleteImage = async (params?: DeleteImageParams, options?: Parameters<typeof serverMutator>[1]): Promise<void> => {
 
-export const getGetImageHashHashUrl = (hash: string) => {
-    return `/image/hash/${hash}`;
-};
+  return serverMutator<void>(getDeleteImageUrl(params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getGetImageHashHashUrl = (hash: string,) => {
+
+
+
+
+  return `/image/hash/${hash}`
+}
 
 /**
  * Returns image metadata by its hash
  * @summary Gets image metadata by its unique hash
  */
-export const getImageHashHash = async (
-    hash: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<ImageMetadata> => {
-    return serverMutator<ImageMetadata>(getGetImageHashHashUrl(hash), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImageHashHash = async (hash: string, options?: Parameters<typeof serverMutator>[1]): Promise<ImageMetadata> => {
 
-export const getGetImageIdIdUrl = (id: number) => {
-    return `/image/id/${id}`;
-};
+  return serverMutator<ImageMetadata>(getGetImageHashHashUrl(hash),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetImageIdIdUrl = (id: number,) => {
+
+
+
+
+  return `/image/id/${id}`
+}
 
 /**
  * Returns image metadata by its numeric ID
  * @summary Gets image metadata by ID
  */
-export const getImageIdId = async (
-    id: number,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<ImageMetadata> => {
-    return serverMutator<ImageMetadata>(getGetImageIdIdUrl(id), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImageIdId = async (id: number, options?: Parameters<typeof serverMutator>[1]): Promise<ImageMetadata> => {
 
-export const getGetImageRawHashHashUrl = (hash: string) => {
-    return `/image/raw/hash/${hash}`;
-};
+  return serverMutator<ImageMetadata>(getGetImageIdIdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetImageRawHashHashUrl = (hash: string,) => {
+
+
+
+
+  return `/image/raw/hash/${hash}`
+}
 
 /**
  * Returns the raw image file by its hash
  * @summary Gets raw image by hash
  */
-export const getImageRawHashHash = async (
-    hash: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<Blob> => {
-    return serverMutator<Blob>(getGetImageRawHashHashUrl(hash), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImageRawHashHash = async (hash: string, options?: Parameters<typeof serverMutator>[1]): Promise<Blob> => {
 
-export const getGetImageRawNameUrl = (name: string) => {
-    return `/image/raw/${name}`;
-};
+  return serverMutator<Blob>(getGetImageRawHashHashUrl(hash),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetImageRawNameUrl = (name: string,) => {
+
+
+
+
+  return `/image/raw/${name}`
+}
 
 /**
  * Returns the raw image file by its name
  * @summary Gets raw image by name
  */
-export const getImageRawName = async (
-    name: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<Blob> => {
-    return serverMutator<Blob>(getGetImageRawNameUrl(name), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImageRawName = async (name: string, options?: Parameters<typeof serverMutator>[1]): Promise<Blob> => {
 
-export const getGetImageThumbHashHashUrl = (hash: string) => {
-    return `/image/thumb/hash/${hash}`;
-};
+  return serverMutator<Blob>(getGetImageRawNameUrl(name),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetImageThumbHashHashUrl = (hash: string,) => {
+
+
+
+
+  return `/image/thumb/hash/${hash}`
+}
 
 /**
  * Returns the raw thumbnail image file by its hash
  * @summary Gets raw image thumbnail by hash
  */
-export const getImageThumbHashHash = async (
-    hash: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<Blob> => {
-    return serverMutator<Blob>(getGetImageThumbHashHashUrl(hash), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImageThumbHashHash = async (hash: string, options?: Parameters<typeof serverMutator>[1]): Promise<Blob> => {
 
-export const getGetImageThumbNameUrl = (name: string) => {
-    return `/image/thumb/${name}`;
-};
+  return serverMutator<Blob>(getGetImageThumbHashHashUrl(hash),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetImageThumbNameUrl = (name: string,) => {
+
+
+
+
+  return `/image/thumb/${name}`
+}
 
 /**
  * Returns the raw thumbnail image file by its name
  * @summary Gets raw image thumbnail by name
  */
-export const getImageThumbName = async (
-    name: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<Blob> => {
-    return serverMutator<Blob>(getGetImageThumbNameUrl(name), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImageThumbName = async (name: string, options?: Parameters<typeof serverMutator>[1]): Promise<Blob> => {
+
+  return serverMutator<Blob>(getGetImageThumbNameUrl(name),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 
 export const getPostImageUploadUrl = () => {
-    return `/image/upload`;
-};
 
-export const postImageUpload = async (
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<ImageMetadata> => {
-    return serverMutator<ImageMetadata>(getPostImageUploadUrl(), {
-        ...options,
-        method: "POST",
-    });
-};
+
+
+
+  return `/image/upload`
+}
+
+export const postImageUpload = async ( options?: Parameters<typeof serverMutator>[1]): Promise<ImageMetadata> => {
+
+  return serverMutator<ImageMetadata>(getPostImageUploadUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
 
 export const getPostImageUploadBatchUrl = () => {
-    return `/image/upload/batch`;
-};
+
+
+
+
+  return `/image/upload/batch`
+}
 
 /**
  * Uploads multiple images with metadata in a single request (requires authentication)
  * !!Swagger to openapi conversion doesn't support file arrays
  * @summary Uploads multiple images in batch
  */
-export const postImageUploadBatch = async (
-    postImageUploadBatchBody: PostImageUploadBatchBody,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<ImagePostBatchResponse> => {
+export const postImageUploadBatch = async (postImageUploadBatchBody: PostImageUploadBatchBody, options?: Parameters<typeof serverMutator>[1]): Promise<ImagePostBatchResponse> => {
     const formData = new FormData();
-    formData.append(`metadata`, postImageUploadBatchBody.metadata);
-    formData.append(`files`, postImageUploadBatchBody.files);
+formData.append(`metadata`, postImageUploadBatchBody.metadata);
+formData.append(`files`, postImageUploadBatchBody.files);
 
-    return serverMutator<ImagePostBatchResponse>(getPostImageUploadBatchUrl(), {
-        ...options,
-        method: "POST",
-        body: formData,
-    });
-};
+  return serverMutator<ImagePostBatchResponse>(getPostImageUploadBatchUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
 
-export const getGetImageNameUrl = (name: string) => {
-    return `/image/${name}`;
-};
+
+
+export const getGetImageNameUrl = (name: string,) => {
+
+
+
+
+  return `/image/${name}`
+}
 
 /**
  * Returns image metadata by its name
  * @summary Gets image metadata by name
  */
-export const getImageName = async (
-    name: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<ImageMetadata> => {
-    return serverMutator<ImageMetadata>(getGetImageNameUrl(name), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getImageName = async (name: string, options?: Parameters<typeof serverMutator>[1]): Promise<ImageMetadata> => {
 
-export const getDeleteImageNameUrl = (name: string) => {
-    return `/image/${name}`;
-};
+  return serverMutator<ImageMetadata>(getGetImageNameUrl(name),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteImageNameUrl = (name: string,) => {
+
+
+
+
+  return `/image/${name}`
+}
 
 /**
  * Deletes an image by its name (requires authentication)
  * @summary Deletes an image by name
  */
-export const deleteImageName = async (
-    name: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<void> => {
-    return serverMutator<void>(getDeleteImageNameUrl(name), {
-        ...options,
-        method: "DELETE",
-    });
-};
+export const deleteImageName = async (name: string, options?: Parameters<typeof serverMutator>[1]): Promise<void> => {
 
-export const getGetLogUrl = (params?: GetLogParams) => {
-    const normalizedParams = new URLSearchParams();
+  return serverMutator<void>(getDeleteImageNameUrl(name),
+  {
+    ...options,
+    method: 'DELETE'
 
-    Object.entries(params || {}).forEach(([key, value]) => {
-        if (value !== undefined) {
-            normalizedParams.append(
-                key,
-                value === null ? "null" : String(value),
-            );
-        }
-    });
 
-    const stringifiedParams = normalizedParams.toString();
+  }
+);}
 
-    return stringifiedParams.length > 0 ? `/log?${stringifiedParams}` : `/log`;
-};
+
+
+export const getGetLogUrl = (params?: GetLogParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/log?${stringifiedParams}` : `/log`
+}
 
 /**
  * Returns a paginated list of audit log entries
  * @summary Gets audit log entries
  */
-export const getLog = async (
-    params?: GetLogParams,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<EntryResponse[]> => {
-    return serverMutator<EntryResponse[]>(getGetLogUrl(params), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getLog = async (params?: GetLogParams, options?: Parameters<typeof serverMutator>[1]): Promise<EntryResponse[]> => {
 
-export const getGetTagsUrl = (params?: GetTagsParams) => {
-    const normalizedParams = new URLSearchParams();
+  return serverMutator<EntryResponse[]>(getGetLogUrl(params),
+  {
+    ...options,
+    method: 'GET'
 
-    Object.entries(params || {}).forEach(([key, value]) => {
-        if (value !== undefined) {
-            normalizedParams.append(
-                key,
-                value === null ? "null" : String(value),
-            );
-        }
-    });
 
-    const stringifiedParams = normalizedParams.toString();
+  }
+);}
 
-    return stringifiedParams.length > 0
-        ? `/tags?${stringifiedParams}`
-        : `/tags`;
-};
+
+
+export const getGetTagsUrl = (params?: GetTagsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/tags?${stringifiedParams}` : `/tags`
+}
 
 /**
  * Returns a paginated list of all tags
  * @summary Gets all tags
  */
-export const getTags = async (
-    params?: GetTagsParams,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<TagResponse[]> => {
-    return serverMutator<TagResponse[]>(getGetTagsUrl(params), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getTags = async (params?: GetTagsParams, options?: Parameters<typeof serverMutator>[1]): Promise<TagResponse[]> => {
+
+  return serverMutator<TagResponse[]>(getGetTagsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 
 export const getPostTagsUrl = () => {
-    return `/tags`;
-};
+
+
+
+
+  return `/tags`
+}
 
 /**
  * Creates a new tag (requires authentication)
  * @summary Creates a new tag
  */
-export const postTags = async (
-    tagPostRequest: TagPostRequest,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<TagResponse> => {
-    const getHeaders = (
-        h?: NonNullable<RequestInit["headers"]>,
-    ): Record<string, string | readonly string[]> => {
-        if (!h) return {};
-        if (h instanceof Headers) return Object.fromEntries(h.entries());
-        if (Array.isArray(h)) return Object.fromEntries(h);
-        return h;
-    };
-    return serverMutator<TagResponse>(getPostTagsUrl(), {
-        ...options,
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...getHeaders(options?.headers),
-        },
-        body: JSON.stringify(tagPostRequest),
-    });
-};
+export const postTags = async (tagPostRequest: TagPostRequest, options?: Parameters<typeof serverMutator>[1]): Promise<TagResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<TagResponse>(getPostTagsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tagPostRequest)
+  }
+);}
+
+
 
 export const getPostTagsBatchUrl = () => {
-    return `/tags/batch`;
-};
+
+
+
+
+  return `/tags/batch`
+}
 
 /**
  * Creates multiple tags in a single request (requires authentication)
  * @summary Creates multiple tags in batch
  */
-export const postTagsBatch = async (
-    tagPostBatchRequest: TagPostBatchRequest,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<TagBatchResponse> => {
-    const getHeaders = (
-        h?: NonNullable<RequestInit["headers"]>,
-    ): Record<string, string | readonly string[]> => {
-        if (!h) return {};
-        if (h instanceof Headers) return Object.fromEntries(h.entries());
-        if (Array.isArray(h)) return Object.fromEntries(h);
-        return h;
-    };
-    return serverMutator<TagBatchResponse>(getPostTagsBatchUrl(), {
-        ...options,
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            ...getHeaders(options?.headers),
-        },
-        body: JSON.stringify(tagPostBatchRequest),
-    });
-};
+export const postTagsBatch = async (tagPostBatchRequest: TagPostBatchRequest, options?: Parameters<typeof serverMutator>[1]): Promise<TagBatchResponse> => {
 
-export const getGetUserIdIdUrl = (id: number) => {
-    return `/user/id/${id}`;
-};
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return serverMutator<TagBatchResponse>(getPostTagsBatchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tagPostBatchRequest)
+  }
+);}
+
+
+
+export const getGetUserIdIdUrl = (id: number,) => {
+
+
+
+
+  return `/user/id/${id}`
+}
 
 /**
  * Returns user profile by numeric ID
  * @summary Gets user by ID
  */
-export const getUserIdId = async (
-    id: number,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<UserDataResponse> => {
-    return serverMutator<UserDataResponse>(getGetUserIdIdUrl(id), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getUserIdId = async (id: number, options?: Parameters<typeof serverMutator>[1]): Promise<UserDataResponse> => {
+
+  return serverMutator<UserDataResponse>(getGetUserIdIdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 
 export const getGetUserMeUrl = () => {
-    return `/user/me`;
-};
+
+
+
+
+  return `/user/me`
+}
 
 /**
  * Returns the authenticated user's profile (requires authentication)
  * @summary Gets current user profile
  */
-export const getUserMe = async (
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<UserDataResponse> => {
-    return serverMutator<UserDataResponse>(getGetUserMeUrl(), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getUserMe = async ( options?: Parameters<typeof serverMutator>[1]): Promise<UserDataResponse> => {
 
-export const getGetUserNameUrl = (name: string) => {
-    return `/user/${name}`;
-};
+  return serverMutator<UserDataResponse>(getGetUserMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetUserNameUrl = (name: string,) => {
+
+
+
+
+  return `/user/${name}`
+}
 
 /**
  * Returns user profile by username
  * @summary Gets user by username
  */
-export const getUserName = async (
-    name: string,
-    options?: Parameters<typeof serverMutator>[1],
-): Promise<UserDataResponse> => {
-    return serverMutator<UserDataResponse>(getGetUserNameUrl(name), {
-        ...options,
-        method: "GET",
-    });
-};
+export const getUserName = async (name: string, options?: Parameters<typeof serverMutator>[1]): Promise<UserDataResponse> => {
+
+  return serverMutator<UserDataResponse>(getGetUserNameUrl(name),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}

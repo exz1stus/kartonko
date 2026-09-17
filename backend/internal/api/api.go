@@ -8,6 +8,7 @@ import (
 	"server/internal/storage"
 
 	authapi "server/internal/api/auth"
+	boardapi "server/internal/api/board"
 	imageapi "server/internal/api/image"
 	logapi "server/internal/api/log"
 	tagapi "server/internal/api/tag"
@@ -27,6 +28,7 @@ type Api struct {
 	tagHandler   *tagapi.Handler
 	userHandler  *userapi.Handler
 	logHandler   *logapi.Handler
+	boardHandler *boardapi.Handler
 }
 
 func NewAPI(app *App, jwtSecret string) *Api {
@@ -40,6 +42,7 @@ func NewAPI(app *App, jwtSecret string) *Api {
 		app.TagService,
 	)
 	tagHandler := tagapi.NewTagHandler(app.TagService)
+	boardHandler := boardapi.NewBoardHandler(app.BoardService)
 
 	return &Api{
 		nil,
@@ -49,6 +52,7 @@ func NewAPI(app *App, jwtSecret string) *Api {
 		tagHandler,
 		userHandler,
 		logHandler,
+		boardHandler,
 	}
 }
 

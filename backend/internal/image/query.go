@@ -2,6 +2,8 @@ package image
 
 import (
 	"server/internal/user"
+
+	"gorm.io/gorm"
 )
 
 // Query represents an image search query
@@ -62,4 +64,16 @@ func (b *QueryBuilder) Limit(limit int) *QueryBuilder {
 
 func (b *QueryBuilder) Build() *Query {
 	return &b.query
+}
+
+func ApplyCursorLimit(db *gorm.DB, cursor, limit int) *gorm.DB {
+	if limit != 0 {
+		db = db.Limit(limit)
+	}
+
+	if cursor != 0 {
+		db = db.Offset(cursor)
+	}
+
+	return db
 }

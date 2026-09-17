@@ -28,7 +28,7 @@ func toServiceError[T any](val T, err error) (T, error) {
 type ImageService interface {
 	Upload(ctx context.Context, userID uint, req UploadRequest, format Format, data []byte) (*ImageMetadata, error)
 
-	GetByID(id uint) (*ImageMetadata, error)
+	GetByID(ctx context.Context, id uint) (*ImageMetadata, error)
 	GetByName(name string) (*ImageMetadata, error)
 	GetByHash(hash string) (*ImageMetadata, error)
 	Search(ctx context.Context, query *Query) ([]ImageMetadata, error)
@@ -68,7 +68,7 @@ func NewImageService(
 	}
 }
 
-func (s *imageService) GetByID(id uint) (*ImageMetadata, error) {
+func (s *imageService) GetByID(ctx context.Context, id uint) (*ImageMetadata, error) {
 	return toServiceError(s.images.GetByID(id))
 }
 
@@ -103,7 +103,7 @@ func (s *imageService) Search(ctx context.Context, query *Query) ([]ImageMetadat
 		if err != nil {
 			continue
 		}
-		img, err := s.GetByID(id)
+		img, err := s.GetByID(ctx, id)
 		if err != nil {
 			continue
 		}

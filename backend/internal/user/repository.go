@@ -12,7 +12,7 @@ type UserRepository interface {
 	GetByID(id uint) (*User, error)
 	GetByUsername(username string) (*User, error)
 	GetByEmail(email string) (*User, error)
-	GetByProviderID(id string) (*User, error)
+	GetByProviderID(providerID string) (*User, error)
 
 	SetPrivilege(userID uint, privilege Privilege) error
 

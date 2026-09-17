@@ -70,13 +70,13 @@ func (h *Handler) GetGoogleCallback(c *gin.Context) {
 
 	config := GetGoogleAuthConfig()
 
-	token, err := config.Exchange(c.Request.Context(), code)
+	token, err := config.Exchange(c, code)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, apierrors.ErrorResponse{Error: "Failed to exchange codes"})
 		return
 	}
 
-	client := config.Client(c.Request.Context(), token)
+	client := config.Client(c, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, apierrors.ErrorResponse{Error: "Failed to fetch user info"})

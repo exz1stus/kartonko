@@ -76,7 +76,7 @@ func getImageBytesFromHeader(fileHeader *multipart.FileHeader) ([]byte, error) {
 
 func HandleUpload(c *gin.Context, images image.ImageService, postRequest ImagePostRequest, fileHeader *multipart.FileHeader) (*image.ImageMetadata, error) {
 	if err := isImageRequestValid(&postRequest, fileHeader); err != nil {
-		return nil, helpers.WrapBadRequest(err)
+		return nil, errors.WrapBadRequest(err)
 	}
 
 	user, err := auth.GetUserFromContext(c)
@@ -92,22 +92,22 @@ func HandleUpload(c *gin.Context, images image.ImageService, postRequest ImagePo
 		return nil, err
 	}
 
-	return images.Upload(c.Request.Context(), user.ID, postRequest.ToUploadRequest(), format, data)
+	return images.Upload(c, user.ID, postRequest.ToUploadRequest(), format, data)
 }
 
 func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata string, form *multipart.Form) (*ImagePostBatchResponse, error) {
 	var batch ImagePostBatchRequest
 	if err := json.Unmarshal([]byte(metadata), &batch); err != nil {
-		return nil, helpers.WrapBadRequest(err)
+		return nil, errors.WrapBadRequest(err)
 	}
 
 	files := form.File["files"]
 	if files == nil {
-		return nil, helpers.WrapBadRequest(fmt.Errorf("formData: no files attached"))
+		return nil, errors.WrapBadRequest(fmt.Errorf("formData: no files attached"))
 	}
 
 	if len(batch.Data) != len(files) {
-		return nil, helpers.WrapBadRequest(fmt.Errorf("files and metadata items lenght are different"))
+		return nil, errors.WrapBadRequest(fmt.Errorf("files and metadata items lenght are different"))
 	}
 
 	user, err := auth.GetUserFromContext(c)
@@ -129,7 +129,7 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 		if err := isImageRequestValid(&meta, files[i]); err != nil {
 			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
-				Error: helpers.WrapBadRequest(err).Error(),
+				Error: err.Error(),
 			})
 			continue
 		}
@@ -143,7 +143,7 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 			return nil, err
 		}
 
-		img, err := images.Upload(c.Request.Context(), user.ID, meta.ToUploadRequest(), format, data)
+		img, err := images.Upload(c, user.ID, meta.ToUploadRequest(), format, data)
 		if err != nil {
 			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
@@ -168,9 +168,12 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/{name} [get]
 func (h *Handler) GetImageByName(c *gin.Context) {
-	helpers.HandleGet(c, func() (*image.ImageMetadata, error) {
-		return h.imageService.GetByName(c.Param("name"))
-	}, func(img *image.ImageMetadata) any { return NewImageResponse(img) })
+	img, err := h.imageService.GetByName(c.Param("name"))
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	helpers.RespondJSON(c, http.StatusOK, NewImageResponse(img))
 }
 
 // GetImageByHash godoc
@@ -183,9 +186,12 @@ func (h *Handler) GetImageByName(c *gin.Context) {
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/hash/{hash} [get]
 func (h *Handler) GetImageByHash(c *gin.Context) {
-	helpers.HandleGet(c, func() (*image.ImageMetadata, error) {
-		return h.imageService.GetByHash(c.Param("hash"))
-	}, func(img *image.ImageMetadata) any { return NewImageResponse(img) })
+	img, err := h.imageService.GetByName(c.Param("hash"))
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	helpers.RespondJSON(c, http.StatusOK, NewImageResponse(img))
 }
 
 // GetImageByID godoc
@@ -195,18 +201,23 @@ func (h *Handler) GetImageByHash(c *gin.Context) {
 // @Produce json
 // @Param id path uint64 true "Image ID"
 // @Success 200 {object} ImageResponse
+// @Failure 400 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/id/{id} [get]
 func (h *Handler) GetImageByID(c *gin.Context) {
-	idStr := c.Param("id")
-	id64, err := strconv.ParseUint(idStr, 10, strconv.IntSize)
+	id, err := helpers.ParseID(c)
 	if err != nil {
-		errors.RespondError(c, helpers.WrapBadRequest(err))
+		errors.RespondError(c, err)
 		return
 	}
-	helpers.HandleGet(c, func() (*image.ImageMetadata, error) {
-		return h.imageService.GetByID(uint(id64))
-	}, func(img *image.ImageMetadata) any { return NewImageResponse(img) })
+
+	item, err := h.imageService.GetByID(c, id)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+
+	helpers.RespondJSON(c, http.StatusOK, NewImageResponse(item))
 }
 
 // GetRawImageByName godoc
@@ -298,12 +309,36 @@ func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 // @Router /image [get]
 func (h *Handler) GetImagesByQuery(c *gin.Context) {
 	helpers.WithQuery(c, h.newQueryFromContext, func(query *image.Query) error {
-		images, err := h.imageService.Search(c.Request.Context(), query)
+		images, err := h.imageService.Search(c, query)
 		if err != nil {
 			return err
 		}
 		RespondImages(c, images)
 		return nil
+	})
+}
+
+// DeleteImageByID godoc
+// @Summary Deletes an image by id
+// @Description Deletes an image by its id (requires authentication)
+// @Tags images
+// @Security BearerAuth
+// @Produce json
+// @Param id path uint true "Image id"
+// @Success 204 "No Content"
+// @Failure 401 {object} errors.ErrorResponse
+// @Failure 403 {object} errors.ErrorResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/{id} [delete]
+func (h *Handler) DeleteImageByID(c *gin.Context) {
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+
+	helpers.WithUser(c, func(usr *user.User) error {
+		return h.imageService.DeleteByID(c, usr, id)
 	})
 }
 
@@ -322,7 +357,7 @@ func (h *Handler) GetImagesByQuery(c *gin.Context) {
 func (h *Handler) DeleteImageByName(c *gin.Context) {
 	name := strings.ToLower(c.Param("name"))
 	helpers.WithUser(c, func(usr *user.User) error {
-		return h.imageService.DeleteByName(c.Request.Context(), usr, name)
+		return h.imageService.DeleteByName(c, usr, name)
 	})
 }
 
@@ -344,7 +379,7 @@ func (h *Handler) DeleteImageByName(c *gin.Context) {
 func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 	helpers.WithUserAndQuery(c, h.newQueryFromContext, func(usr *user.User, query *image.Query) error {
 		query.Limit = 0
-		errs := h.imageService.DeleteByQuery(c.Request.Context(), usr, query)
+		errs := h.imageService.DeleteByQuery(c, usr, query)
 		if errs != nil {
 			hasPermissionError := false
 			messages := make([]string, len(errs))
@@ -371,11 +406,9 @@ func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 // @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
-
 // @Param file formData file true "Image file"
 // @Param name formData string true	"Image name"
-// @Param tags []formData string false "Array of tags"
-
+// @Param tags formData []string false "Array of tags"
 // @Success 201 {object} ImageResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
@@ -417,7 +450,7 @@ func (h *Handler) PostImagesBatch(c *gin.Context) {
 	formData := c.PostForm("metadata")
 	form, err := c.MultipartForm()
 	if err != nil {
-		errors.RespondError(c, helpers.WrapBadRequest(err))
+		errors.RespondError(c, errors.WrapBadRequest(err))
 		return
 	}
 
@@ -460,7 +493,7 @@ func (h *Handler) newQueryFromContext(c *gin.Context) (*image.Query, error) {
 	prefix := c.Query("prefix")
 	semantic, err := strconv.ParseBool(c.DefaultQuery("semantic", "false"))
 	if err != nil {
-		return nil, helpers.WrapBadRequest(fmt.Errorf("invalid semantic value: %w", err))
+		return nil, errors.WrapBadRequest(fmt.Errorf("invalid semantic value: %w", err))
 	}
 	username := c.Query("username")
 	userIDStr := c.Query("user_id")
@@ -506,15 +539,15 @@ func (h *Handler) newQueryFromContext(c *gin.Context) (*image.Query, error) {
 		userID64, err := strconv.ParseUint(userIDStr, 10, 64)
 		userID := uint(userID64)
 		if err != nil {
-			return nil, helpers.WrapBadRequest(err)
+			return nil, errors.WrapBadRequest(err)
 		}
-		user, err := h.userService.GetByID(userID)
+		user, err := h.userService.GetByID(c, userID)
 		if err != nil {
 			return nil, err
 		}
 		builder.User(user)
 	} else if username != "" {
-		user, err := h.userService.GetByUsername(username)
+		user, err := h.userService.GetByName(username)
 		if err != nil {
 			return nil, err
 		}

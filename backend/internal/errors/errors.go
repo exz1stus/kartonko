@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 var (
@@ -32,6 +33,7 @@ func RespondError(c *gin.Context, err error) {
 		status = http.StatusInternalServerError
 
 	case errors.Is(err, ErrNotFound):
+	case errors.Is(err, gorm.ErrRecordNotFound):
 		status = http.StatusNotFound
 
 	case errors.Is(err, ErrPermissionDenied):

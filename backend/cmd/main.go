@@ -11,10 +11,9 @@ import (
 //@schemes         http https
 //
 //@securityDefinitions.apikey BearerAuth
-//@name Authorization
-//@description Bearer JWT authentication.
 //@in cookie
 //@name jwt
+//@description Bearer JWT authentication stored in the jwt cookie.
 
 func main() {
 	api := api.MustInitApi()

@@ -5,6 +5,7 @@
 package user
 
 import (
+	"context"
 	"server/internal/user"
 
 	mock "github.com/stretchr/testify/mock"
@@ -334,8 +335,8 @@ func (_c *MockUserRepository_GetByID_Call) RunAndReturn(run func(id uint) (*user
 }
 
 // GetByProviderID provides a mock function for the type MockUserRepository
-func (_mock *MockUserRepository) GetByProviderID(id string) (*user.User, error) {
-	ret := _mock.Called(id)
+func (_mock *MockUserRepository) GetByProviderID(providerID string) (*user.User, error) {
+	ret := _mock.Called(providerID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByProviderID")
@@ -344,17 +345,17 @@ func (_mock *MockUserRepository) GetByProviderID(id string) (*user.User, error) 
 	var r0 *user.User
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(string) (*user.User, error)); ok {
-		return returnFunc(id)
+		return returnFunc(providerID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string) *user.User); ok {
-		r0 = returnFunc(id)
+		r0 = returnFunc(providerID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.User)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(id)
+		r1 = returnFunc(providerID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -367,12 +368,12 @@ type MockUserRepository_GetByProviderID_Call struct {
 }
 
 // GetByProviderID is a helper method to define mock.On call
-//   - id string
-func (_e *MockUserRepository_Expecter) GetByProviderID(id any) *MockUserRepository_GetByProviderID_Call {
-	return &MockUserRepository_GetByProviderID_Call{Call: _e.mock.On("GetByProviderID", id)}
+//   - providerID string
+func (_e *MockUserRepository_Expecter) GetByProviderID(providerID any) *MockUserRepository_GetByProviderID_Call {
+	return &MockUserRepository_GetByProviderID_Call{Call: _e.mock.On("GetByProviderID", providerID)}
 }
 
-func (_c *MockUserRepository_GetByProviderID_Call) Run(run func(id string)) *MockUserRepository_GetByProviderID_Call {
+func (_c *MockUserRepository_GetByProviderID_Call) Run(run func(providerID string)) *MockUserRepository_GetByProviderID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -390,7 +391,7 @@ func (_c *MockUserRepository_GetByProviderID_Call) Return(user1 *user.User, err 
 	return _c
 }
 
-func (_c *MockUserRepository_GetByProviderID_Call) RunAndReturn(run func(id string) (*user.User, error)) *MockUserRepository_GetByProviderID_Call {
+func (_c *MockUserRepository_GetByProviderID_Call) RunAndReturn(run func(providerID string) (*user.User, error)) *MockUserRepository_GetByProviderID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -976,8 +977,8 @@ func (_c *MockUserService_GetByEmail_Call) RunAndReturn(run func(email string) (
 }
 
 // GetByID provides a mock function for the type MockUserService
-func (_mock *MockUserService) GetByID(id uint) (*user.User, error) {
-	ret := _mock.Called(id)
+func (_mock *MockUserService) GetByID(ctx context.Context, id uint) (*user.User, error) {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByID")
@@ -985,18 +986,18 @@ func (_mock *MockUserService) GetByID(id uint) (*user.User, error) {
 
 	var r0 *user.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(uint) (*user.User, error)); ok {
-		return returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) (*user.User, error)); ok {
+		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(uint) *user.User); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) *user.User); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(uint) error); ok {
-		r1 = returnFunc(id)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uint) error); ok {
+		r1 = returnFunc(ctx, id)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1009,19 +1010,25 @@ type MockUserService_GetByID_Call struct {
 }
 
 // GetByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id uint
-func (_e *MockUserService_Expecter) GetByID(id any) *MockUserService_GetByID_Call {
-	return &MockUserService_GetByID_Call{Call: _e.mock.On("GetByID", id)}
+func (_e *MockUserService_Expecter) GetByID(ctx any, id any) *MockUserService_GetByID_Call {
+	return &MockUserService_GetByID_Call{Call: _e.mock.On("GetByID", ctx, id)}
 }
 
-func (_c *MockUserService_GetByID_Call) Run(run func(id uint)) *MockUserService_GetByID_Call {
+func (_c *MockUserService_GetByID_Call) Run(run func(ctx context.Context, id uint)) *MockUserService_GetByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 uint
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(uint)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1032,7 +1039,69 @@ func (_c *MockUserService_GetByID_Call) Return(user1 *user.User, err error) *Moc
 	return _c
 }
 
-func (_c *MockUserService_GetByID_Call) RunAndReturn(run func(id uint) (*user.User, error)) *MockUserService_GetByID_Call {
+func (_c *MockUserService_GetByID_Call) RunAndReturn(run func(ctx context.Context, id uint) (*user.User, error)) *MockUserService_GetByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetByName provides a mock function for the type MockUserService
+func (_mock *MockUserService) GetByName(username string) (*user.User, error) {
+	ret := _mock.Called(username)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByName")
+	}
+
+	var r0 *user.User
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (*user.User, error)); ok {
+		return returnFunc(username)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) *user.User); ok {
+		r0 = returnFunc(username)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*user.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(username)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUserService_GetByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByName'
+type MockUserService_GetByName_Call struct {
+	*mock.Call
+}
+
+// GetByName is a helper method to define mock.On call
+//   - username string
+func (_e *MockUserService_Expecter) GetByName(username any) *MockUserService_GetByName_Call {
+	return &MockUserService_GetByName_Call{Call: _e.mock.On("GetByName", username)}
+}
+
+func (_c *MockUserService_GetByName_Call) Run(run func(username string)) *MockUserService_GetByName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUserService_GetByName_Call) Return(user1 *user.User, err error) *MockUserService_GetByName_Call {
+	_c.Call.Return(user1, err)
+	return _c
+}
+
+func (_c *MockUserService_GetByName_Call) RunAndReturn(run func(username string) (*user.User, error)) *MockUserService_GetByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1095,68 +1164,6 @@ func (_c *MockUserService_GetByProviderID_Call) Return(user1 *user.User, err err
 }
 
 func (_c *MockUserService_GetByProviderID_Call) RunAndReturn(run func(id string) (*user.User, error)) *MockUserService_GetByProviderID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetByUsername provides a mock function for the type MockUserService
-func (_mock *MockUserService) GetByUsername(username string) (*user.User, error) {
-	ret := _mock.Called(username)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetByUsername")
-	}
-
-	var r0 *user.User
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*user.User, error)); ok {
-		return returnFunc(username)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) *user.User); ok {
-		r0 = returnFunc(username)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*user.User)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(username)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockUserService_GetByUsername_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByUsername'
-type MockUserService_GetByUsername_Call struct {
-	*mock.Call
-}
-
-// GetByUsername is a helper method to define mock.On call
-//   - username string
-func (_e *MockUserService_Expecter) GetByUsername(username any) *MockUserService_GetByUsername_Call {
-	return &MockUserService_GetByUsername_Call{Call: _e.mock.On("GetByUsername", username)}
-}
-
-func (_c *MockUserService_GetByUsername_Call) Run(run func(username string)) *MockUserService_GetByUsername_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockUserService_GetByUsername_Call) Return(user1 *user.User, err error) *MockUserService_GetByUsername_Call {
-	_c.Call.Return(user1, err)
-	return _c
-}
-
-func (_c *MockUserService_GetByUsername_Call) RunAndReturn(run func(username string) (*user.User, error)) *MockUserService_GetByUsername_Call {
 	_c.Call.Return(run)
 	return _c
 }

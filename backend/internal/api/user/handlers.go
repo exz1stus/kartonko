@@ -5,7 +5,6 @@ import (
 	"server/internal/api/helpers"
 	"server/internal/errors"
 	userpkg "server/internal/user"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,9 +38,12 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /user/{name} [get]
 func (h *Handler) GetUserByName(c *gin.Context) {
-	helpers.HandleGet(c, func() (*userpkg.User, error) {
-		return h.userService.GetByUsername(c.Param("name"))
-	}, func(u *userpkg.User) any { return FromServiceUser(u) })
+	user, err := h.userService.GetByName(c.Param("name"))
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	helpers.RespondJSON(c, http.StatusOK, NewUserDataResponse(user))
 }
 
 // GetUserByID godoc
@@ -55,15 +57,19 @@ func (h *Handler) GetUserByName(c *gin.Context) {
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /user/id/{id} [get]
 func (h *Handler) GetUserByID(c *gin.Context) {
-	idStr := c.Param("id")
-	id64, err := strconv.ParseUint(idStr, 10, 64)
+	id, err := helpers.ParseID(c)
 	if err != nil {
-		errors.RespondError(c, helpers.WrapBadRequest(err))
+		errors.RespondError(c, err)
 		return
 	}
-	helpers.HandleGet(c, func() (*userpkg.User, error) {
-		return h.userService.GetByID(uint(id64))
-	}, func(u *userpkg.User) any { return FromServiceUser(u) })
+
+	user, err := h.userService.GetByID(c, id)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+
+	helpers.RespondJSON(c, http.StatusOK, NewUserDataResponse(user))
 }
 
 // GetMe godoc
@@ -77,7 +83,7 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 // @Router /user/me [get]
 func (h *Handler) GetMe(c *gin.Context) {
 	helpers.WithUser(c, func(u *userpkg.User) error {
-		helpers.RespondJSON(c, http.StatusOK, FromServiceUser(u))
+		helpers.RespondJSON(c, http.StatusOK, NewUserDataResponse(u))
 		return nil
 	})
 }

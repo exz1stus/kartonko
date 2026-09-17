@@ -45,6 +45,7 @@ func (api *Api) InitRoutes(authMiddleware gin.HandlerFunc) {
 	registerRoutes("/tags", api.tagHandler)
 	registerRoutes("/user", api.userHandler)
 	registerRoutes("/log", api.logHandler)
+	registerRoutes("/board", api.boardHandler)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

@@ -1,7 +1,8 @@
 package auth
 
 import (
-	"net/http"
+	"fmt"
+	"server/internal/errors"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,7 @@ func (h *Handler) AuthMiddleware(c *gin.Context) {
 	} else {
 		cookie, err := c.Cookie("jwt")
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token not found"})
+			errors.RespondError(c, errors.WrapUnauthorized(fmt.Errorf("Authorization token not found")))
 			c.Abort()
 			return
 		}
@@ -32,28 +33,28 @@ func (h *Handler) AuthMiddleware(c *gin.Context) {
 	})
 
 	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		errors.RespondError(c, errors.WrapUnauthorized(fmt.Errorf("Invalid token")))
 		c.Abort()
 		return
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		errors.RespondError(c, errors.WrapUnauthorized(fmt.Errorf("Invalid token claims")))
 		c.Abort()
 		return
 	}
 
 	userId, ok := claims["userId"].(float64)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		errors.RespondError(c, errors.WrapUnauthorized(fmt.Errorf("Invalid token claims")))
 		c.Abort()
 		return
 	}
 
-	user, err := h.userService.GetByID(uint(userId))
+	user, err := h.userService.GetByID(c, uint(userId))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
+		errors.RespondError(c, errors.WrapUnauthorized(fmt.Errorf("Unauthorized accesss")))
 		c.Abort()
 		return
 	}

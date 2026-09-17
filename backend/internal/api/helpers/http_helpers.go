@@ -16,6 +16,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type EntityService[T any] interface {
+	Get(ctx context.Context, id uint) (T, error)
+}
+
+func ParseID(c *gin.Context) (uint, error) {
+	idStr := c.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, strconv.IntSize)
+	if err != nil {
+		return 0, errors.WrapBadRequest(err)
+	}
+
+	return uint(id64), nil
+}
+
 func WriteFilePart(w *multipart.Writer, fieldName string, filename string, contentType string, content []byte) error {
 	if fieldName == "" || filename == "" || len(content) == 0 {
 		return fmt.Errorf("bad file data provided")
@@ -35,26 +49,6 @@ func WriteFilePart(w *multipart.Writer, fieldName string, filename string, conte
 	return nil
 }
 
-func WrapBadRequest(err error) error {
-	if err == nil {
-		return nil
-	}
-	if err == errors.ErrBadRequest || err == errors.ErrUnauthorized || err == errors.ErrNotFound || err == errors.ErrPermissionDenied {
-		return err
-	}
-	return fmt.Errorf("%w: %v", errors.ErrBadRequest, err)
-}
-
-func wrapUnauthorized(err error) error {
-	if err == nil {
-		return nil
-	}
-	if err == errors.ErrUnauthorized || err == errors.ErrBadRequest || err == errors.ErrNotFound || err == errors.ErrPermissionDenied {
-		return err
-	}
-	return fmt.Errorf("%w: %v", errors.ErrUnauthorized, err)
-}
-
 func RespondJSON(c *gin.Context, status int, data any) {
 	if data == nil {
 		data = gin.H{}
@@ -62,18 +56,10 @@ func RespondJSON(c *gin.Context, status int, data any) {
 	c.JSON(status, data)
 }
 
-func RespondCreated(c *gin.Context, data any) {
-	RespondJSON(c, http.StatusCreated, data)
-}
-
-func RespondMultiStatus(c *gin.Context, data any) {
-	RespondJSON(c, http.StatusMultiStatus, data)
-}
-
 func WithUser(c *gin.Context, fn func(*user.User) error) {
 	user, err := auth.GetUserFromContext(c)
 	if err != nil {
-		errors.RespondError(c, wrapUnauthorized(err))
+		errors.RespondError(c, errors.WrapUnauthorized(err))
 		return
 	}
 	if err := fn(user); err != nil {
@@ -84,7 +70,7 @@ func WithUser(c *gin.Context, fn func(*user.User) error) {
 func WithQuery[Q any](c *gin.Context, parseFn func(*gin.Context) (Q, error), fn func(Q) error) {
 	query, err := parseFn(c)
 	if err != nil {
-		errors.RespondError(c, WrapBadRequest(err))
+		errors.RespondError(c, errors.WrapBadRequest(err))
 		return
 	}
 	if err := fn(query); err != nil {
@@ -95,12 +81,12 @@ func WithQuery[Q any](c *gin.Context, parseFn func(*gin.Context) (Q, error), fn 
 func WithUserAndQuery[Q any](c *gin.Context, parseFn func(*gin.Context) (Q, error), fn func(*user.User, Q) error) {
 	user, err := auth.GetUserFromContext(c)
 	if err != nil {
-		errors.RespondError(c, wrapUnauthorized(err))
+		errors.RespondError(c, errors.WrapBadRequest(err))
 		return
 	}
 	query, err := parseFn(c)
 	if err != nil {
-		errors.RespondError(c, WrapBadRequest(err))
+		errors.RespondError(c, errors.WrapBadRequest(err))
 		return
 	}
 	if err := fn(user, query); err != nil {
@@ -118,14 +104,14 @@ func GetCursorLimit(c *gin.Context) (cursor, limit int, err error) {
 	if cursorStr != "" {
 		cursor, err = strconv.Atoi(cursorStr)
 		if err != nil {
-			return 0, 0, WrapBadRequest(fmt.Errorf("invalid cursor parameter: %w", err))
+			return 0, 0, errors.WrapBadRequest(fmt.Errorf("invalid cursor parameter: %w", err))
 		}
 	}
 
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			return 0, 0, WrapBadRequest(fmt.Errorf("invalid limit parameter: %w", err))
+			return 0, 0, errors.WrapBadRequest(fmt.Errorf("invalid limit parameter: %w", err))
 		}
 	}
 	return cursor, limit, nil
@@ -133,25 +119,16 @@ func GetCursorLimit(c *gin.Context) (cursor, limit int, err error) {
 
 func GetJSON[T any](c *gin.Context, dst *T, requiredFields ...string) error {
 	if err := c.ShouldBindJSON(dst); err != nil {
-		return WrapBadRequest(err)
+		return errors.WrapBadRequest(err)
 	}
 	v := reflect.ValueOf(dst).Elem()
 	for _, field := range requiredFields {
 		f := v.FieldByName(field)
 		if f.IsValid() && f.Kind() == reflect.String && f.String() == "" {
-			return WrapBadRequest(fmt.Errorf("field %s is required", field))
+			return errors.WrapBadRequest(fmt.Errorf("field %s is required", field))
 		}
 	}
 	return nil
-}
-
-func HandleGet[T any](c *gin.Context, fetch func() (T, error), toResponse func(T) any) {
-	item, err := fetch()
-	if err != nil {
-		errors.RespondError(c, err)
-		return
-	}
-	RespondJSON(c, http.StatusOK, toResponse(item))
 }
 
 func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error), toResponse func(T) any) {
@@ -174,7 +151,7 @@ func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error
 }
 
 func HandleStream(c *gin.Context, fetch func(ctx context.Context) (io.ReadCloser, any, error), contentType func(any) string) {
-	body, meta, err := fetch(c.Request.Context())
+	body, meta, err := fetch(c)
 	if err != nil {
 		errors.RespondError(c, err)
 		return
@@ -230,7 +207,7 @@ func HandleBatch[T any, R any](
 	}
 
 	if len(failures) > 0 {
-		RespondMultiStatus(c, resp)
+		RespondJSON(c, http.StatusMultiStatus, resp)
 		return
 	}
 

@@ -3,6 +3,7 @@ package tag
 import (
 	"net/http"
 	"server/internal/api/helpers"
+	"server/internal/errors"
 	tagpkg "server/internal/tag"
 	"server/internal/user"
 
@@ -67,15 +68,15 @@ func (h *Handler) PostTag(c *gin.Context) {
 	helpers.WithUser(c, func(usr *user.User) error {
 		var req TagPostRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			return helpers.WrapBadRequest(err)
+			return errors.WrapBadRequest(err)
 		}
 
-		t, err := h.tagService.Create(c.Request.Context(), req.ToServiceCreate(), usr.ID)
+		t, err := h.tagService.Create(c, req.ToServiceCreate(), usr.ID)
 		if err != nil {
 			return err
 		}
 
-		helpers.RespondCreated(c, FromServiceTag(t))
+		helpers.RespondJSON(c, http.StatusCreated, FromServiceTag(t))
 		return nil
 	})
 }
@@ -97,7 +98,7 @@ func (h *Handler) PostTagsBatch(c *gin.Context) {
 	helpers.WithUser(c, func(usr *user.User) error {
 		var req TagPostBatchRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			return helpers.WrapBadRequest(err)
+			return errors.WrapBadRequest(err)
 		}
 
 		names := req.ToServiceCreate()
@@ -108,7 +109,7 @@ func (h *Handler) PostTagsBatch(c *gin.Context) {
 		}
 
 		for _, name := range names {
-			t, err := h.tagService.Create(c.Request.Context(), name, usr.ID)
+			t, err := h.tagService.Create(c, name, usr.ID)
 			if err != nil {
 				failures = append(failures, struct {
 					Name  string `json:"name"`
@@ -130,11 +131,11 @@ func (h *Handler) PostTagsBatch(c *gin.Context) {
 		}
 
 		if len(failures) > 0 {
-			helpers.RespondMultiStatus(c, response)
+			helpers.RespondJSON(c, http.StatusMultiStatus, response)
 			return nil
 		}
 
-		helpers.RespondCreated(c, response)
+		helpers.RespondJSON(c, http.StatusCreated, response)
 		return nil
 	})
 }

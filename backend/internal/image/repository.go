@@ -177,15 +177,7 @@ func applyFilters(db *gorm.DB, query *Query) *gorm.DB {
 		db = db.Where("user_id = ?", query.User.ID)
 	}
 
-	if query.Limit != 0 {
-		db = db.Limit(query.Limit)
-	}
-
-	if query.Cursor != 0 {
-		db = db.Offset(query.Cursor)
-	}
-
-	db = db.Debug()
+	db = ApplyCursorLimit(db, query.Cursor, query.Limit)
 
 	return db
 }

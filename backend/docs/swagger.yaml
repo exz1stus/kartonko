@@ -9,6 +9,35 @@ definitions:
     - password
     - username
     type: object
+  BoardItemPatchRequest:
+    type: object
+  BoardItemPostRequest:
+    properties:
+      image_id:
+        type: integer
+    required:
+    - image_id
+    type: object
+  BoardItemResponse:
+    properties:
+      added:
+        type: string
+      image_metadata:
+        $ref: '#/definitions/ImageMetadata'
+    required:
+    - added
+    - image_metadata
+    type: object
+  BoardResponse:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
   EntryResponse:
     properties:
       action:
@@ -181,6 +210,26 @@ definitions:
     - privilege
     - username
     type: object
+  board.BoardCreateRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  board.BoardPatchRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
   user.UserResponce:
     properties:
       id:
@@ -278,6 +327,332 @@ paths:
       summary: Register a user
       tags:
       - auth
+  /board:
+    get:
+      description: Returns a slice of list of boards
+      parameters:
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: integer
+      - default: 20
+        description: Limit results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/BoardResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List boards
+      tags:
+      - boards
+    post:
+      parameters:
+      - description: Board creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.BoardCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/BoardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Creates new board
+      tags:
+      - boards
+  /board/{id}:
+    delete:
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete board by id
+      tags:
+      - boards
+    get:
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BoardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets board metadata by id
+      tags:
+      - boards
+    patch:
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Board patch request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.BoardPatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BoardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Patches existing board by id
+      tags:
+      - boards
+  /board/{id}/image:
+    get:
+      description: Returns a slice of board's items
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Pagination cursor
+        in: query
+        name: cursor
+        type: integer
+      - default: 20
+        description: Limit results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/BoardItemResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List board items
+      tags:
+      - boards
+    post:
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Board item creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/BoardItemPostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/BoardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Adds image to a board
+      tags:
+      - boards
+  /board/{id}/image/{imageID}:
+    delete:
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Image ID
+        format: int64
+        in: path
+        name: imageID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Removes image from board by id
+      tags:
+      - boards
+    get:
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Image ID
+        format: int64
+        in: path
+        name: imageID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BoardItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets image from the board
+      tags:
+      - boards
+    patch:
+      parameters:
+      - description: Board ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Image ID
+        format: int64
+        in: path
+        name: imageID
+        required: true
+        type: integer
+      - description: Board item patch request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/BoardItemPatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BoardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Patches existing board image
+      tags:
+      - boards
   /health:
     get:
       description: Returns "ok" if server is up and running
@@ -346,6 +721,10 @@ paths:
         in: query
         name: prefix
         type: string
+      - description: Interpret prefix as a natural-language semantic query
+        in: query
+        name: semantic
+        type: boolean
       - collectionFormat: csv
         description: Comma separated or array
         in: query
@@ -384,6 +763,37 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Gets images by query
+      tags:
+      - images
+  /image/{id}:
+    delete:
+      description: Deletes an image by its id (requires authentication)
+      parameters:
+      - description: Image id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deletes an image by id
       tags:
       - images
   /image/{name}:
@@ -479,6 +889,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ImageMetadata'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -580,6 +994,29 @@ paths:
       - images
   /image/upload:
     post:
+      consumes:
+      - multipart/form-data
+      description: Uploads an image with metadata (requires authentication)
+      parameters:
+      - description: Image file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Image name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Array of tags
+        in: formData
+        items:
+          type: string
+        name: tags
+        type: array
+      produces:
+      - application/json
       responses:
         "201":
           description: Created
@@ -597,6 +1034,11 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Uploads a single image
+      tags:
+      - images
   /image/upload/batch:
     post:
       consumes:
@@ -849,7 +1291,7 @@ schemes:
 - https
 securityDefinitions:
   BearerAuth:
-    description: Bearer JWT authentication.
+    description: Bearer JWT authentication stored in the jwt cookie.
     in: cookie
     name: jwt
     type: apiKey

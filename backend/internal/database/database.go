@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"server/internal/board"
 	"server/internal/image"
 	"server/internal/log"
 	"server/internal/tag"
@@ -28,6 +29,8 @@ func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 		&tag.Tag{},
 		&user.User{},
 		&log.AuditEntry{},
+		&board.Board{},
+		&board.BoardItem{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"server/internal/api/transaction"
+	"server/internal/board"
 	embeddings "server/internal/embedding"
 	"server/internal/image"
 	"server/internal/log"
@@ -19,6 +20,7 @@ type App struct {
 	LogService        log.LogService
 	ObjectService     image.ObjectService
 	EmbeddingsService embeddings.EmbeddingsService
+	BoardService      board.BoardService
 }
 
 func NewApp(
@@ -30,6 +32,7 @@ func NewApp(
 	userRepo := user.NewUserRepository(db)
 	tagRepo := tag.NewTagRepository(db)
 	logRepo := log.NewLogRepository(db)
+	boardRepo := board.NewBoardRepository(db)
 
 	runner := transaction.GormRunner{DB: db}
 
@@ -50,6 +53,8 @@ func NewApp(
 		runner,
 	)
 
+	boardService := board.NewBoardService(boardRepo, userRepo)
+
 	userService := user.NewUserService(userRepo)
 	//TODO: temporary for dev
 	userService.SetPrivilege(1, 1)
@@ -67,5 +72,6 @@ func NewApp(
 		LogService:        logService,
 		ObjectService:     objectService,
 		EmbeddingsService: embeddingsService,
+		BoardService:      boardService,
 	}
 }

@@ -39,7 +39,7 @@ func TestAuthMiddleware(userSvc userpkg.UserService) gin.HandlerFunc {
 		}
 		var id uint64
 		fmt.Sscanf(idStr, "%d", &id)
-		usr, err := userSvc.GetByID(uint(id))
+		usr, err := userSvc.GetByID(context.Background(), uint(id))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("failed parsing test user: %v", err)})
 			c.Abort()

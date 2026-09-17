@@ -7,8 +7,16 @@
  */
 import type {
   AuthRequestBody,
+  BoardBoardCreateRequest,
+  BoardBoardPatchRequest,
+  BoardItemPatchRequest,
+  BoardItemPostRequest,
+  BoardItemResponse,
+  BoardResponse,
   DeleteImageParams,
   EntryResponse,
+  GetBoardIdImageParams,
+  GetBoardParams,
   GetHealth200,
   GetImageParams,
   GetLogParams,
@@ -108,6 +116,297 @@ return clientMutator<LoginResponse>(getPostAuthRegisterUrl(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(authRequestBody)
+  }
+);}
+
+
+
+export const getGetBoardUrl = (params?: GetBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/board?${stringifiedParams}` : `/board`
+}
+
+/**
+ * Returns a slice of list of boards
+ * @summary List boards
+ */
+export const getBoard = async (params?: GetBoardParams, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse[]> => {
+
+  return clientMutator<BoardResponse[]>(getGetBoardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPostBoardUrl = () => {
+
+
+
+
+  return `/board`
+}
+
+/**
+ * @summary Creates new board
+ */
+export const postBoard = async (boardBoardCreateRequest: BoardBoardCreateRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return clientMutator<BoardResponse>(getPostBoardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardBoardCreateRequest)
+  }
+);}
+
+
+
+export const getGetBoardIdUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}`
+}
+
+/**
+ * @summary Gets board metadata by id
+ */
+export const getBoardId = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+
+  return clientMutator<BoardResponse>(getGetBoardIdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteBoardIdUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}`
+}
+
+/**
+ * @summary Delete board by id
+ */
+export const deleteBoardId = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
+
+  return clientMutator<void>(getDeleteBoardIdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPatchBoardIdUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}`
+}
+
+/**
+ * @summary Patches existing board by id
+ */
+export const patchBoardId = async (id: number,
+    boardBoardPatchRequest: BoardBoardPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return clientMutator<BoardResponse>(getPatchBoardIdUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardBoardPatchRequest)
+  }
+);}
+
+
+
+export const getGetBoardIdImageUrl = (id: number,
+    params?: GetBoardIdImageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/board/${id}/image?${stringifiedParams}` : `/board/${id}/image`
+}
+
+/**
+ * Returns a slice of board's items
+ * @summary List board items
+ */
+export const getBoardIdImage = async (id: number,
+    params?: GetBoardIdImageParams, options?: Parameters<typeof clientMutator>[1]): Promise<BoardItemResponse[]> => {
+
+  return clientMutator<BoardItemResponse[]>(getGetBoardIdImageUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPostBoardIdImageUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}/image`
+}
+
+/**
+ * @summary Adds image to a board
+ */
+export const postBoardIdImage = async (id: number,
+    boardItemPostRequest: BoardItemPostRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return clientMutator<BoardResponse>(getPostBoardIdImageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardItemPostRequest)
+  }
+);}
+
+
+
+export const getGetBoardIdImageImageIDUrl = (id: number,
+    imageID: number,) => {
+
+
+
+
+  return `/board/${id}/image/${imageID}`
+}
+
+/**
+ * @summary Gets image from the board
+ */
+export const getBoardIdImageImageID = async (id: number,
+    imageID: number, options?: Parameters<typeof clientMutator>[1]): Promise<BoardItemResponse> => {
+
+  return clientMutator<BoardItemResponse>(getGetBoardIdImageImageIDUrl(id,imageID),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteBoardIdImageImageIDUrl = (id: number,
+    imageID: number,) => {
+
+
+
+
+  return `/board/${id}/image/${imageID}`
+}
+
+/**
+ * @summary Removes image from board by id
+ */
+export const deleteBoardIdImageImageID = async (id: number,
+    imageID: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
+
+  return clientMutator<void>(getDeleteBoardIdImageImageIDUrl(id,imageID),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPatchBoardIdImageImageIDUrl = (id: number,
+    imageID: number,) => {
+
+
+
+
+  return `/board/${id}/image/${imageID}`
+}
+
+/**
+ * @summary Patches existing board image
+ */
+export const patchBoardIdImageImageID = async (id: number,
+    imageID: number,
+    boardItemPatchRequest: BoardItemPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return clientMutator<BoardResponse>(getPatchBoardIdImageImageIDUrl(id,imageID),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(boardItemPatchRequest)
   }
 );}
 

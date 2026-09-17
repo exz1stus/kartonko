@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -9,8 +10,8 @@ type UserService interface {
 	CreateByGoogle(username string, email string, googleID string, pictureURL string) (*User, error)
 	CreateByRegistration(username string, hashedPassword string) (*User, error)
 
-	GetByID(id uint) (*User, error)
-	GetByUsername(username string) (*User, error)
+	GetByID(ctx context.Context, id uint) (*User, error)
+	GetByName(username string) (*User, error)
 	GetByEmail(email string) (*User, error)
 	GetByProviderID(id string) (*User, error)
 
@@ -85,11 +86,11 @@ func (s *userService) CreateByRegistration(username string, hashedPassword strin
 	return user, err
 }
 
-func (s *userService) GetByID(id uint) (*User, error) {
+func (s *userService) GetByID(ctx context.Context, id uint) (*User, error) {
 	return s.users.GetByID(id)
 }
 
-func (s *userService) GetByUsername(username string) (*User, error) {
+func (s *userService) GetByName(username string) (*User, error) {
 	return s.users.GetByUsername(username)
 }
 

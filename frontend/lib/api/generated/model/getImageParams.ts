@@ -12,6 +12,10 @@ export type GetImageParams = {
  */
 prefix?: string;
 /**
+ * Interpret prefix as a natural-language semantic query
+ */
+semantic?: boolean;
+/**
  * Comma separated or array
  */
 tags?: string[];

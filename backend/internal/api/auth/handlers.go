@@ -76,7 +76,7 @@ func (h *Handler) PostLogin(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.GetByUsername(input.Username)
+	user, err := h.userService.GetByName(input.Username)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errors.ErrorResponse{Error: "invalid username"})
 		return
