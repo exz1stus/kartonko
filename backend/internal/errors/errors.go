@@ -32,17 +32,17 @@ func RespondError(c *gin.Context, err error) {
 	case errors.Is(err, ErrInternalServer):
 		status = http.StatusInternalServerError
 
-	case errors.Is(err, ErrNotFound):
-	case errors.Is(err, gorm.ErrRecordNotFound):
+	case errors.Is(err, ErrNotFound),
+		errors.Is(err, gorm.ErrRecordNotFound):
 		status = http.StatusNotFound
 
 	case errors.Is(err, ErrPermissionDenied):
 		status = http.StatusForbidden
 
-	case errors.Is(err, ErrUnsupportedFormat):
-	case errors.Is(err, ErrDuplicateHash):
-	case errors.Is(err, ErrDuplicateName):
-	case errors.Is(err, ErrBadRequest):
+	case errors.Is(err, ErrUnsupportedFormat),
+		errors.Is(err, ErrDuplicateHash),
+		errors.Is(err, ErrDuplicateName),
+		errors.Is(err, ErrBadRequest):
 		status = http.StatusBadRequest
 
 	case errors.Is(err, ErrUnauthorized):

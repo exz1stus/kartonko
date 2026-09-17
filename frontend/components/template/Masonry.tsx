@@ -88,14 +88,15 @@ const Masonry: React.FC<Props> = ({
         return () => observer.disconnect();
     }, [childrenArray, colWidthPx, gap, maxCols, minCols]);
 
-    // const maxContainerWidth = ;
+    const maxWidthStyle =
+        maxCols > 0 ? `${(maxCols + 1) * colWidthPx}px` : "100%";
 
     return (
         <div
             ref={containerRef}
             className={ec("grid w-full h-full", className)}
             style={{
-                // maxWidth: maxContainerWidth,
+                maxWidth: maxWidthStyle,
                 columnGap: `${gap}px`,
                 gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
             }}

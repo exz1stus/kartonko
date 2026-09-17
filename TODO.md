@@ -46,6 +46,7 @@ BACKEND:
 - ~~new doc frontend scalar~~
 
 - add boards
+- rewrite api to valid crud, add update, add frontend way to manipulate
 - revert upload to json
 - move to rabbit mq events
 - fast upload route

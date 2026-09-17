@@ -76,7 +76,7 @@ const Gallery: React.FC<Props> = ({
                 <Masonry
                     className="p-4"
                     items={masonryItems}
-                    colWidthPx={200}
+                    colWidthPx={180}
                     minCols={2}
                 />
             </div>
