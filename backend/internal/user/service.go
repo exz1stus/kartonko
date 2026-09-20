@@ -60,10 +60,10 @@ func (s *userService) CreateByGoogle(username string, email string, googleID str
 
 	user := &User{
 		Username:   username,
-		Email:      email,
+		Email:      &email,
 		Privilege:  Unprivileged,
 		Provider:   "google",
-		ProviderID: googleID,
+		ProviderID: &googleID,
 		PictureURL: pictureURL,
 	}
 
@@ -80,6 +80,7 @@ func (s *userService) CreateByRegistration(username string, hashedPassword strin
 		Username:       username,
 		HashedPassword: hashedPassword,
 		Privilege:      Unprivileged,
+		Provider:       "registration",
 	}
 
 	err := s.Create(user)

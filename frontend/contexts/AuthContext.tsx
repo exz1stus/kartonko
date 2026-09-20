@@ -1,7 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import router from "next/router";
 import {
     useState,
     useEffect,
@@ -39,10 +38,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({
         };
 
         window.addEventListener("beforeunload", handleWindowClose);
-        router.events.on("routeChangeStart", handleBrowseAway);
         return () => {
             window.removeEventListener("beforeunload", handleWindowClose);
-            router.events.off("routeChangeStart", handleBrowseAway);
         };
     }, []);
 

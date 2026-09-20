@@ -31,7 +31,7 @@ FRONTEND:
 - Image editing page
 - Photopea edit image integration
 - Uploading update webhook
-- Fix captcha not reloading on error upload
+- ~~Fix captcha not reloading on error upload~~
 - Add Last seen on webhooks
 - rework profile pop up
 

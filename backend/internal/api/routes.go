@@ -22,7 +22,7 @@ func (api *Api) InitRoutes(authMiddleware gin.HandlerFunc) {
 	r := api.router
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{env.GetEnvString("FRONTEND_ORIGIN")},
+		AllowOrigins:     []string{env.GetEnvString("FRONTEND_ORIGIN"), env.GetEnvString("API_ORIGIN")},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

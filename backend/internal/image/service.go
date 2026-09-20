@@ -306,7 +306,7 @@ func (s *imageService) validateNewImage(img *ImageMetadata) error {
 		return fmt.Errorf("check duplicate hash: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("duplicate hash: %w", err)
+		return fmt.Errorf("duplicate hash")
 	}
 
 	exists, err = s.images.ExistsByName(img.Filename)
@@ -314,7 +314,7 @@ func (s *imageService) validateNewImage(img *ImageMetadata) error {
 		return fmt.Errorf("check duplicate name: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("duplicate name: %w", err)
+		return fmt.Errorf("duplicate name %s", img.Filename)
 	}
 
 	return nil

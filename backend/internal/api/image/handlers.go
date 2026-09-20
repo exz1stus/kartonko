@@ -186,7 +186,7 @@ func (h *Handler) GetImageByName(c *gin.Context) {
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/hash/{hash} [get]
 func (h *Handler) GetImageByHash(c *gin.Context) {
-	img, err := h.imageService.GetByName(c.Param("hash"))
+	img, err := h.imageService.GetByHash(c.Param("hash"))
 	if err != nil {
 		errors.RespondError(c, err)
 		return
@@ -298,7 +298,7 @@ func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 // @Tags images
 // @Produce json
 // @Param prefix query string false "Filter by name prefix"
-// @Param semantic query bool false "Interpret prefix as a natural-language semantic query"O
+// @Param semantic query bool false "Interpret prefix as a natural-language semantic query"
 // @Param tags query []string false "Comma separated or array" Example:"tags=animal,cat" or "tags=animal&tags=cat"
 // @Param username query string false "Filter by username"
 // @Param user_id query uint false "Filter by user ID"
