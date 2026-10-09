@@ -9,6 +9,8 @@
 export interface BoardResponse {
   description: string;
   id: number;
+  image_count: number;
   name: string;
+  slug: string;
   user_id: number;
 }

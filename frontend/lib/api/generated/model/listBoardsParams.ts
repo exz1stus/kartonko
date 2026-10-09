@@ -15,4 +15,12 @@ cursor?: number;
  * Limit results
  */
 limit?: number;
+/**
+ * Board name contains
+ */
+name?: string;
+/**
+ * Board owner ID
+ */
+user_id?: number;
 };

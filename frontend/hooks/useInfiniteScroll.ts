@@ -9,33 +9,33 @@ interface Props<TQuery, TItem> {
     initRequestSize?: number;
     initialItems?: TItem[];
     initialReachedEnd?: boolean;
-    isQueryEmpty: (query: TQuery) => boolean;
 }
 
 export default function useInfiniteScroll<TQuery, TItem>({
     fetchFn,
     query,
     requestSize = 30,
-    initRequestSize = 70,
+    initRequestSize = 40,
     initialItems = [],
     initialReachedEnd = false,
-    isQueryEmpty,
 }: Props<TQuery, TItem>) {
     const [items, setItems] = useState<TItem[]>(initialItems);
     const [loading, setLoading] = useState(false);
     const [reachedEnd, setReachedEnd] = useState(initialReachedEnd);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchingRef = useRef(false);
     const reachedEndRef = useRef(initialReachedEnd);
     const loadingRef = useRef(false);
+    const errorRef = useRef(false);
     const cursorRef = useRef(initialItems.length);
     const fetchIdRef = useRef(0);
     const queryRef = useRef(query);
-    const hasQueryChangedFromInit = useRef(false);
+    const queryKeyRef = useRef(JSON.stringify(query));
 
     const fetchItems = useCallback(
         async (query: TQuery, limit: number) => {
-            if (fetchingRef.current || reachedEndRef.current) return;
+            if (fetchingRef.current || reachedEndRef.current || errorRef.current) return;
 
             const cursor = cursorRef.current;
             cursorRef.current += limit;
@@ -48,6 +48,7 @@ export default function useInfiniteScroll<TQuery, TItem>({
                 const data = await fetchFn(query, cursor, limit);
                 if (!data) return;
                 if (myFetchId !== fetchIdRef.current) return;
+                setError(null);
                 setItems((prev) => [...prev, ...data]);
 
                 if (data.length < limit) {
@@ -58,6 +59,8 @@ export default function useInfiniteScroll<TQuery, TItem>({
                 console.error("useInfiniteScroll fetch error:", error);
                 if (myFetchId === fetchIdRef.current) {
                     cursorRef.current = cursor;
+                    errorRef.current = true;
+                    setError(error instanceof Error ? error.message : "Could not load results");
                 }
             } finally {
                 if (myFetchId === fetchIdRef.current) {
@@ -79,20 +82,23 @@ export default function useInfiniteScroll<TQuery, TItem>({
 
     // Reset and re-fetch when query changes
     useEffect(() => {
-        if (!isQueryEmpty(query)) hasQueryChangedFromInit.current = true;
-        if (!hasQueryChangedFromInit.current) return;
+        const queryKey = JSON.stringify(query);
+        if (queryKey === queryKeyRef.current) return;
+        queryKeyRef.current = queryKey;
 
         queryRef.current = query;
         fetchIdRef.current++;
         fetchingRef.current = false;
         loadingRef.current = false;
         reachedEndRef.current = false;
+        errorRef.current = false;
         cursorRef.current = 0;
 
         setItems([]);
         setReachedEnd(false);
+        setError(null);
         fetchItems(query, requestSize);
-    }, [fetchItems, isQueryEmpty, query, requestSize]);
+    }, [fetchItems, query, requestSize]);
 
     // Initial fetch
     useEffect(() => {
@@ -103,16 +109,35 @@ export default function useInfiniteScroll<TQuery, TItem>({
 
     // Fires when sentinel enters view (user scrolled down, or content doesn't fill screen)
     useEffect(() => {
-        if (!inView || loadingRef.current || reachedEndRef.current) return;
+        if (!inView || loadingRef.current || reachedEndRef.current || errorRef.current) return;
         fetchItems(queryRef.current, requestSize);
     }, [inView, fetchItems, requestSize]);
 
     // inView won't re-fire if it's already true when loading ends (sentinel
     // stayed visible the whole time). Re-check manually after each fetch.
     useEffect(() => {
-        if (loading || !inView || reachedEndRef.current) return;
+        if (loading || !inView || reachedEndRef.current || errorRef.current) return;
         fetchItems(queryRef.current, requestSize);
     }, [loading, inView, fetchItems, requestSize]);
 
-    return { items, loading, reachedEnd, sentinelRef };
+    const retry = () => {
+        errorRef.current = false;
+        setError(null);
+        fetchItems(queryRef.current, requestSize);
+    };
+
+    const refresh = () => {
+        fetchIdRef.current++;
+        fetchingRef.current = false;
+        loadingRef.current = false;
+        reachedEndRef.current = false;
+        errorRef.current = false;
+        cursorRef.current = 0;
+        setItems([]);
+        setReachedEnd(false);
+        setError(null);
+        fetchItems(queryRef.current, requestSize);
+    };
+
+    return { items, loading, reachedEnd, error, retry, refresh, sentinelRef };
 }

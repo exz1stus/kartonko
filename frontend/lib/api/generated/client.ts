@@ -252,6 +252,54 @@ return clientMutator<BoardResponse>(getPostBoardUrl(),
 
 
 
+export const getListBoardIDsForImageUrl = (imageId: number,) => {
+
+
+
+
+  return `/board/image/${imageId}/board-ids`
+}
+
+/**
+ * @summary List IDs of boards containing an image
+ */
+export const listBoardIDsForImage = async (imageId: number, options?: Parameters<typeof clientMutator>[1]): Promise<number[]> => {
+
+  return clientMutator<number[]>(getListBoardIDsForImageUrl(imageId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetBoardBySlugUrl = (slug: string,) => {
+
+
+
+
+  return `/board/slug/${slug}`
+}
+
+/**
+ * @summary Gets board metadata by its readable slug
+ */
+export const getBoardBySlug = async (slug: string, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+
+  return clientMutator<BoardResponse>(getGetBoardBySlugUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
 export const getGetBoardUrl = (id: number,) => {
 
 
@@ -391,6 +439,30 @@ return clientMutator<BoardItemResponse>(getPostBoardImageUrl(id),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(boardItemPostRequest)
+  }
+);}
+
+
+
+export const getListBoardImageIDsUrl = (id: number,) => {
+
+
+
+
+  return `/board/${id}/image-ids`
+}
+
+/**
+ * @summary List IDs of images on a board
+ */
+export const listBoardImageIDs = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<number[]> => {
+
+  return clientMutator<number[]>(getListBoardImageIDsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

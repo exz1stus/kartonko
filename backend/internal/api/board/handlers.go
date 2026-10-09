@@ -7,6 +7,7 @@ import (
 	"server/internal/errors"
 	"server/internal/user"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,16 +26,81 @@ func NewBoardHandler(
 
 func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 	public.GET("", h.ListBoards)
+	public.GET("/image/:imageId/board-ids", h.ListBoardIDsForImage)
+	public.GET("/slug/:slug", h.GetBoardBySlug)
 
 	protected.POST("", h.PostBoard)
 	public.GET("/:id", h.GetBoard)
 	protected.PATCH("/:id", h.PatchBoard)
 	protected.DELETE("/:id", h.DeleteBoard)
 	public.GET("/:id/image", h.ListBoardImages)
+	public.GET("/:id/image-ids", h.ListBoardImageIDs)
 
 	protected.POST("/:id/image", h.PostBoardImage)
 	public.GET("/:id/image/:imageId", h.GetBoardImage)
 	protected.DELETE("/:id/image/:imageId", h.DeleteBoardImage)
+}
+
+// GetBoardBySlug godoc
+// @Summary Gets board metadata by its readable slug
+// @Tags boards
+// @Produce json
+// @Param slug path string true "Board slug"
+// @Success 200 {object} BoardResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /board/slug/{slug} [get]
+// @ID GetBoardBySlug
+func (h *Handler) GetBoardBySlug(c *gin.Context) {
+	board, err := h.boardService.GetBySlug(c, c.Param("slug"))
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	helpers.RespondJSON(c, http.StatusOK, NewBoardResponse(board))
+}
+
+// ListBoardIDsForImage godoc
+// @Summary List IDs of boards containing an image
+// @Tags boards
+// @Produce json
+// @Param imageId path uint64 true "Image ID"
+// @Success 200 {array} integer
+// @Router /board/image/{imageId}/board-ids [get]
+// @ID ListBoardIDsForImage
+func (h *Handler) ListBoardIDsForImage(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("imageId"), 10, 64)
+	if err != nil || id == 0 {
+		errors.RespondError(c, errors.ErrBadRequest)
+		return
+	}
+	ids, err := h.boardService.BoardIDsForImage(c, uint(id))
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	helpers.RespondJSON(c, http.StatusOK, ids)
+}
+
+// ListBoardImageIDs godoc
+// @Summary List IDs of images on a board
+// @Tags boards
+// @Produce json
+// @Param id path uint64 true "Board ID"
+// @Success 200 {array} integer
+// @Router /board/{id}/image-ids [get]
+// @ID ListBoardImageIDs
+func (h *Handler) ListBoardImageIDs(c *gin.Context) {
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	ids, err := h.boardService.ImageIDs(c, id)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+	helpers.RespondJSON(c, http.StatusOK, ids)
 }
 
 // ListBoards godoc
@@ -44,6 +110,8 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Produce json
 // @Param cursor query int false "Pagination cursor"
 // @Param limit query int false "Limit results" default(20)
+// @Param name query string false "Board name contains"
+// @Param user_id query int false "Board owner ID"
 // @Success 200 {array} BoardResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Router /board [get]
@@ -55,7 +123,16 @@ func (h *Handler) ListBoards(c *gin.Context) {
 		return
 	}
 
-	boards, err := h.boardService.List(c, cursor, limit)
+	var ownerID uint64
+	if raw := c.Query("user_id"); raw != "" {
+		ownerID, err = strconv.ParseUint(raw, 10, 64)
+		if err != nil || ownerID == 0 {
+			errors.RespondError(c, errors.ErrBadRequest)
+			return
+		}
+	}
+
+	boards, err := h.boardService.List(c, c.Query("name"), uint(ownerID), cursor, limit)
 	if err != nil {
 		errors.RespondError(c, err)
 		return
@@ -192,6 +269,8 @@ func (h *Handler) DeleteBoard(c *gin.Context) {
 // @Param id path uint64 true "Board ID"
 // @Param cursor query int false "Pagination cursor"
 // @Param limit query int false "Limit results" default(20)
+// @Param prefix query string false "Image filename prefix"
+// @Param tags query []string false "Image tags" collectionFormat(csv)
 // @Success 200 {array} BoardItemResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
@@ -209,7 +288,15 @@ func (h *Handler) ListBoardImages(c *gin.Context) {
 		return
 	}
 
-	items, err := h.boardService.ListImages(c, boardID, cursor, limit)
+	var tags []string
+	for _, value := range c.QueryArray("tags") {
+		for _, tag := range strings.Split(value, ",") {
+			if tag = strings.TrimSpace(tag); tag != "" {
+				tags = append(tags, tag)
+			}
+		}
+	}
+	items, err := h.boardService.ListImages(c, boardID, c.Query("prefix"), tags, cursor, limit)
 	if err != nil {
 		errors.RespondError(c, err)
 		return

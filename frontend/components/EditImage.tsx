@@ -46,7 +46,9 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                 try {
                     const existing = await getImageByName(nextFilename);
                     if (existing.id !== image.id) {
-                        throw new Error(`Image name already exists: ${nextFilename}`);
+                        throw new Error(
+                            `Image name already exists: ${nextFilename}`,
+                        );
                     }
                 } catch (error) {
                     if (!(error instanceof ApiError && error.status === 404)) {
@@ -63,7 +65,10 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                 if (result.failures?.length) {
                     throw new Error(
                         result.failures
-                            .map((failure) => `${failure.name}: ${failure.error}`)
+                            .map(
+                                (failure) =>
+                                    `${failure.name}: ${failure.error}`,
+                            )
                             .join(", "),
                     );
                 }
@@ -111,13 +116,12 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
     return (
         <div className="flex flex-col gap-2">
             <div className="flex flex-row items-center gap-2">
-                <span className="text-2xl">Edit:</span>
                 {!editing && (
                     <button
                         type="button"
                         disabled={pending}
                         onClick={() => setEditing(true)}
-                        className="m-2 hover:text-primary disabled:opacity-50"
+                        className="disabled:opacity-50 m-2 hover:text-primary"
                         aria-label="Edit image"
                     >
                         <Pencil />
@@ -127,7 +131,7 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                     type="button"
                     disabled={pending}
                     onClick={() => void removeImage()}
-                    className="m-2 hover:text-red-500 disabled:opacity-50"
+                    className="disabled:opacity-50 m-2 hover:text-red-500"
                     aria-label="Delete image"
                 >
                     <Trash2 />
@@ -136,30 +140,42 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
             {editing && (
                 <div className="flex flex-col gap-2 min-w-64">
                     <input
-                        className="border rounded-md px-2 py-1 bg-transparent"
+                        className="bg-transparent px-2 py-1 border rounded-md"
                         value={filename}
-                        onChange={(event) => setFilename(sanitizeName(event.target.value))}
+                        onChange={(event) =>
+                            setFilename(sanitizeName(event.target.value))
+                        }
                         aria-label="Image name"
                     />
                     <TagSelector
                         inputStyle="flex flex-wrap gap-1 border rounded-t-md w-full h-full bg-neutral-900 px-3 py-2"
                         tags={tags}
-                        removeTag={(tag) => setTags((current) => current.filter((item) => item !== tag))}
+                        removeTag={(tag) =>
+                            setTags((current) =>
+                                current.filter((item) => item !== tag),
+                            )
+                        }
                         onTagsUpdate={setTags}
                         newTags={newTags}
-                        removeNewTag={(tag) => setNewTags((current) => current.filter((item) => item !== tag))}
+                        removeNewTag={(tag) =>
+                            setNewTags((current) =>
+                                current.filter((item) => item !== tag),
+                            )
+                        }
                         onNewTagsUpdate={setNewTags}
                     />
                     <div className="flex gap-2">
                         <button
                             type="button"
                             disabled={pending}
-                            onClick={() => void toast.promise(save(), {
-                                loading: "Saving...",
-                                success: "Image updated",
-                                error: (error) => error.message,
-                            })}
-                            className="inline-flex items-center gap-1 border rounded-md px-2 py-1 hover:border-primary"
+                            onClick={() =>
+                                void toast.promise(save(), {
+                                    loading: "Saving...",
+                                    success: "Image updated",
+                                    error: (error) => error.message,
+                                })
+                            }
+                            className="inline-flex items-center gap-1 px-2 py-1 border hover:border-primary rounded-md"
                         >
                             <Save size={16} /> Save
                         </button>
@@ -172,7 +188,7 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                                 setNewTags([]);
                                 setEditing(false);
                             }}
-                            className="inline-flex items-center gap-1 border rounded-md px-2 py-1"
+                            className="inline-flex items-center gap-1 px-2 py-1 border rounded-md"
                         >
                             <X size={16} /> Cancel
                         </button>

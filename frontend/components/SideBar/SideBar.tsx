@@ -23,6 +23,8 @@ const SideBar: React.FC = async () => {
     return (
         <aside className="flex portrait:flex-row landscape:flex-col portrait:flex-wrap portrait:justify-center items-center portrait:gap-2 portrait:px-2 landscape:py-2 w-full h-full">
             <Link href="/">Gallery</Link>
+            <Link href="/boards">Boards</Link>
+            <Link href="/tags">Tags</Link>
             {authed}
             {moderator}
         </aside>

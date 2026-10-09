@@ -8,5 +8,7 @@
 
 export interface TagResponse {
   id: number;
+  image_count: number;
   name: string;
+  user_id: number;
 }

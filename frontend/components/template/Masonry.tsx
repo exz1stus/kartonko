@@ -110,7 +110,7 @@ const Masonry: React.FC<Props> = ({
     return (
         <div
             ref={containerRef}
-            className={ec("grid w-full h-full", className)}
+            className={ec("grid w-full", className)}
             style={{
                 maxWidth: maxWidthStyle,
                 columnGap: `${gap}px`,

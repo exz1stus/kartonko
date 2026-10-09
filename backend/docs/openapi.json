@@ -239,6 +239,22 @@
                             "type": "integer",
                             "default": 20
                         }
+                    },
+                    {
+                        "description": "Board name contains",
+                        "name": "name",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Board owner ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
                     }
                 ],
                 "responses": {
@@ -307,6 +323,84 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/board/image/{imageId}/board-ids": {
+            "get": {
+                "tags": [
+                    "boards"
+                ],
+                "summary": "List IDs of boards containing an image",
+                "operationId": "ListBoardIDsForImage",
+                "parameters": [
+                    {
+                        "description": "Image ID",
+                        "name": "imageId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/board/slug/{slug}": {
+            "get": {
+                "tags": [
+                    "boards"
+                ],
+                "summary": "Gets board metadata by its readable slug",
+                "operationId": "GetBoardBySlug",
+                "parameters": [
+                    {
+                        "description": "Board slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BoardResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -532,6 +626,27 @@
                             "type": "integer",
                             "default": 20
                         }
+                    },
+                    {
+                        "description": "Image filename prefix",
+                        "name": "prefix",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Image tags",
+                        "name": "tags",
+                        "in": "query",
+                        "style": "form",
+                        "explode": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
                     }
                 ],
                 "responses": {
@@ -626,6 +741,42 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/board/{id}/image-ids": {
+            "get": {
+                "tags": [
+                    "boards"
+                ],
+                "summary": "List IDs of images on a board",
+                "operationId": "ListBoardImageIDs",
+                "parameters": [
+                    {
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    }
                                 }
                             }
                         }
@@ -2432,11 +2583,15 @@
                 "type": "object",
                 "required": [
                     "added",
+                    "id",
                     "image_metadata"
                 ],
                 "properties": {
                     "added": {
                         "type": "string"
+                    },
+                    "id": {
+                        "type": "integer"
                     },
                     "image_metadata": {
                         "$ref": "#/components/schemas/ImageMetadata"
@@ -2474,7 +2629,9 @@
                 "required": [
                     "description",
                     "id",
+                    "image_count",
                     "name",
+                    "slug",
                     "user_id"
                 ],
                 "properties": {
@@ -2484,7 +2641,13 @@
                     "id": {
                         "type": "integer"
                     },
+                    "image_count": {
+                        "type": "integer"
+                    },
                     "name": {
+                        "type": "string"
+                    },
+                    "slug": {
                         "type": "string"
                     },
                     "user_id": {
@@ -2719,14 +2882,22 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "name"
+                    "image_count",
+                    "name",
+                    "user_id"
                 ],
                 "properties": {
                     "id": {
                         "type": "integer"
                     },
+                    "image_count": {
+                        "type": "integer"
+                    },
                     "name": {
                         "type": "string"
+                    },
+                    "user_id": {
+                        "type": "integer"
                     }
                 }
             },

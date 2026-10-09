@@ -51,6 +51,16 @@ func getRawContentType(meta any) string {
 	return "application/octet-stream"
 }
 
+func handleThumbnail(c *gin.Context, fetch func(context.Context) (io.ReadCloser, any, error)) {
+	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		body, meta, err := fetch(ctx)
+		if err == nil {
+			c.Header("Cache-Control", "public, max-age=300")
+		}
+		return body, meta, err
+	}, getRawContentType)
+}
+
 func getFormatFromHeader(fileHeader *multipart.FileHeader) (image.Format, error) {
 	format, err := image.FormatFromMIME(fileHeader.Header.Get("Content-Type"))
 	if err != nil || !format.IsSupported() {
@@ -300,14 +310,15 @@ func (h *Handler) GetRawThumbnail(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		errors.RespondError(c, err)
+		return
 	}
-	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+	handleThumbnail(c, func(ctx context.Context) (io.ReadCloser, any, error) {
 		img, err := h.imageService.Get(c, id)
 		if err != nil {
 			return nil, nil, err
 		}
 		return h.objectService.GetRawThumbnailByHash(ctx, img.Hash)
-	}, getRawContentType)
+	})
 }
 
 // GetRawThumbnailByName godoc
@@ -322,13 +333,13 @@ func (h *Handler) GetRawThumbnail(c *gin.Context) {
 // @ID GetRawThumbnailByName
 func (h *Handler) GetRawThumbnailByName(c *gin.Context) {
 	name := c.Param("name")
-	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+	handleThumbnail(c, func(ctx context.Context) (io.ReadCloser, any, error) {
 		img, err := h.imageService.GetByName(c, name)
 		if err != nil {
 			return nil, nil, err
 		}
 		return h.objectService.GetRawThumbnailByHash(ctx, img.Hash)
-	}, getRawContentType)
+	})
 }
 
 // GetRawThumbnailByHash godoc
@@ -343,9 +354,9 @@ func (h *Handler) GetRawThumbnailByName(c *gin.Context) {
 // @ID GetRawThumbnailByHash
 func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 	hash := c.Param("hash")
-	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+	handleThumbnail(c, func(ctx context.Context) (io.ReadCloser, any, error) {
 		return h.objectService.GetRawThumbnailByHash(ctx, hash)
-	}, getRawContentType)
+	})
 }
 
 // GetImagesByQuery godoc

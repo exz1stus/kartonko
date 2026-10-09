@@ -12,12 +12,14 @@ type Board struct {
 	gorm.Model
 
 	Name        string `json:"name" gorm:"not null"`
+	Slug        string `json:"slug" gorm:"uniqueIndex"`
 	Description string `json:"description"`
 
 	UserID uint      `json:"user_id" gorm:"not null"`
 	User   user.User `json:"user" gorm:"foreignKey:UserID"`
 
-	Items []BoardItem `json:"items"  gorm:"foreignKey:BoardID;constraint:OnDelete:CASCADE;"`
+	Items      []BoardItem `json:"items"  gorm:"foreignKey:BoardID;constraint:OnDelete:CASCADE;"`
+	ImageCount int64       `gorm:"->;-:migration"`
 }
 
 type BoardItem struct {

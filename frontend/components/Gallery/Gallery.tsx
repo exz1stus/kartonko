@@ -1,15 +1,13 @@
 "use client";
-import React, { useCallback, useRef, useState } from "react";
-import ImageCard from "@/components/Gallery/ImageCard";
-import { SearchQuery, ImageSearch, isQueryEmpty } from "./ImageSearch";
+import React, { useCallback, useState } from "react";
+import { SearchQuery, ImageSearch } from "./ImageSearch";
 import { useDebounce } from "use-debounce";
 import Scrollbar from "@/components/template/Scrollbar";
 import DragDropZone from "@/components/UploadImage/DragDropZone";
-import Masonry, { MasonryItem } from "@/components/template/Masonry";
+import InfiniteImageGrid from "@/components/Gallery/InfiniteImageGrid";
 import { ImageMetadata } from "@/lib/api/generated/model";
 import usePreUpload from "@/hooks/usePreUpload";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
-import Loading from "../Loading";
 import { ImageIcon } from "lucide-react";
 import { getImagesByQuery } from "@/lib/api/generated/client";
 
@@ -24,7 +22,6 @@ const Gallery: React.FC<Props> = ({
     initReachedEnd,
     initialQuery,
 }) => {
-    const galleryRef = useRef<HTMLDivElement>(null);
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery);
     const [debouncedQuery] = useDebounce(searchQuery, 200);
 
@@ -46,24 +43,15 @@ const Gallery: React.FC<Props> = ({
         [],
     );
 
-    const { items, loading, reachedEnd, sentinelRef } = useInfiniteScroll<
+    const { items, loading, reachedEnd, error, retry, sentinelRef } = useInfiniteScroll<
         SearchQuery,
         ImageMetadata
     >({
         fetchFn: fetchImages,
         query: debouncedQuery,
         initialItems: initialImages,
-        isQueryEmpty: isQueryEmpty,
         initialReachedEnd: initReachedEnd,
     });
-
-    const masonryItems: MasonryItem[] = items.map((image) => ({
-        key: image.filename,
-        ratio: image.height / image.width,
-        // ImageCard's filename is one line with leading-6.
-        extraHeightPx: 24,
-        item: <ImageCard image={image} />,
-    }));
 
     const footer = (
         <div className="flex gap-3 px-5">
@@ -72,41 +60,18 @@ const Gallery: React.FC<Props> = ({
         </div>
     );
 
-    const content = (
-        <div ref={galleryRef}>
-            <div className="flex justify-center grow p-4">
-                <Masonry
-                    items={masonryItems}
-                    colWidthPx={180}
-                    maxColWidthPx={320}
-                    minCols={2}
-                />
-            </div>
-            {!reachedEnd && <div ref={sentinelRef} />}
-            <div
-                className={`${
-                    reachedEnd && !loading && masonryItems.length > 0
-                        ? "border-t"
-                        : ""
-                } flex  justify-center p-4`}
-            >
-                {loading && <Loading />}
-            </div>
-        </div>
-    );
-
     return (
         <div className="flex flex-col h-full">
             <ImageSearch
                 initialQuery={initialQuery}
                 onQueryChange={(query: SearchQuery) => setSearchQuery(query)}
-                className="p-4 border-primary-0 border-b shrink-0"
+                className="shrink-0 border-b border-surface-20 p-4"
             />
-            <div className="flex-1 overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-hidden">
                 <DragDropZone onFilesDropped={handleDroppedFiles}>
                     <div className="flex flex-col h-full">
-                        <Scrollbar className="overflow-x-hidden">
-                            {content}
+                        <Scrollbar className="min-h-0 overflow-x-hidden overscroll-contain">
+                            <InfiniteImageGrid images={items} loading={loading} reachedEnd={reachedEnd} error={error} retry={retry} sentinelRef={sentinelRef} />
                             {reachedEnd && footer}
                         </Scrollbar>
                     </div>

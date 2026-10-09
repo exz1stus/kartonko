@@ -25,7 +25,6 @@ const Log = () => {
     >({
         fetchFn: fetchEntries,
         query: {},
-        isQueryEmpty: () => true,
     });
 
     const entries = items.map((entry, index) => {

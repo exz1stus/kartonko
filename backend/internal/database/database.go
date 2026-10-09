@@ -39,6 +39,9 @@ func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
 	}
+	if err := board.EnsureSlugs(db); err != nil {
+		return nil, fmt.Errorf("failed to backfill board slugs: %w", err)
+	}
 
 	return db, nil
 }

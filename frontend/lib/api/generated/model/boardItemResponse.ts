@@ -9,5 +9,6 @@ import type { ImageMetadata } from './imageMetadata';
 
 export interface BoardItemResponse {
   added: string;
+  id: number;
   image_metadata: ImageMetadata;
 }

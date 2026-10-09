@@ -5,6 +5,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	apperrors "server/internal/errors"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -37,8 +38,17 @@ func (r *tagRepository) WithTx(tx *gorm.DB) TagRepository {
 
 func (r *tagRepository) Get(ctx context.Context, tagID uint) (*Tag, error) {
 	var tag Tag
-	err := r.db.WithContext(ctx).Where("id = ?", tagID).First(&tag).Error
-	return &tag, err
+	db := r.db.WithContext(ctx)
+	if err := db.Where("id = ?", tagID).First(&tag).Error; err != nil {
+		return &tag, err
+	}
+	if err := db.Table("image_tags").
+		Joins("JOIN image_metadata ON image_metadata.id = image_tags.image_metadata_id AND image_metadata.deleted_at IS NULL").
+		Where("image_tags.tag_id = ?", tagID).
+		Distinct("image_tags.image_metadata_id").Count(&tag.ImageCount).Error; err != nil {
+		return &tag, err
+	}
+	return &tag, nil
 }
 
 func (r *tagRepository) Update(ctx context.Context, tag *Tag) error {
@@ -69,15 +79,32 @@ func (r *tagRepository) Create(ctx context.Context, tag *Tag) error {
 }
 
 func (r *tagRepository) SearchPrefix(ctx context.Context, prefix string, cursor int, limit int) ([]Tag, error) {
-	var tags []Tag
-	if err := r.db.WithContext(ctx).Model(&Tag{}).
-		Where("name LIKE ?", prefix+"%").
+	type tagCountRow struct {
+		Tag
+		ImageCount int64 `gorm:"column:image_count"`
+	}
+	var rows []tagCountRow
+	if err := r.db.WithContext(ctx).Table("tags").
+		Joins(`LEFT JOIN (
+			SELECT image_tags.tag_id, COUNT(DISTINCT image_tags.image_metadata_id) AS image_count
+			FROM image_tags
+			JOIN image_metadata ON image_metadata.id = image_tags.image_metadata_id
+				AND image_metadata.deleted_at IS NULL
+			GROUP BY image_tags.tag_id
+		) AS image_counts ON image_counts.tag_id = tags.id`).
+		Select("tags.*, COALESCE(image_counts.image_count, 0) AS image_count").
+		Where("tags.deleted_at IS NULL AND LOWER(tags.name) LIKE ?", strings.ToLower(prefix)+"%").
+		Order("image_count DESC, tags.name ASC, tags.id ASC").
 		Offset(cursor).
 		Limit(limit).
-		Find(&tags).Error; err != nil {
+		Scan(&rows).Error; err != nil {
 		return nil, err
 	}
-
+	tags := make([]Tag, len(rows))
+	for i, row := range rows {
+		tags[i] = row.Tag
+		tags[i].ImageCount = row.ImageCount
+	}
 	return tags, nil
 }
 

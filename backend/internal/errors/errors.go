@@ -18,6 +18,7 @@ var (
 	ErrUnsupportedFormat = errors.New("unsupported format")
 	ErrDuplicateName     = errors.New("name already exists")
 	ErrDuplicateHash     = errors.New("hash already exists")
+	ErrAlreadyExists     = errors.New("image is already on this board")
 )
 
 type ErrorResponse struct {
@@ -47,6 +48,9 @@ func RespondError(c *gin.Context, err error) {
 
 	case errors.Is(err, ErrUnauthorized):
 		status = http.StatusUnauthorized
+
+	case errors.Is(err, ErrAlreadyExists):
+		status = http.StatusConflict
 	}
 
 	c.JSON(status, ErrorResponse{Error: msg})

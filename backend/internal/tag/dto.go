@@ -18,8 +18,10 @@ type TagPatchRequest struct {
 } // @name TagPatchRequest
 
 type TagResponse struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	ID         uint   `json:"id"`
+	Name       string `json:"name"`
+	UserID     uint   `json:"user_id"`
+	ImageCount int64  `json:"image_count"`
 } // @name TagResponse
 
 type TagBatchResponse struct {
@@ -32,8 +34,10 @@ type TagBatchResponse struct {
 
 func NewTagResponse(tag *Tag) TagResponse {
 	return TagResponse{
-		ID:   tag.ID,
-		Name: tag.Name,
+		ID:         tag.ID,
+		Name:       tag.Name,
+		UserID:     tag.UserID,
+		ImageCount: tag.ImageCount,
 	}
 }
 

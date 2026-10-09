@@ -235,6 +235,18 @@ const docTemplate = `{
                         "description": "Limit results",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Board name contains",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Board owner ID",
+                        "name": "user_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -290,6 +302,74 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/board/image/{imageId}/board-ids": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "boards"
+                ],
+                "summary": "List IDs of boards containing an image",
+                "operationId": "ListBoardIDsForImage",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Image ID",
+                        "name": "imageId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/board/slug/{slug}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "boards"
+                ],
+                "summary": "Gets board metadata by its readable slug",
+                "operationId": "GetBoardBySlug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Board slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/BoardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -469,6 +549,22 @@ const docTemplate = `{
                         "description": "Limit results",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Image filename prefix",
+                        "name": "prefix",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Image tags",
+                        "name": "tags",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -540,6 +636,39 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/board/{id}/image-ids": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "boards"
+                ],
+                "summary": "List IDs of images on a board",
+                "operationId": "ListBoardImageIDs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
                         }
                     }
                 }
@@ -1988,11 +2117,15 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "added",
+                "id",
                 "image_metadata"
             ],
             "properties": {
                 "added": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "image_metadata": {
                     "$ref": "#/definitions/ImageMetadata"
@@ -2030,7 +2163,9 @@ const docTemplate = `{
             "required": [
                 "description",
                 "id",
+                "image_count",
                 "name",
+                "slug",
                 "user_id"
             ],
             "properties": {
@@ -2040,7 +2175,13 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "image_count": {
+                    "type": "integer"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 },
                 "user_id": {
@@ -2275,14 +2416,22 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "id",
-                "name"
+                "image_count",
+                "name",
+                "user_id"
             ],
             "properties": {
                 "id": {
                     "type": "integer"
                 },
+                "image_count": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },

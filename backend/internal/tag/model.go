@@ -10,8 +10,9 @@ import (
 
 type Tag struct {
 	gorm.Model
-	Name   string `json:"name" gorm:"unique;not null"`
-	UserID uint   `json:"user_id" gorm:"not null"`
+	Name       string `json:"name" gorm:"unique;not null"`
+	UserID     uint   `json:"user_id" gorm:"not null"`
+	ImageCount int64  `gorm:"-"`
 
 	User user.User `gorm:"foreign_key:UserID"`
 }

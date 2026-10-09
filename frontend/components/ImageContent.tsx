@@ -8,6 +8,7 @@ import EditImage from "./EditImage";
 import { getUser } from "@/lib/api/generated/server";
 import { getLoggedUser } from "@/lib/user/user.server";
 import { ImageMetadata } from "@/lib/api/generated/model";
+import AddToBoard from "@/components/Boards/AddToBoard";
 
 interface Props {
     image: ImageMetadata;
@@ -64,6 +65,7 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                             <TimeField time={image.uploaded_at} />
                         </div>
                         {tags}
+                        {user && <AddToBoard imageId={image.id} />}
                         {user && (
                             <EditImage
                                 image={image}

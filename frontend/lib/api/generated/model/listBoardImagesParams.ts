@@ -15,4 +15,12 @@ cursor?: number;
  * Limit results
  */
 limit?: number;
+/**
+ * Image filename prefix
+ */
+prefix?: string;
+/**
+ * Image tags
+ */
+tags?: string[];
 };
