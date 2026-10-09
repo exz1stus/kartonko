@@ -55,7 +55,7 @@ func (s *objectService) getRaw(
 }
 
 func (s *objectService) GetRawImage(ctx context.Context, id uint) (reader io.ReadCloser, img *ImageMetadata, err error) {
-	img, err = s.images.GetByID(id)
+	img, err = s.images.Get(ctx, id)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -63,7 +63,7 @@ func (s *objectService) GetRawImage(ctx context.Context, id uint) (reader io.Rea
 }
 
 func (s *objectService) GetRawThumbnail(ctx context.Context, id uint) (reader io.ReadCloser, img *ImageMetadata, err error) {
-	img, err = s.images.GetByID(id)
+	img, err = s.images.Get(ctx, id)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,7 +71,7 @@ func (s *objectService) GetRawThumbnail(ctx context.Context, id uint) (reader io
 }
 
 func (s *objectService) GetRawImageByHash(ctx context.Context, hash string) (reader io.ReadCloser, img *ImageMetadata, err error) {
-	img, err = s.images.GetByHash(hash)
+	img, err = s.images.GetByHash(ctx, hash)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,7 +79,7 @@ func (s *objectService) GetRawImageByHash(ctx context.Context, hash string) (rea
 }
 
 func (s *objectService) GetRawThumbnailByHash(ctx context.Context, hash string) (reader io.ReadCloser, img *ImageMetadata, err error) {
-	img, err = s.images.GetByHash(hash)
+	img, err = s.images.GetByHash(ctx, hash)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -87,7 +87,7 @@ func (s *objectService) GetRawThumbnailByHash(ctx context.Context, hash string) 
 }
 
 func (s *objectService) GetRawImageData(ctx context.Context, id uint) (io.ReadCloser, error) {
-	img, err := s.images.GetByID(id)
+	img, err := s.images.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}

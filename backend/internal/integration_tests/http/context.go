@@ -39,7 +39,7 @@ func TestAuthMiddleware(userSvc userpkg.UserService) gin.HandlerFunc {
 		}
 		var id uint64
 		fmt.Sscanf(idStr, "%d", &id)
-		usr, err := userSvc.GetByID(context.Background(), uint(id))
+		usr, err := userSvc.Get(context.Background(), uint(id))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("failed parsing test user: %v", err)})
 			c.Abort()
@@ -118,7 +118,7 @@ func (c *TestContext) AssertImageCount(expected int64) {
 
 func (c *TestContext) AssertImageCountQuery(query *imgpkg.Query, expected int64) {
 	c.T.Helper()
-	count, err := c.ImageService.Count(query)
+	count, err := c.ImageService.Count(c.T.Context(), query)
 	require.NoError(c.T, err)
 	require.Equal(c.T, count, expected)
 }
@@ -202,7 +202,7 @@ func WriteFilePart(w *multipart.Writer, fieldName, filename, contentType string,
 
 func (c *TestContext) UploadImage(postMetadata imgapi.ImagePostRequest, mimeType string, content []byte, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
-	req := buildUploadRequest(c.T, "/image/upload", postMetadata, mimeType, content)
+	req := buildUploadRequest(c.T, "/image", postMetadata, mimeType, content)
 	if userID != 0 {
 		req = WithTestUser(req, userID)
 	}
@@ -243,7 +243,7 @@ func (c *TestContext) UploadImageBatch(fileDatas []TestFileData, commonTags []st
 	}
 	metadataJSONstr := string(metadataJSON)
 
-	req := buildBatchUploadRequest(c.T, "/image/upload/batch", metadataJSONstr, fileDatas)
+	req := buildBatchUploadRequest(c.T, "/image/batch", metadataJSONstr, fileDatas)
 	if userID != 0 {
 		req = WithTestUser(req, userID)
 	}
@@ -282,7 +282,7 @@ func (c *TestContext) QueryImagesWithResponse(query string, userID uint64) (*htt
 
 func (c *TestContext) GetImageByName(filename string, userID uint64) (*httptest.ResponseRecorder, imgapi.ImageResponse) {
 	c.T.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/image/"+filename, nil)
+	req := httptest.NewRequest(http.MethodGet, "/image/name/"+filename, nil)
 	if userID != 0 {
 		req = WithTestUser(req, userID)
 	}
@@ -300,7 +300,7 @@ func (c *TestContext) GetImageByName(filename string, userID uint64) (*httptest.
 
 func (c *TestContext) GetRawImage(filename string, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/image/raw/"+filename, nil)
+	req := httptest.NewRequest(http.MethodGet, "/image/name/"+filename+"/raw", nil)
 	if userID != 0 {
 		req = WithTestUser(req, userID)
 	}
@@ -311,7 +311,7 @@ func (c *TestContext) GetRawImage(filename string, userID uint64) *httptest.Resp
 
 func (c *TestContext) GetThumbnail(filename string, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/image/thumb/"+filename, nil)
+	req := httptest.NewRequest(http.MethodGet, "/image/name/"+filename+"/thumb", nil)
 	if userID != 0 {
 		req = WithTestUser(req, userID)
 	}
@@ -365,14 +365,16 @@ func (c *TestContext) SeedImageByNameAndTags(name string, tags ...string) imgapi
 func (c *TestContext) SeedTags(tags ...string) {
 	c.T.Helper()
 	for _, tn := range tags {
-		exists, err := c.TagService.Exists(tn)
+		exists, err := c.TagService.ExistsByName(c.T.Context(), tn)
 		if err != nil {
 			c.T.Fatalf("failed to check tag %s: %v", tn, err)
 		}
 		if exists {
 			continue
 		}
-		_, err = c.TagService.Create(context.Background(), tn, 1) //uses uid 1 - moderator user
+
+		req := &tag.TagPostRequest{Name: tn}
+		_, err = c.TagService.Create(c.T.Context(), req, 1) //uses uid 1 - moderator user
 		if err != nil {
 			c.T.Fatalf("failed to seed tag %s: %v", tn, err)
 		}

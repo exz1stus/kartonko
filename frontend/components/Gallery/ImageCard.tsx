@@ -33,7 +33,7 @@ const ImageCard: React.FC<Props> = ({ image, className, style }) => {
             <PerspectiveCard>
                 <div className="flex flex-col items-center bg-surface-20 rounded-xl hover:cursor-pointer">
                     <Image
-                        src={`/apilocal/image/thumb/${filename}`}
+                        src={`/apilocal/image/name/${filename}/thumb`}
                         alt={filename}
                         className="rounded-t-xl w-full h-auto"
                         width={width}

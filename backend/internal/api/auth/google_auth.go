@@ -49,6 +49,15 @@ func GetGoogleAuthConfig() *oauth2.Config {
 	return googleOauthConfig
 }
 
+// GetGoogleLogin godoc
+// @Summary Google OAuth login
+// @Description Initiates Google OAuth login flow
+// @Tags auth
+// @Produce json
+// @Param redirect query string false "Redirect URL after login"
+// @Success 302 "Redirect to Google OAuth"
+// @Router /auth/google [get]
+// @ID GetGoogleLogin
 func (h *Handler) GetGoogleLogin(c *gin.Context) {
 	redirect := c.Query("redirect")
 	state := redirect
@@ -63,6 +72,18 @@ type UserInfo struct {
 	Picture string `json:"picture"`
 }
 
+// GetGoogleCallback godoc
+// @Summary Google OAuth callback
+// @Description Handles Google OAuth callback
+// @Tags auth
+// @Produce json
+// @Param code query string true "Authorization code"
+// @Param state query string false "State parameter"
+// @Success 200 {object} LoginResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
+// @Router /auth/google/callback [get]
+// @ID GetGoogleCallback
 func (h *Handler) GetGoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
@@ -90,7 +111,7 @@ func (h *Handler) GetGoogleCallback(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.GetByProviderID(userInfo.ID)
+	user, err := h.userService.GetByProviderID(c, userInfo.ID)
 	if err != nil && !stderrors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusBadRequest, apierrors.ErrorResponse{Error: err.Error()})
 		return
@@ -98,6 +119,7 @@ func (h *Handler) GetGoogleCallback(c *gin.Context) {
 
 	if stderrors.Is(err, gorm.ErrRecordNotFound) {
 		user, err = h.userService.CreateByGoogle(
+			c,
 			userInfo.Name,
 			userInfo.Email,
 			userInfo.ID,

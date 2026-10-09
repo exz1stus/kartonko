@@ -2,9 +2,8 @@ package board
 
 import (
 	"context"
-	"server/internal/api/auth"
 	"server/internal/errors"
-	"server/internal/user"
+	userpkg "server/internal/user"
 )
 
 type BoardService interface {
@@ -25,15 +24,15 @@ type BoardService interface {
 
 type boardService struct {
 	boards BoardRepository
-	users  user.UserRepository
+	users  userpkg.UserRepository
 }
 
-func NewBoardService(boards BoardRepository, users user.UserRepository) BoardService {
+func NewBoardService(boards BoardRepository, users userpkg.UserRepository) BoardService {
 	return &boardService{boards, users}
 }
 
 func (s *boardService) List(ctx context.Context, cursor, limit int) ([]Board, error) {
-	return s.boards.List(cursor, limit)
+	return s.boards.List(ctx, cursor, limit)
 }
 
 func (s *boardService) Create(ctx context.Context, userID uint, req *BoardCreateRequest) (*Board, error) {
@@ -43,7 +42,7 @@ func (s *boardService) Create(ctx context.Context, userID uint, req *BoardCreate
 		UserID:      userID,
 	}
 
-	if err := s.boards.Create(board); err != nil {
+	if err := s.boards.Create(ctx, board); err != nil {
 		return nil, err
 	}
 
@@ -55,11 +54,11 @@ func (s *boardService) Delete(ctx context.Context, userID uint, boardID uint) er
 		return err
 	}
 
-	return s.boards.Delete(boardID)
+	return s.boards.Delete(ctx, boardID)
 }
 
 func (s *boardService) Get(ctx context.Context, boardID uint) (*Board, error) {
-	return s.boards.Get(boardID)
+	return s.boards.Get(ctx, boardID)
 }
 
 func (s *boardService) Update(ctx context.Context, userID uint, boardID uint, req *BoardPatchRequest) (*Board, error) {
@@ -80,7 +79,7 @@ func (s *boardService) Update(ctx context.Context, userID uint, boardID uint, re
 		board.Description = *req.Description
 	}
 
-	if err := s.boards.Update(board); err != nil {
+	if err := s.boards.Update(ctx, board); err != nil {
 		return nil, err
 	}
 
@@ -88,17 +87,17 @@ func (s *boardService) Update(ctx context.Context, userID uint, boardID uint, re
 }
 
 func (s *boardService) checkUserPermission(ctx context.Context, boardID uint, userID uint) error {
-	user, err := s.users.GetByID(userID)
+	user, err := s.users.Get(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	board, err := s.boards.Get(boardID)
+	board, err := s.boards.Get(ctx, boardID)
 	if err != nil {
 		return err
 	}
 
-	if !auth.CanEdit(user.ID, user.Privilege, board.UserID) {
+	if !userpkg.CanEdit(user.ID, user.Privilege, board.UserID) {
 		return errors.ErrPermissionDenied
 	}
 
@@ -106,16 +105,16 @@ func (s *boardService) checkUserPermission(ctx context.Context, boardID uint, us
 }
 
 func (s *boardService) GetImage(ctx context.Context, boardID, imageID uint) (*BoardItem, error) {
-	return s.boards.GetItem(boardID, imageID)
+	return s.boards.GetItem(ctx, boardID, imageID)
 }
 
 func (s *boardService) ListImages(ctx context.Context, boardID uint, cursor, limit int) ([]BoardItem, error) {
-	return s.boards.ListItems(boardID, cursor, limit)
+	return s.boards.ListItems(ctx, boardID, cursor, limit)
 }
 
 func (s *boardService) AddImage(ctx context.Context, boardID uint, imageID uint, userID uint) (*BoardItem, error) {
 	if err := s.checkUserPermission(ctx, boardID, userID); err != nil {
-		return nil, errors.WrapPermissionDenied(err)
+		return nil, err
 	}
 
 	item := &BoardItem{
@@ -123,7 +122,7 @@ func (s *boardService) AddImage(ctx context.Context, boardID uint, imageID uint,
 		ImageID: imageID,
 	}
 
-	if err := s.boards.AddItem(boardID, item); err != nil {
+	if err := s.boards.AddItem(ctx, boardID, item); err != nil {
 		return nil, err
 	}
 
@@ -135,7 +134,7 @@ func (s *boardService) RemoveImage(ctx context.Context, boardID uint, imageID ui
 		return err
 	}
 
-	return s.boards.DeleteItem(boardID, imageID)
+	return s.boards.DeleteItem(ctx, boardID, imageID)
 }
 
 // func (s *boardService) UpdateImage(ctx context.Context, boardID uint, item *BoardItemPatchRequest, userID uint) (*BoardItem, error) {

@@ -4,45 +4,70 @@ import (
 	"context"
 	"fmt"
 	"server/internal/api/transaction"
+	"server/internal/errors"
 	"server/internal/log"
+	userpkg "server/internal/user"
 
 	"gorm.io/gorm"
 )
 
 type TagService interface {
-	Create(ctx context.Context, tag string, userID uint) (*Tag, error)
+	Create(ctx context.Context, req *TagPostRequest, userID uint) (*Tag, error)
+	Get(ctx context.Context, tagID uint) (*Tag, error)
+	Update(ctx context.Context, userID, tagID uint, req *TagPatchRequest) (*Tag, error)
+	Delete(ctx context.Context, userID, tagID uint) error
 
-	SearchPrefix(prefix string, cursor int, limit int) ([]Tag, error)
+	SearchPrefix(ctx context.Context, prefix string, cursor int, limit int) ([]Tag, error)
 
-	Exists(name string) (bool, error)
-	ExistMany(tags []Tag) ([]bool, error)
+	ExistsByName(ctx context.Context, name string) (bool, error)
+	ExistMany(ctx context.Context, tags []Tag) ([]bool, error)
 }
 
 type tagService struct {
 	tags         TagRepository
+	users        userpkg.UserRepository
 	logs         log.LogService
 	transactions transaction.Runner
 }
 
-func NewTagService(tags TagRepository, logs log.LogService, transactions transaction.Runner) TagService {
-	return &tagService{tags, logs, transactions}
+func NewTagService(tags TagRepository, logs log.LogService, users userpkg.UserRepository, transactions transaction.Runner) TagService {
+	return &tagService{tags, users, logs, transactions}
 }
 
-func (s *tagService) Create(ctx context.Context, tag string, userID uint) (*Tag, error) {
-	exists, err := s.tags.Exists(tag)
+func (s *tagService) checkUserPermission(ctx context.Context, tagID uint, userID uint) error {
+	user, err := s.users.Get(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	tag, err := s.tags.Get(ctx, tagID)
+	if err != nil {
+		return err
+	}
+
+	if !userpkg.CanEdit(user.ID, user.Privilege, tag.UserID) {
+		return errors.ErrPermissionDenied
+	}
+
+	return nil
+}
+
+func (s *tagService) Create(ctx context.Context, req *TagPostRequest, userID uint) (*Tag, error) {
+	exists, err := s.tags.ExistsByName(ctx, req.Name)
 	if err != nil {
 		return nil, fmt.Errorf("check duplicate: %w", err)
 	}
 	if exists {
-		return nil, fmt.Errorf("tag already exists: %s", tag)
+		return nil, fmt.Errorf("tag already exists: %s", req.Name)
 	}
 
 	var createdTag *Tag
 
 	err = s.transactions.Within(ctx, func(tx *gorm.DB) error {
 		tagsRepoTX := s.tags.WithTx(tx)
-		tag, err := tagsRepoTX.Create(tag)
-		if err != nil {
+		tag := &Tag{Name: req.Name, UserID: userID}
+
+		if err := tagsRepoTX.Create(ctx, tag); err != nil {
 			return err
 		}
 
@@ -57,14 +82,47 @@ func (s *tagService) Create(ctx context.Context, tag string, userID uint) (*Tag,
 	return createdTag, nil
 }
 
-func (s *tagService) SearchPrefix(prefix string, cursor int, limit int) ([]Tag, error) {
-	return s.tags.SearchPrefix(prefix, cursor, limit)
+func (s *tagService) Get(ctx context.Context, tagID uint) (*Tag, error) {
+	return s.tags.Get(ctx, tagID)
 }
 
-func (s *tagService) Exists(name string) (bool, error) {
-	return s.tags.Exists(name)
+func (s *tagService) Delete(ctx context.Context, userID, tagID uint) error {
+	if err := s.checkUserPermission(ctx, tagID, userID); err != nil {
+		return err
+	}
+
+	return s.tags.Delete(ctx, tagID)
 }
 
-func (s *tagService) ExistMany(tags []Tag) ([]bool, error) {
-	return s.tags.ExistMany(tags)
+func (s *tagService) Update(ctx context.Context, userID, tagID uint, req *TagPatchRequest) (*Tag, error) {
+	if err := s.checkUserPermission(ctx, tagID, userID); err != nil {
+		return nil, err
+	}
+
+	board, err := s.Get(ctx, tagID)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Name != nil {
+		board.Name = *req.Name
+	}
+
+	if err := s.tags.Update(ctx, board); err != nil {
+		return nil, err
+	}
+
+	return board, nil
+}
+
+func (s *tagService) SearchPrefix(ctx context.Context, prefix string, cursor int, limit int) ([]Tag, error) {
+	return s.tags.SearchPrefix(ctx, prefix, cursor, limit)
+}
+
+func (s *tagService) ExistsByName(ctx context.Context, name string) (bool, error) {
+	return s.tags.ExistsByName(ctx, name)
+}
+
+func (s *tagService) ExistMany(ctx context.Context, tags []Tag) ([]bool, error) {
+	return s.tags.ExistMany(ctx, tags)
 }

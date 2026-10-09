@@ -9,7 +9,7 @@ import ImageCreated from "./ImageCreated";
 import ImageDeleted from "./ImageDeleted";
 import TagCreated from "./TagCreated";
 import TagDeleted from "./TagDeleted";
-import { getUserIdId } from "@/lib/api/generated/client";
+import { getUser } from "@/lib/api/generated/client";
 
 interface Props {
     data: LogEntryData;
@@ -36,7 +36,7 @@ const LogEntry = ({ data }: Props) => {
     );
 
     const fetchUser = async () => {
-        const user = await getUserIdId(data.user_id);
+        const user = await getUser(data.user_id);
         setUser(user);
     };
 

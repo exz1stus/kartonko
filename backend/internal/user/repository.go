@@ -1,23 +1,29 @@
 package user
 
 import (
+	"context"
+
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
 	WithTx(tx *gorm.DB) UserRepository
 
-	Create(user *User) error
+	Create(ctx context.Context, user *User) error
 
-	GetByID(id uint) (*User, error)
-	GetByUsername(username string) (*User, error)
-	GetByEmail(email string) (*User, error)
-	GetByProviderID(providerID string) (*User, error)
+	Get(ctx context.Context, id uint) (*User, error)
+	GetByUsername(ctx context.Context, username string) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetByProviderID(ctx context.Context, providerID string) (*User, error)
 
-	SetPrivilege(userID uint, privilege Privilege) error
+	Update(ctx context.Context, user *User) error
 
-	ExistsByUsername(username string) (bool, error)
-	ExistsByEmail(email string) (bool, error)
+	Delete(ctx context.Context, userID uint) error
+
+	SetPrivilege(ctx context.Context, userID uint, privilege Privilege) error
+
+	ExistsByUsername(ctx context.Context, username string) (bool, error)
+	ExistsByEmail(ctx context.Context, email string) (bool, error)
 }
 
 type userRepository struct {
@@ -32,48 +38,72 @@ func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
 	return NewUserRepository(tx)
 }
 
-func (r *userRepository) Create(user *User) error {
-	return r.db.Create(user).Error
+func (r *userRepository) Create(ctx context.Context, user *User) error {
+	return r.db.WithContext(ctx).Create(user).Error
 }
 
-func (r *userRepository) GetByID(id uint) (*User, error) {
+func (r *userRepository) Get(ctx context.Context, id uint) (*User, error) {
 	var user User
-	err := r.db.Where("id = ?", id).First(&user).Error
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	return &user, err
 }
 
-func (r *userRepository) GetByUsername(username string) (*User, error) {
+func (r *userRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
 	var user User
-	err := r.db.Where("username = ?", username).First(&user).Error
+	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
 	return &user, err
 }
 
-func (r *userRepository) GetByEmail(email string) (*User, error) {
+func (r *userRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	var user User
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	return &user, err
 }
 
-func (r *userRepository) GetByProviderID(id string) (*User, error) {
+func (r *userRepository) GetByProviderID(ctx context.Context, id string) (*User, error) {
 	var user User
-	err := r.db.Where("provider_id = ?", id).First(&user).Error
+	err := r.db.WithContext(ctx).Where("provider_id = ?", id).First(&user).Error
 	return &user, err
 }
 
-func (r *userRepository) SetPrivilege(userID uint, privilege Privilege) error {
-	return r.db.Model(&User{}).
+func (r *userRepository) Delete(ctx context.Context, userID uint) error {
+	return r.db.
+		WithContext(ctx).
+		Where("id = ?", userID).
+		Delete(&User{}).
+		Error
+}
+
+func (r *userRepository) Update(ctx context.Context, user *User) error {
+	result := r.db.
+		WithContext(ctx).
+		Updates(user)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}
+
+func (r *userRepository) SetPrivilege(ctx context.Context, userID uint, privilege Privilege) error {
+	return r.db.WithContext(ctx).Model(&User{}).
 		Where("id = ?", userID).
 		Update("privilege", privilege).Error
 }
 
-func (r *userRepository) ExistsByUsername(username string) (bool, error) {
+func (r *userRepository) ExistsByUsername(ctx context.Context, username string) (bool, error) {
 	var count int64
-	err := r.db.Model(&User{}).Where("username = ?", username).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&User{}).Where("username = ?", username).Count(&count).Error
 	return count > 0, err
 }
 
-func (r *userRepository) ExistsByEmail(email string) (bool, error) {
+func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var count int64
-	err := r.db.Model(&User{}).Where("email = ?", email).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&User{}).Where("email = ?", email).Count(&count).Error
 	return count > 0, err
 }

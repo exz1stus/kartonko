@@ -7,6 +7,92 @@
         "version": "1.0"
     },
     "paths": {
+        "/auth/google": {
+            "get": {
+                "description": "Initiates Google OAuth login flow",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Google OAuth login",
+                "operationId": "GetGoogleLogin",
+                "parameters": [
+                    {
+                        "description": "Redirect URL after login",
+                        "name": "redirect",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to Google OAuth"
+                    }
+                }
+            }
+        },
+        "/auth/google/callback": {
+            "get": {
+                "description": "Handles Google OAuth callback",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Google OAuth callback",
+                "operationId": "GetGoogleCallback",
+                "parameters": [
+                    {
+                        "description": "Authorization code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "State parameter",
+                        "name": "state",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Logs in a user, generating a JWT token.",
@@ -14,6 +100,7 @@
                     "auth"
                 ],
                 "summary": "Login a user",
+                "operationId": "PostLogin",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/AuthRequest"
                 },
@@ -58,9 +145,18 @@
                     "auth"
                 ],
                 "summary": "Logout a user",
+                "operationId": "PostLogout",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Logout successful",
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "Clears the jwt cookie",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
                         "content": {
                             "*/*": {
                                 "schema": {
@@ -80,6 +176,7 @@
                     "auth"
                 ],
                 "summary": "Register a user",
+                "operationId": "PostRegister",
                 "requestBody": {
                     "$ref": "#/components/requestBodies/AuthRequest"
                 },
@@ -124,6 +221,7 @@
                     "boards"
                 ],
                 "summary": "List boards",
+                "operationId": "ListBoards",
                 "parameters": [
                     {
                         "description": "Pagination cursor",
@@ -174,11 +272,12 @@
                     "boards"
                 ],
                 "summary": "Creates new board",
+                "operationId": "PostBoard",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/board.BoardCreateRequest"
+                                "$ref": "#/components/schemas/BoardPostRequest"
                             }
                         }
                     },
@@ -225,6 +324,7 @@
                     "boards"
                 ],
                 "summary": "Gets board metadata by id",
+                "operationId": "GetBoard",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -275,6 +375,7 @@
                     "boards"
                 ],
                 "summary": "Delete board by id",
+                "operationId": "DeleteBoard",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -328,6 +429,7 @@
                     "boards"
                 ],
                 "summary": "Patches existing board by id",
+                "operationId": "PatchBoard",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -344,7 +446,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/board.BoardPatchRequest"
+                                "$ref": "#/components/schemas/BoardPatchRequest"
                             }
                         }
                     },
@@ -402,6 +504,7 @@
                     "boards"
                 ],
                 "summary": "List board items",
+                "operationId": "ListBoardImages",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -472,6 +575,7 @@
                     "boards"
                 ],
                 "summary": "Adds image to a board",
+                "operationId": "PostBoardImage",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -535,6 +639,7 @@
                     "boards"
                 ],
                 "summary": "Gets image from the board",
+                "operationId": "GetBoardImage",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -595,6 +700,7 @@
                     "boards"
                 ],
                 "summary": "Removes image from board by id",
+                "operationId": "DeleteBoardImage",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -658,6 +764,7 @@
                     "boards"
                 ],
                 "summary": "Patches existing board image",
+                "operationId": "PatchBoardImage",
                 "parameters": [
                     {
                         "description": "Board ID",
@@ -742,6 +849,7 @@
                     "healthcheck"
                 ],
                 "summary": "Health check",
+                "operationId": "GetHealthCheck",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -774,6 +882,7 @@
                     "images"
                 ],
                 "summary": "Gets images by query",
+                "operationId": "GetImagesByQuery",
                 "parameters": [
                     {
                         "description": "Filter by name prefix",
@@ -864,356 +973,6 @@
                     }
                 }
             },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Deletes multiple images matching the query parameters (requires authentication)",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Deletes images by query",
-                "parameters": [
-                    {
-                        "description": "Filter by name prefix",
-                        "name": "prefix",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "JSON array of tags",
-                        "name": "tags",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Filter by username",
-                        "name": "username",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Filter by user ID",
-                        "name": "user_id",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/image/hash/{hash}": {
-            "get": {
-                "description": "Returns image metadata by its hash",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Gets image metadata by its unique hash",
-                "parameters": [
-                    {
-                        "description": "Image hash",
-                        "name": "hash",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ImageMetadata"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/image/id/{id}": {
-            "get": {
-                "description": "Returns image metadata by its numeric ID",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Gets image metadata by ID",
-                "parameters": [
-                    {
-                        "description": "Image ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "format": "int64"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ImageMetadata"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/image/raw/hash/{hash}": {
-            "get": {
-                "description": "Returns the raw image file by its hash",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Gets raw image by hash",
-                "parameters": [
-                    {
-                        "description": "Image hash",
-                        "name": "hash",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Raw image file",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "type": "string",
-                                    "format": "binary"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/image/raw/{name}": {
-            "get": {
-                "description": "Returns the raw image file by its name",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Gets raw image by name",
-                "parameters": [
-                    {
-                        "description": "Image name",
-                        "name": "name",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Raw image file",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "type": "string",
-                                    "format": "binary"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/image/thumb/hash/{hash}": {
-            "get": {
-                "description": "Returns the raw thumbnail image file by its hash",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Gets raw image thumbnail by hash",
-                "parameters": [
-                    {
-                        "description": "Image hash",
-                        "name": "hash",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Raw thumbnail image file",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "type": "string",
-                                    "format": "binary"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/image/thumb/{name}": {
-            "get": {
-                "description": "Returns the raw thumbnail image file by its name",
-                "tags": [
-                    "images"
-                ],
-                "summary": "Gets raw image thumbnail by name",
-                "parameters": [
-                    {
-                        "description": "Image thumbnail name",
-                        "name": "name",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Raw thumbnail image file",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "type": "string",
-                                    "format": "binary"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/octet-stream": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/image/upload": {
             "post": {
                 "security": [
                     {
@@ -1225,6 +984,7 @@
                     "images"
                 ],
                 "summary": "Uploads a single image",
+                "operationId": "PostImage",
                 "requestBody": {
                     "content": {
                         "multipart/form-data": {
@@ -1299,9 +1059,91 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes multiple images matching the query parameters (requires authentication)",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Deletes images by query",
+                "operationId": "DeleteImagesByQuery",
+                "parameters": [
+                    {
+                        "description": "Filter by name prefix",
+                        "name": "prefix",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "JSON array of tags",
+                        "name": "tags",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by username",
+                        "name": "username",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by user ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
-        "/image/upload/batch": {
+        "/image/batch": {
             "post": {
                 "security": [
                     {
@@ -1313,6 +1155,7 @@
                     "images"
                 ],
                 "summary": "Uploads multiple images in batch",
+                "operationId": "PostImagesBatch",
                 "requestBody": {
                     "content": {
                         "multipart/form-data": {
@@ -1383,49 +1226,32 @@
                 }
             }
         },
-        "/image/{id}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Deletes an image by its id (requires authentication)",
+        "/image/hash/{hash}": {
+            "get": {
+                "description": "Returns image metadata by its hash",
                 "tags": [
                     "images"
                 ],
-                "summary": "Deletes an image by id",
+                "summary": "Gets image metadata by its unique hash",
+                "operationId": "GetImageByHash",
                 "parameters": [
                     {
-                        "description": "Image id",
-                        "name": "id",
+                        "description": "Image hash",
+                        "name": "hash",
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "401": {
-                        "description": "Unauthorized",
+                    "200": {
+                        "description": "OK",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "$ref": "#/components/schemas/ImageMetadata"
                                 }
                             }
                         }
@@ -1443,13 +1269,102 @@
                 }
             }
         },
-        "/image/{name}": {
+        "/image/hash/{hash}/raw": {
+            "get": {
+                "description": "Returns the raw image file by its hash",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Gets raw image by hash",
+                "operationId": "GetRawImageByHash",
+                "parameters": [
+                    {
+                        "description": "Image hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw image file",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/image/hash/{hash}/thumb": {
+            "get": {
+                "description": "Returns the raw thumbnail image file by its hash",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Gets raw image thumbnail by hash",
+                "operationId": "GetRawThumbnailByHash",
+                "parameters": [
+                    {
+                        "description": "Image hash",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw thumbnail image file",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/image/name/{name}": {
             "get": {
                 "description": "Returns image metadata by its name",
                 "tags": [
                     "images"
                 ],
                 "summary": "Gets image metadata by name",
+                "operationId": "GetImageByName",
                 "parameters": [
                     {
                         "description": "Image name",
@@ -1495,6 +1410,7 @@
                     "images"
                 ],
                 "summary": "Deletes an image by name",
+                "operationId": "DeleteImageByName",
                 "parameters": [
                     {
                         "description": "Image name",
@@ -1543,6 +1459,369 @@
                 }
             }
         },
+        "/image/name/{name}/raw": {
+            "get": {
+                "description": "Returns the raw image file by its name",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Gets raw image by name",
+                "operationId": "GetRawImageByName",
+                "parameters": [
+                    {
+                        "description": "Image name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw image file",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/image/name/{name}/thumb": {
+            "get": {
+                "description": "Returns the raw thumbnail image file by its name",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Gets raw image thumbnail by name",
+                "operationId": "GetRawThumbnailByName",
+                "parameters": [
+                    {
+                        "description": "Image thumbnail name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw thumbnail image file",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/image/{id}": {
+            "get": {
+                "description": "Returns image metadata by its numeric ID",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Gets image metadata by ID",
+                "operationId": "GetImage",
+                "parameters": [
+                    {
+                        "description": "Image ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ImageMetadata"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes an image by its ID (requires authentication)",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Deletes an image by ID",
+                "operationId": "DeleteImage",
+                "parameters": [
+                    {
+                        "description": "Image ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "images"
+                ],
+                "summary": "Patches existing image metadata by ID",
+                "operationId": "PatchImage",
+                "parameters": [
+                    {
+                        "description": "Image ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImagePatchRequest"
+                            }
+                        }
+                    },
+                    "description": "Image patch request",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ImageMetadata"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/image/{id}/raw": {
+            "get": {
+                "description": "Returns the raw image file by its ID",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Gets raw image by ID",
+                "operationId": "GetRawImage",
+                "parameters": [
+                    {
+                        "description": "Image ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw image file",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/image/{id}/thumb": {
+            "get": {
+                "description": "Returns the raw thumbnail image file by its ID",
+                "tags": [
+                    "images"
+                ],
+                "summary": "Gets raw image thumbnail by ID",
+                "operationId": "GetRawThumbnail",
+                "parameters": [
+                    {
+                        "description": "Image ID thumbnail",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw thumbnail image file",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/log": {
             "get": {
                 "description": "Returns a paginated list of audit log entries",
@@ -1550,6 +1829,7 @@
                     "log"
                 ],
                 "summary": "Gets audit log entries",
+                "operationId": "GetAuditLogEntries",
                 "parameters": [
                     {
                         "description": "Pagination cursor",
@@ -1603,6 +1883,7 @@
                     "tags"
                 ],
                 "summary": "Gets all tags",
+                "operationId": "GetTags",
                 "parameters": [
                     {
                         "description": "Tag name prefix",
@@ -1667,6 +1948,7 @@
                     "tags"
                 ],
                 "summary": "Creates a new tag",
+                "operationId": "PostTag",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -1734,6 +2016,7 @@
                     "tags"
                 ],
                 "summary": "Creates multiple tags in batch",
+                "operationId": "PostTagsBatch",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -1789,13 +2072,222 @@
                 }
             }
         },
-        "/user/id/{id}": {
+        "/tags/{id}": {
+            "delete": {
+                "tags": [
+                    "tags"
+                ],
+                "summary": "Delete tag by id",
+                "operationId": "DeleteTag",
+                "parameters": [
+                    {
+                        "description": "Tag ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "tags"
+                ],
+                "summary": "Patches existing tag by id",
+                "operationId": "PatchTag",
+                "parameters": [
+                    {
+                        "description": "Tag ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TagPatchRequest"
+                            }
+                        }
+                    },
+                    "description": "Tag patch request",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TagResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated user's profile (requires authentication)",
+                "tags": [
+                    "user"
+                ],
+                "summary": "Gets current user profile",
+                "operationId": "GetMe",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDataResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/name/{name}": {
+            "get": {
+                "description": "Returns user profile by username",
+                "tags": [
+                    "user"
+                ],
+                "summary": "Gets user by username",
+                "operationId": "GetUserByName",
+                "parameters": [
+                    {
+                        "description": "Username",
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDataResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/{id}": {
             "get": {
                 "description": "Returns user profile by numeric ID",
                 "tags": [
                     "user"
                 ],
                 "summary": "Gets user by ID",
+                "operationId": "GetUser",
                 "parameters": [
                     {
                         "description": "User ID",
@@ -1840,33 +2332,51 @@
                         }
                     }
                 }
-            }
-        },
-        "/user/me": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the authenticated user's profile (requires authentication)",
+            },
+            "delete": {
                 "tags": [
                     "user"
                 ],
-                "summary": "Gets current user profile",
+                "summary": "Delete user by id",
+                "operationId": "DeleteUser",
+                "parameters": [
+                    {
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/UserDataResponse"
+                                    "$ref": "#/components/schemas/ErrorResponse"
                                 }
                             }
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1876,26 +2386,36 @@
                         }
                     }
                 }
-            }
-        },
-        "/user/{name}": {
-            "get": {
-                "description": "Returns user profile by username",
+            },
+            "patch": {
                 "tags": [
                     "user"
                 ],
-                "summary": "Gets user by username",
+                "summary": "Patches existing user by id",
+                "operationId": "PatchUser",
                 "parameters": [
                     {
-                        "description": "Username",
-                        "name": "name",
+                        "description": "User ID",
+                        "name": "id",
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/user.UserPatchRequest"
+                            }
+                        }
+                    },
+                    "description": "User patch request",
+                    "required": true
+                },
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1907,8 +2427,28 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1985,6 +2525,36 @@
                     },
                     "image_metadata": {
                         "$ref": "#/components/schemas/ImageMetadata"
+                    }
+                }
+            },
+            "BoardPatchRequest": {
+                "type": "object",
+                "required": [
+                    "description",
+                    "name"
+                ],
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "BoardPostRequest": {
+                "type": "object",
+                "required": [
+                    "description",
+                    "name"
+                ],
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
                     }
                 }
             },
@@ -2110,6 +2680,24 @@
                     }
                 }
             },
+            "ImagePatchRequest": {
+                "type": "object",
+                "required": [
+                    "filename",
+                    "tags"
+                ],
+                "properties": {
+                    "filename": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "ImagePostBatchResponse": {
                 "type": "object",
                 "required": [
@@ -2178,6 +2766,14 @@
                     }
                 }
             },
+            "TagPatchRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
             "TagPostBatchRequest": {
                 "type": "object",
                 "required": [
@@ -2195,9 +2791,6 @@
             },
             "TagPostRequest": {
                 "type": "object",
-                "required": [
-                    "name"
-                ],
                 "properties": {
                     "name": {
                         "type": "string"
@@ -2254,32 +2847,13 @@
                     }
                 }
             },
-            "board.BoardCreateRequest": {
+            "user.UserPatchRequest": {
                 "type": "object",
-                "required": [
-                    "description",
-                    "name"
-                ],
                 "properties": {
-                    "description": {
+                    "pictureURL": {
                         "type": "string"
                     },
-                    "name": {
-                        "type": "string"
-                    }
-                }
-            },
-            "board.BoardPatchRequest": {
-                "type": "object",
-                "required": [
-                    "description",
-                    "name"
-                ],
-                "properties": {
-                    "description": {
-                        "type": "string"
-                    },
-                    "name": {
+                    "username": {
                         "type": "string"
                     }
                 }

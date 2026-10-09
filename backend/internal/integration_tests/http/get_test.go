@@ -94,7 +94,7 @@ func TestGetImageByID(t *testing.T) {
 	}, testutil.MakeUniqueTestPNG(t, 10, 10, 3), 1)
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/image/id/%d", img.ID), nil)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/image/%d", img.ID), nil)
 		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)
@@ -110,7 +110,7 @@ func TestGetImageByID(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/image/id/notanumber", nil)
+		req := httptest.NewRequest(http.MethodGet, "/image/notanumber", nil)
 		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)
@@ -119,7 +119,7 @@ func TestGetImageByID(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/image/id/999999", nil)
+		req := httptest.NewRequest(http.MethodGet, "/image/999999", nil)
 		req = WithTestUser(req, 1)
 		rec := httptest.NewRecorder()
 		ctx.Router.ServeHTTP(rec, req)

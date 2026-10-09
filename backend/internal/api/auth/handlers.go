@@ -69,6 +69,7 @@ func GetUserFromContext(c *gin.Context) (*user.User, error) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /auth/login [post]
+// @ID PostLogin
 func (h *Handler) PostLogin(c *gin.Context) {
 	var input AuthRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -76,7 +77,7 @@ func (h *Handler) PostLogin(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.GetByName(input.Username)
+	user, err := h.userService.GetByUsername(c, input.Username)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errors.ErrorResponse{Error: "invalid username"})
 		return
@@ -121,6 +122,7 @@ func GetJWTCookieMaxAge() time.Duration {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /auth/register [post]
+// @ID PostRegister
 func (h *Handler) PostRegister(c *gin.Context) {
 	var input AuthRequest
 
@@ -135,7 +137,7 @@ func (h *Handler) PostRegister(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.CreateByRegistration(input.Username, string(hashedPassword))
+	user, err := h.userService.CreateByRegistration(c, input.Username, string(hashedPassword))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errors.ErrorResponse{Error: fmt.Sprint("failed to create user: ", err.Error())})
 		return
@@ -162,8 +164,10 @@ func (h *Handler) PostRegister(c *gin.Context) {
 // @Description Logs out a user, deleting the JWT token.
 // @Tags auth
 // @Accept  json
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} map[string]interface{} "Logout successful"
+// @Header 200 {string} Set-Cookie "Clears the jwt cookie"
 // @Router /auth/logout [post]
+// @ID PostLogout
 func (h *Handler) PostLogout(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "jwt",

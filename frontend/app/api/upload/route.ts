@@ -1,5 +1,9 @@
 import { assertCaptchaFromRequest } from "@/lib/captcha.server";
-import { postImageUpload, postTagsBatch } from "@/lib/api/generated/server";
+import {
+    postImage,
+    PostImageBody,
+    postTagsBatch,
+} from "@/lib/api/generated/server";
 import { NextRequest, NextResponse } from "next/server";
 import { ImageUploadRequest } from "@/lib/image/upload";
 import ApiError from "@/lib/api/error";
@@ -15,18 +19,13 @@ function parseRequestData(formData: FormData): ImageUploadRequest {
 function toBackendUploadBody(
     metadata: ImageUploadRequest,
     file: File,
-): FormData {
-    const backendFormData = new FormData();
-    backendFormData.append("name", metadata.name);
-    backendFormData.append("file", file);
-
+): PostImageBody {
     const tags = metadata.tags.concat(metadata.newTags || []);
-
-    tags.forEach((tag) => {
-        backendFormData.append("tags", tag);
-    });
-
-    return backendFormData;
+    return {
+        name: metadata.name,
+        file: file,
+        tags: tags,
+    };
 }
 
 async function handleNewTags(newTags?: string[]): Promise<void> {
@@ -55,8 +54,7 @@ export async function POST(req: NextRequest) {
 
         const backendBody = toBackendUploadBody(reqData, file);
 
-        const metadata = await postImageUpload({
-            body: backendBody,
+        const metadata = await postImage(backendBody, {
             credentials: "include",
         });
         return NextResponse.json(metadata, { status: 201 });

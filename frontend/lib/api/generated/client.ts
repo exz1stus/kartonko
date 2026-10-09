@@ -7,34 +7,104 @@
  */
 import type {
   AuthRequestBody,
-  BoardBoardCreateRequest,
-  BoardBoardPatchRequest,
   BoardItemPatchRequest,
   BoardItemPostRequest,
   BoardItemResponse,
+  BoardPatchRequest,
+  BoardPostRequest,
   BoardResponse,
-  DeleteImageParams,
+  DeleteImagesByQueryParams,
   EntryResponse,
-  GetBoardIdImageParams,
-  GetBoardParams,
-  GetHealth200,
-  GetImageParams,
-  GetLogParams,
+  GetAuditLogEntriesParams,
+  GetGoogleCallbackParams,
+  GetGoogleLoginParams,
+  GetHealthCheck200,
+  GetImagesByQueryParams,
   GetTagsParams,
   ImageMetadata,
+  ImagePatchRequest,
   ImagePostBatchResponse,
+  ListBoardImagesParams,
+  ListBoardsParams,
   LoginResponse,
-  PostAuthLogout200,
-  PostImageUploadBatchBody,
+  PostImageBody,
+  PostImagesBatchBody,
+  PostLogout200,
   TagBatchResponse,
+  TagPatchRequest,
   TagPostBatchRequest,
   TagPostRequest,
   TagResponse,
-  UserDataResponse
+  UserDataResponse,
+  UserUserPatchRequest
 } from './model';
 
 import { clientMutator } from '../clientMutator';
-export const getPostAuthLoginUrl = () => {
+export const getGetGoogleLoginUrl = (params?: GetGoogleLoginParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/auth/google?${stringifiedParams}` : `/auth/google`
+}
+
+/**
+ * Initiates Google OAuth login flow
+ * @summary Google OAuth login
+ */
+export const getGoogleLogin = async (params?: GetGoogleLoginParams, options?: Parameters<typeof clientMutator>[1]): Promise<unknown> => {
+
+  return clientMutator<unknown>(getGetGoogleLoginUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetGoogleCallbackUrl = (params: GetGoogleCallbackParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/auth/google/callback?${stringifiedParams}` : `/auth/google/callback`
+}
+
+/**
+ * Handles Google OAuth callback
+ * @summary Google OAuth callback
+ */
+export const getGoogleCallback = async (params: GetGoogleCallbackParams, options?: Parameters<typeof clientMutator>[1]): Promise<LoginResponse> => {
+
+  return clientMutator<LoginResponse>(getGetGoogleCallbackUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getPostLoginUrl = () => {
 
 
 
@@ -46,7 +116,7 @@ export const getPostAuthLoginUrl = () => {
  * Logs in a user, generating a JWT token.
  * @summary Login a user
  */
-export const postAuthLogin = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof clientMutator>[1]): Promise<LoginResponse> => {
+export const postLogin = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof clientMutator>[1]): Promise<LoginResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -54,7 +124,7 @@ export const postAuthLogin = async (authRequestBody: AuthRequestBody, options?: 
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return clientMutator<LoginResponse>(getPostAuthLoginUrl(),
+return clientMutator<LoginResponse>(getPostLoginUrl(),
   {
     ...options,
     method: 'POST',
@@ -65,7 +135,7 @@ return clientMutator<LoginResponse>(getPostAuthLoginUrl(),
 
 
 
-export const getPostAuthLogoutUrl = () => {
+export const getPostLogoutUrl = () => {
 
 
 
@@ -77,9 +147,9 @@ export const getPostAuthLogoutUrl = () => {
  * Logs out a user, deleting the JWT token.
  * @summary Logout a user
  */
-export const postAuthLogout = async ( options?: Parameters<typeof clientMutator>[1]): Promise<PostAuthLogout200> => {
+export const postLogout = async ( options?: Parameters<typeof clientMutator>[1]): Promise<PostLogout200> => {
 
-  return clientMutator<PostAuthLogout200>(getPostAuthLogoutUrl(),
+  return clientMutator<PostLogout200>(getPostLogoutUrl(),
   {
     ...options,
     method: 'POST'
@@ -90,7 +160,7 @@ export const postAuthLogout = async ( options?: Parameters<typeof clientMutator>
 
 
 
-export const getPostAuthRegisterUrl = () => {
+export const getPostRegisterUrl = () => {
 
 
 
@@ -102,7 +172,7 @@ export const getPostAuthRegisterUrl = () => {
  * Registers a new user, generating a JWT token.
  * @summary Register a user
  */
-export const postAuthRegister = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof clientMutator>[1]): Promise<LoginResponse> => {
+export const postRegister = async (authRequestBody: AuthRequestBody, options?: Parameters<typeof clientMutator>[1]): Promise<LoginResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -110,7 +180,7 @@ export const postAuthRegister = async (authRequestBody: AuthRequestBody, options
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return clientMutator<LoginResponse>(getPostAuthRegisterUrl(),
+return clientMutator<LoginResponse>(getPostRegisterUrl(),
   {
     ...options,
     method: 'POST',
@@ -121,7 +191,7 @@ return clientMutator<LoginResponse>(getPostAuthRegisterUrl(),
 
 
 
-export const getGetBoardUrl = (params?: GetBoardParams,) => {
+export const getListBoardsUrl = (params?: ListBoardsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -140,9 +210,9 @@ export const getGetBoardUrl = (params?: GetBoardParams,) => {
  * Returns a slice of list of boards
  * @summary List boards
  */
-export const getBoard = async (params?: GetBoardParams, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse[]> => {
+export const listBoards = async (params?: ListBoardsParams, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse[]> => {
 
-  return clientMutator<BoardResponse[]>(getGetBoardUrl(params),
+  return clientMutator<BoardResponse[]>(getListBoardsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -164,7 +234,7 @@ export const getPostBoardUrl = () => {
 /**
  * @summary Creates new board
  */
-export const postBoard = async (boardBoardCreateRequest: BoardBoardCreateRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+export const postBoard = async (boardPostRequest: BoardPostRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -177,13 +247,13 @@ return clientMutator<BoardResponse>(getPostBoardUrl(),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(boardBoardCreateRequest)
+    body: JSON.stringify(boardPostRequest)
   }
 );}
 
 
 
-export const getGetBoardIdUrl = (id: number,) => {
+export const getGetBoardUrl = (id: number,) => {
 
 
 
@@ -194,9 +264,9 @@ export const getGetBoardIdUrl = (id: number,) => {
 /**
  * @summary Gets board metadata by id
  */
-export const getBoardId = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+export const getBoard = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
 
-  return clientMutator<BoardResponse>(getGetBoardIdUrl(id),
+  return clientMutator<BoardResponse>(getGetBoardUrl(id),
   {
     ...options,
     method: 'GET'
@@ -207,7 +277,7 @@ export const getBoardId = async (id: number, options?: Parameters<typeof clientM
 
 
 
-export const getDeleteBoardIdUrl = (id: number,) => {
+export const getDeleteBoardUrl = (id: number,) => {
 
 
 
@@ -218,9 +288,9 @@ export const getDeleteBoardIdUrl = (id: number,) => {
 /**
  * @summary Delete board by id
  */
-export const deleteBoardId = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
+export const deleteBoard = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
 
-  return clientMutator<void>(getDeleteBoardIdUrl(id),
+  return clientMutator<void>(getDeleteBoardUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -231,7 +301,7 @@ export const deleteBoardId = async (id: number, options?: Parameters<typeof clie
 
 
 
-export const getPatchBoardIdUrl = (id: number,) => {
+export const getPatchBoardUrl = (id: number,) => {
 
 
 
@@ -242,8 +312,8 @@ export const getPatchBoardIdUrl = (id: number,) => {
 /**
  * @summary Patches existing board by id
  */
-export const patchBoardId = async (id: number,
-    boardBoardPatchRequest: BoardBoardPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+export const patchBoard = async (id: number,
+    boardPatchRequest: BoardPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -251,19 +321,19 @@ export const patchBoardId = async (id: number,
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return clientMutator<BoardResponse>(getPatchBoardIdUrl(id),
+return clientMutator<BoardResponse>(getPatchBoardUrl(id),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(boardBoardPatchRequest)
+    body: JSON.stringify(boardPatchRequest)
   }
 );}
 
 
 
-export const getGetBoardIdImageUrl = (id: number,
-    params?: GetBoardIdImageParams,) => {
+export const getListBoardImagesUrl = (id: number,
+    params?: ListBoardImagesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -282,10 +352,10 @@ export const getGetBoardIdImageUrl = (id: number,
  * Returns a slice of board's items
  * @summary List board items
  */
-export const getBoardIdImage = async (id: number,
-    params?: GetBoardIdImageParams, options?: Parameters<typeof clientMutator>[1]): Promise<BoardItemResponse[]> => {
+export const listBoardImages = async (id: number,
+    params?: ListBoardImagesParams, options?: Parameters<typeof clientMutator>[1]): Promise<BoardItemResponse[]> => {
 
-  return clientMutator<BoardItemResponse[]>(getGetBoardIdImageUrl(id,params),
+  return clientMutator<BoardItemResponse[]>(getListBoardImagesUrl(id,params),
   {
     ...options,
     method: 'GET'
@@ -296,7 +366,7 @@ export const getBoardIdImage = async (id: number,
 
 
 
-export const getPostBoardIdImageUrl = (id: number,) => {
+export const getPostBoardImageUrl = (id: number,) => {
 
 
 
@@ -307,7 +377,7 @@ export const getPostBoardIdImageUrl = (id: number,) => {
 /**
  * @summary Adds image to a board
  */
-export const postBoardIdImage = async (id: number,
+export const postBoardImage = async (id: number,
     boardItemPostRequest: BoardItemPostRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
@@ -316,7 +386,7 @@ export const postBoardIdImage = async (id: number,
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return clientMutator<BoardResponse>(getPostBoardIdImageUrl(id),
+return clientMutator<BoardResponse>(getPostBoardImageUrl(id),
   {
     ...options,
     method: 'POST',
@@ -327,7 +397,7 @@ return clientMutator<BoardResponse>(getPostBoardIdImageUrl(id),
 
 
 
-export const getGetBoardIdImageImageIDUrl = (id: number,
+export const getGetBoardImageUrl = (id: number,
     imageID: number,) => {
 
 
@@ -339,10 +409,10 @@ export const getGetBoardIdImageImageIDUrl = (id: number,
 /**
  * @summary Gets image from the board
  */
-export const getBoardIdImageImageID = async (id: number,
+export const getBoardImage = async (id: number,
     imageID: number, options?: Parameters<typeof clientMutator>[1]): Promise<BoardItemResponse> => {
 
-  return clientMutator<BoardItemResponse>(getGetBoardIdImageImageIDUrl(id,imageID),
+  return clientMutator<BoardItemResponse>(getGetBoardImageUrl(id,imageID),
   {
     ...options,
     method: 'GET'
@@ -353,7 +423,7 @@ export const getBoardIdImageImageID = async (id: number,
 
 
 
-export const getDeleteBoardIdImageImageIDUrl = (id: number,
+export const getDeleteBoardImageUrl = (id: number,
     imageID: number,) => {
 
 
@@ -365,10 +435,10 @@ export const getDeleteBoardIdImageImageIDUrl = (id: number,
 /**
  * @summary Removes image from board by id
  */
-export const deleteBoardIdImageImageID = async (id: number,
+export const deleteBoardImage = async (id: number,
     imageID: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
 
-  return clientMutator<void>(getDeleteBoardIdImageImageIDUrl(id,imageID),
+  return clientMutator<void>(getDeleteBoardImageUrl(id,imageID),
   {
     ...options,
     method: 'DELETE'
@@ -379,7 +449,7 @@ export const deleteBoardIdImageImageID = async (id: number,
 
 
 
-export const getPatchBoardIdImageImageIDUrl = (id: number,
+export const getPatchBoardImageUrl = (id: number,
     imageID: number,) => {
 
 
@@ -391,7 +461,7 @@ export const getPatchBoardIdImageImageIDUrl = (id: number,
 /**
  * @summary Patches existing board image
  */
-export const patchBoardIdImageImageID = async (id: number,
+export const patchBoardImage = async (id: number,
     imageID: number,
     boardItemPatchRequest: BoardItemPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
 
@@ -401,7 +471,7 @@ export const patchBoardIdImageImageID = async (id: number,
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return clientMutator<BoardResponse>(getPatchBoardIdImageImageIDUrl(id,imageID),
+return clientMutator<BoardResponse>(getPatchBoardImageUrl(id,imageID),
   {
     ...options,
     method: 'PATCH',
@@ -412,7 +482,7 @@ return clientMutator<BoardResponse>(getPatchBoardIdImageImageIDUrl(id,imageID),
 
 
 
-export const getGetHealthUrl = () => {
+export const getGetHealthCheckUrl = () => {
 
 
 
@@ -424,9 +494,9 @@ export const getGetHealthUrl = () => {
  * Returns "ok" if server is up and running
  * @summary Health check
  */
-export const getHealth = async ( options?: Parameters<typeof clientMutator>[1]): Promise<GetHealth200> => {
+export const getHealthCheck = async ( options?: Parameters<typeof clientMutator>[1]): Promise<GetHealthCheck200> => {
 
-  return clientMutator<GetHealth200>(getGetHealthUrl(),
+  return clientMutator<GetHealthCheck200>(getGetHealthCheckUrl(),
   {
     ...options,
     method: 'GET'
@@ -437,7 +507,7 @@ export const getHealth = async ( options?: Parameters<typeof clientMutator>[1]):
 
 
 
-export const getGetImageUrl = (params?: GetImageParams,) => {
+export const getGetImagesByQueryUrl = (params?: GetImagesByQueryParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -456,9 +526,9 @@ export const getGetImageUrl = (params?: GetImageParams,) => {
  * Returns a list of images matching the query parameters
  * @summary Gets images by query
  */
-export const getImage = async (params?: GetImageParams, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata[]> => {
+export const getImagesByQuery = async (params?: GetImagesByQueryParams, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata[]> => {
 
-  return clientMutator<ImageMetadata[]>(getGetImageUrl(params),
+  return clientMutator<ImageMetadata[]>(getGetImagesByQueryUrl(params),
   {
     ...options,
     method: 'GET'
@@ -469,7 +539,38 @@ export const getImage = async (params?: GetImageParams, options?: Parameters<typ
 
 
 
-export const getDeleteImageUrl = (params?: DeleteImageParams,) => {
+export const getPostImageUrl = () => {
+
+
+
+
+  return `/image`
+}
+
+/**
+ * Uploads an image with metadata (requires authentication)
+ * @summary Uploads a single image
+ */
+export const postImage = async (postImageBody: PostImageBody, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
+    const formData = new FormData();
+formData.append(`file`, postImageBody.file);
+formData.append(`name`, postImageBody.name);
+if(postImageBody.tags !== undefined) {
+ postImageBody.tags.forEach(value => formData.append(`tags`, value));
+ }
+
+  return clientMutator<ImageMetadata>(getPostImageUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+export const getDeleteImagesByQueryUrl = (params?: DeleteImagesByQueryParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -488,9 +589,9 @@ export const getDeleteImageUrl = (params?: DeleteImageParams,) => {
  * Deletes multiple images matching the query parameters (requires authentication)
  * @summary Deletes images by query
  */
-export const deleteImage = async (params?: DeleteImageParams, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
+export const deleteImagesByQuery = async (params?: DeleteImagesByQueryParams, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
 
-  return clientMutator<void>(getDeleteImageUrl(params),
+  return clientMutator<void>(getDeleteImagesByQueryUrl(params),
   {
     ...options,
     method: 'DELETE'
@@ -501,7 +602,36 @@ export const deleteImage = async (params?: DeleteImageParams, options?: Paramete
 
 
 
-export const getGetImageHashHashUrl = (hash: string,) => {
+export const getPostImagesBatchUrl = () => {
+
+
+
+
+  return `/image/batch`
+}
+
+/**
+ * Uploads multiple images with metadata in a single request (requires authentication)
+ * !!Swagger to openapi conversion doesn't support file arrays
+ * @summary Uploads multiple images in batch
+ */
+export const postImagesBatch = async (postImagesBatchBody: PostImagesBatchBody, options?: Parameters<typeof clientMutator>[1]): Promise<ImagePostBatchResponse> => {
+    const formData = new FormData();
+formData.append(`metadata`, postImagesBatchBody.metadata);
+formData.append(`files`, postImagesBatchBody.files);
+
+  return clientMutator<ImagePostBatchResponse>(getPostImagesBatchUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+export const getGetImageByHashUrl = (hash: string,) => {
 
 
 
@@ -513,9 +643,9 @@ export const getGetImageHashHashUrl = (hash: string,) => {
  * Returns image metadata by its hash
  * @summary Gets image metadata by its unique hash
  */
-export const getImageHashHash = async (hash: string, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
+export const getImageByHash = async (hash: string, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
 
-  return clientMutator<ImageMetadata>(getGetImageHashHashUrl(hash),
+  return clientMutator<ImageMetadata>(getGetImageByHashUrl(hash),
   {
     ...options,
     method: 'GET'
@@ -526,46 +656,21 @@ export const getImageHashHash = async (hash: string, options?: Parameters<typeof
 
 
 
-export const getGetImageIdIdUrl = (id: number,) => {
+export const getGetRawImageByHashUrl = (hash: string,) => {
 
 
 
 
-  return `/image/id/${id}`
-}
-
-/**
- * Returns image metadata by its numeric ID
- * @summary Gets image metadata by ID
- */
-export const getImageIdId = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
-
-  return clientMutator<ImageMetadata>(getGetImageIdIdUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getGetImageRawHashHashUrl = (hash: string,) => {
-
-
-
-
-  return `/image/raw/hash/${hash}`
+  return `/image/hash/${hash}/raw`
 }
 
 /**
  * Returns the raw image file by its hash
  * @summary Gets raw image by hash
  */
-export const getImageRawHashHash = async (hash: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
+export const getRawImageByHash = async (hash: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
 
-  return clientMutator<Blob>(getGetImageRawHashHashUrl(hash),
+  return clientMutator<Blob>(getGetRawImageByHashUrl(hash),
   {
     ...options,
     method: 'GET'
@@ -576,46 +681,21 @@ export const getImageRawHashHash = async (hash: string, options?: Parameters<typ
 
 
 
-export const getGetImageRawNameUrl = (name: string,) => {
+export const getGetRawThumbnailByHashUrl = (hash: string,) => {
 
 
 
 
-  return `/image/raw/${name}`
-}
-
-/**
- * Returns the raw image file by its name
- * @summary Gets raw image by name
- */
-export const getImageRawName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
-
-  return clientMutator<Blob>(getGetImageRawNameUrl(name),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getGetImageThumbHashHashUrl = (hash: string,) => {
-
-
-
-
-  return `/image/thumb/hash/${hash}`
+  return `/image/hash/${hash}/thumb`
 }
 
 /**
  * Returns the raw thumbnail image file by its hash
  * @summary Gets raw image thumbnail by hash
  */
-export const getImageThumbHashHash = async (hash: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
+export const getRawThumbnailByHash = async (hash: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
 
-  return clientMutator<Blob>(getGetImageThumbHashHashUrl(hash),
+  return clientMutator<Blob>(getGetRawThumbnailByHashUrl(hash),
   {
     ...options,
     method: 'GET'
@@ -626,96 +706,21 @@ export const getImageThumbHashHash = async (hash: string, options?: Parameters<t
 
 
 
-export const getGetImageThumbNameUrl = (name: string,) => {
+export const getGetImageByNameUrl = (name: string,) => {
 
 
 
 
-  return `/image/thumb/${name}`
-}
-
-/**
- * Returns the raw thumbnail image file by its name
- * @summary Gets raw image thumbnail by name
- */
-export const getImageThumbName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
-
-  return clientMutator<Blob>(getGetImageThumbNameUrl(name),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getPostImageUploadUrl = () => {
-
-
-
-
-  return `/image/upload`
-}
-
-export const postImageUpload = async ( options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
-
-  return clientMutator<ImageMetadata>(getPostImageUploadUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-export const getPostImageUploadBatchUrl = () => {
-
-
-
-
-  return `/image/upload/batch`
-}
-
-/**
- * Uploads multiple images with metadata in a single request (requires authentication)
- * !!Swagger to openapi conversion doesn't support file arrays
- * @summary Uploads multiple images in batch
- */
-export const postImageUploadBatch = async (postImageUploadBatchBody: PostImageUploadBatchBody, options?: Parameters<typeof clientMutator>[1]): Promise<ImagePostBatchResponse> => {
-    const formData = new FormData();
-formData.append(`metadata`, postImageUploadBatchBody.metadata);
-formData.append(`files`, postImageUploadBatchBody.files);
-
-  return clientMutator<ImagePostBatchResponse>(getPostImageUploadBatchUrl(),
-  {
-    ...options,
-    method: 'POST'
-    ,
-    body: formData
-  }
-);}
-
-
-
-export const getGetImageNameUrl = (name: string,) => {
-
-
-
-
-  return `/image/${name}`
+  return `/image/name/${name}`
 }
 
 /**
  * Returns image metadata by its name
  * @summary Gets image metadata by name
  */
-export const getImageName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
+export const getImageByName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
 
-  return clientMutator<ImageMetadata>(getGetImageNameUrl(name),
+  return clientMutator<ImageMetadata>(getGetImageByNameUrl(name),
   {
     ...options,
     method: 'GET'
@@ -726,21 +731,21 @@ export const getImageName = async (name: string, options?: Parameters<typeof cli
 
 
 
-export const getDeleteImageNameUrl = (name: string,) => {
+export const getDeleteImageByNameUrl = (name: string,) => {
 
 
 
 
-  return `/image/${name}`
+  return `/image/name/${name}`
 }
 
 /**
  * Deletes an image by its name (requires authentication)
  * @summary Deletes an image by name
  */
-export const deleteImageName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
+export const deleteImageByName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
 
-  return clientMutator<void>(getDeleteImageNameUrl(name),
+  return clientMutator<void>(getDeleteImageByNameUrl(name),
   {
     ...options,
     method: 'DELETE'
@@ -751,7 +756,188 @@ export const deleteImageName = async (name: string, options?: Parameters<typeof 
 
 
 
-export const getGetLogUrl = (params?: GetLogParams,) => {
+export const getGetRawImageByNameUrl = (name: string,) => {
+
+
+
+
+  return `/image/name/${name}/raw`
+}
+
+/**
+ * Returns the raw image file by its name
+ * @summary Gets raw image by name
+ */
+export const getRawImageByName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
+
+  return clientMutator<Blob>(getGetRawImageByNameUrl(name),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetRawThumbnailByNameUrl = (name: string,) => {
+
+
+
+
+  return `/image/name/${name}/thumb`
+}
+
+/**
+ * Returns the raw thumbnail image file by its name
+ * @summary Gets raw image thumbnail by name
+ */
+export const getRawThumbnailByName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
+
+  return clientMutator<Blob>(getGetRawThumbnailByNameUrl(name),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetImageUrl = (id: number,) => {
+
+
+
+
+  return `/image/${id}`
+}
+
+/**
+ * Returns image metadata by its numeric ID
+ * @summary Gets image metadata by ID
+ */
+export const getImage = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
+
+  return clientMutator<ImageMetadata>(getGetImageUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteImageUrl = (id: number,) => {
+
+
+
+
+  return `/image/${id}`
+}
+
+/**
+ * Deletes an image by its ID (requires authentication)
+ * @summary Deletes an image by ID
+ */
+export const deleteImage = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
+
+  return clientMutator<void>(getDeleteImageUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPatchImageUrl = (id: number,) => {
+
+
+
+
+  return `/image/${id}`
+}
+
+/**
+ * @summary Patches existing image metadata by ID
+ */
+export const patchImage = async (id: number,
+    imagePatchRequest: ImagePatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<ImageMetadata> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return clientMutator<ImageMetadata>(getPatchImageUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(imagePatchRequest)
+  }
+);}
+
+
+
+export const getGetRawImageUrl = (id: number,) => {
+
+
+
+
+  return `/image/${id}/raw`
+}
+
+/**
+ * Returns the raw image file by its ID
+ * @summary Gets raw image by ID
+ */
+export const getRawImage = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
+
+  return clientMutator<Blob>(getGetRawImageUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetRawThumbnailUrl = (id: number,) => {
+
+
+
+
+  return `/image/${id}/thumb`
+}
+
+/**
+ * Returns the raw thumbnail image file by its ID
+ * @summary Gets raw image thumbnail by ID
+ */
+export const getRawThumbnail = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<Blob> => {
+
+  return clientMutator<Blob>(getGetRawThumbnailUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetAuditLogEntriesUrl = (params?: GetAuditLogEntriesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -770,9 +956,9 @@ export const getGetLogUrl = (params?: GetLogParams,) => {
  * Returns a paginated list of audit log entries
  * @summary Gets audit log entries
  */
-export const getLog = async (params?: GetLogParams, options?: Parameters<typeof clientMutator>[1]): Promise<EntryResponse[]> => {
+export const getAuditLogEntries = async (params?: GetAuditLogEntriesParams, options?: Parameters<typeof clientMutator>[1]): Promise<EntryResponse[]> => {
 
-  return clientMutator<EntryResponse[]>(getGetLogUrl(params),
+  return clientMutator<EntryResponse[]>(getGetAuditLogEntriesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -815,7 +1001,7 @@ export const getTags = async (params?: GetTagsParams, options?: Parameters<typeo
 
 
 
-export const getPostTagsUrl = () => {
+export const getPostTagUrl = () => {
 
 
 
@@ -827,7 +1013,7 @@ export const getPostTagsUrl = () => {
  * Creates a new tag (requires authentication)
  * @summary Creates a new tag
  */
-export const postTags = async (tagPostRequest: TagPostRequest, options?: Parameters<typeof clientMutator>[1]): Promise<TagResponse> => {
+export const postTag = async (tagPostRequest: TagPostRequest, options?: Parameters<typeof clientMutator>[1]): Promise<TagResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -835,7 +1021,7 @@ export const postTags = async (tagPostRequest: TagPostRequest, options?: Paramet
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return clientMutator<TagResponse>(getPostTagsUrl(),
+return clientMutator<TagResponse>(getPostTagUrl(),
   {
     ...options,
     method: 'POST',
@@ -877,24 +1063,23 @@ return clientMutator<TagBatchResponse>(getPostTagsBatchUrl(),
 
 
 
-export const getGetUserIdIdUrl = (id: number,) => {
+export const getDeleteTagUrl = (id: number,) => {
 
 
 
 
-  return `/user/id/${id}`
+  return `/tags/${id}`
 }
 
 /**
- * Returns user profile by numeric ID
- * @summary Gets user by ID
+ * @summary Delete tag by id
  */
-export const getUserIdId = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<UserDataResponse> => {
+export const deleteTag = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
 
-  return clientMutator<UserDataResponse>(getGetUserIdIdUrl(id),
+  return clientMutator<void>(getDeleteTagUrl(id),
   {
     ...options,
-    method: 'GET'
+    method: 'DELETE'
 
 
   }
@@ -902,7 +1087,38 @@ export const getUserIdId = async (id: number, options?: Parameters<typeof client
 
 
 
-export const getGetUserMeUrl = () => {
+export const getPatchTagUrl = (id: number,) => {
+
+
+
+
+  return `/tags/${id}`
+}
+
+/**
+ * @summary Patches existing tag by id
+ */
+export const patchTag = async (id: number,
+    tagPatchRequest: TagPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<TagResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return clientMutator<TagResponse>(getPatchTagUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tagPatchRequest)
+  }
+);}
+
+
+
+export const getGetMeUrl = () => {
 
 
 
@@ -914,9 +1130,9 @@ export const getGetUserMeUrl = () => {
  * Returns the authenticated user's profile (requires authentication)
  * @summary Gets current user profile
  */
-export const getUserMe = async ( options?: Parameters<typeof clientMutator>[1]): Promise<UserDataResponse> => {
+export const getMe = async ( options?: Parameters<typeof clientMutator>[1]): Promise<UserDataResponse> => {
 
-  return clientMutator<UserDataResponse>(getGetUserMeUrl(),
+  return clientMutator<UserDataResponse>(getGetMeUrl(),
   {
     ...options,
     method: 'GET'
@@ -927,25 +1143,105 @@ export const getUserMe = async ( options?: Parameters<typeof clientMutator>[1]):
 
 
 
-export const getGetUserNameUrl = (name: string,) => {
+export const getGetUserByNameUrl = (name: string,) => {
 
 
 
 
-  return `/user/${name}`
+  return `/user/name/${name}`
 }
 
 /**
  * Returns user profile by username
  * @summary Gets user by username
  */
-export const getUserName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<UserDataResponse> => {
+export const getUserByName = async (name: string, options?: Parameters<typeof clientMutator>[1]): Promise<UserDataResponse> => {
 
-  return clientMutator<UserDataResponse>(getGetUserNameUrl(name),
+  return clientMutator<UserDataResponse>(getGetUserByNameUrl(name),
   {
     ...options,
     method: 'GET'
 
 
+  }
+);}
+
+
+
+export const getGetUserUrl = (id: number,) => {
+
+
+
+
+  return `/user/${id}`
+}
+
+/**
+ * Returns user profile by numeric ID
+ * @summary Gets user by ID
+ */
+export const getUser = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<UserDataResponse> => {
+
+  return clientMutator<UserDataResponse>(getGetUserUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getDeleteUserUrl = (id: number,) => {
+
+
+
+
+  return `/user/${id}`
+}
+
+/**
+ * @summary Delete user by id
+ */
+export const deleteUser = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<void> => {
+
+  return clientMutator<void>(getDeleteUserUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export const getPatchUserUrl = (id: number,) => {
+
+
+
+
+  return `/user/${id}`
+}
+
+/**
+ * @summary Patches existing user by id
+ */
+export const patchUser = async (id: number,
+    userUserPatchRequest: UserUserPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<UserDataResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return clientMutator<UserDataResponse>(getPatchUserUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(userUserPatchRequest)
   }
 );}

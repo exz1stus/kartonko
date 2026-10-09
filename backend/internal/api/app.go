@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"server/internal/api/transaction"
 	"server/internal/board"
 	embeddings "server/internal/embedding"
@@ -47,6 +48,7 @@ func NewApp(
 	)
 	imageService := image.NewImageService(
 		imageRepo,
+		userRepo,
 		logService,
 		objectService,
 		embeddingsService,
@@ -57,11 +59,12 @@ func NewApp(
 
 	userService := user.NewUserService(userRepo)
 	//TODO: temporary for dev
-	userService.SetPrivilege(1, 1)
+	userService.SetPrivilege(context.Background(), 1, 1)
 
 	tagService := tag.NewTagService(
 		tagRepo,
 		logService,
+		userRepo,
 		runner,
 	)
 

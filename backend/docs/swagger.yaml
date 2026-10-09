@@ -28,6 +28,26 @@ definitions:
     - added
     - image_metadata
     type: object
+  BoardPatchRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  BoardPostRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
   BoardResponse:
     properties:
       description:
@@ -113,6 +133,18 @@ definitions:
     - user_id
     - width
     type: object
+  ImagePatchRequest:
+    properties:
+      filename:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+    required:
+    - filename
+    - tags
+    type: object
   ImagePostBatchResponse:
     properties:
       failures:
@@ -158,6 +190,11 @@ definitions:
     required:
     - successes
     type: object
+  TagPatchRequest:
+    properties:
+      name:
+        type: string
+    type: object
   TagPostBatchRequest:
     properties:
       names:
@@ -172,8 +209,6 @@ definitions:
     properties:
       name:
         type: string
-    required:
-    - name
     type: object
   TagResponse:
     properties:
@@ -210,25 +245,12 @@ definitions:
     - privilege
     - username
     type: object
-  board.BoardCreateRequest:
+  user.UserPatchRequest:
     properties:
-      description:
+      pictureURL:
         type: string
-      name:
+      username:
         type: string
-    required:
-    - description
-    - name
-    type: object
-  board.BoardPatchRequest:
-    properties:
-      description:
-        type: string
-      name:
-        type: string
-    required:
-    - description
-    - name
     type: object
   user.UserResponce:
     properties:
@@ -253,11 +275,61 @@ info:
   title: kartonko API
   version: "1.0"
 paths:
+  /auth/google:
+    get:
+      description: Initiates Google OAuth login flow
+      operationId: GetGoogleLogin
+      parameters:
+      - description: Redirect URL after login
+        in: query
+        name: redirect
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Redirect to Google OAuth
+      summary: Google OAuth login
+      tags:
+      - auth
+  /auth/google/callback:
+    get:
+      description: Handles Google OAuth callback
+      operationId: GetGoogleCallback
+      parameters:
+      - description: Authorization code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: State parameter
+        in: query
+        name: state
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Google OAuth callback
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
       - application/json
       description: Logs in a user, generating a JWT token.
+      operationId: PostLogin
       parameters:
       - description: username and password
         in: body
@@ -288,9 +360,14 @@ paths:
       consumes:
       - application/json
       description: Logs out a user, deleting the JWT token.
+      operationId: PostLogout
       responses:
         "200":
-          description: OK
+          description: Logout successful
+          headers:
+            Set-Cookie:
+              description: Clears the jwt cookie
+              type: string
           schema:
             additionalProperties: true
             type: object
@@ -302,6 +379,7 @@ paths:
       consumes:
       - application/json
       description: Registers a new user, generating a JWT token.
+      operationId: PostRegister
       parameters:
       - description: username and password
         in: body
@@ -330,6 +408,7 @@ paths:
   /board:
     get:
       description: Returns a slice of list of boards
+      operationId: ListBoards
       parameters:
       - description: Pagination cursor
         in: query
@@ -357,13 +436,14 @@ paths:
       tags:
       - boards
     post:
+      operationId: PostBoard
       parameters:
       - description: Board creation request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/board.BoardCreateRequest'
+          $ref: '#/definitions/BoardPostRequest'
       produces:
       - application/json
       responses:
@@ -384,6 +464,7 @@ paths:
       - boards
   /board/{id}:
     delete:
+      operationId: DeleteBoard
       parameters:
       - description: Board ID
         format: int64
@@ -412,6 +493,7 @@ paths:
       tags:
       - boards
     get:
+      operationId: GetBoard
       parameters:
       - description: Board ID
         format: int64
@@ -438,6 +520,7 @@ paths:
       tags:
       - boards
     patch:
+      operationId: PatchBoard
       parameters:
       - description: Board ID
         format: int64
@@ -450,7 +533,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/board.BoardPatchRequest'
+          $ref: '#/definitions/BoardPatchRequest'
       produces:
       - application/json
       responses:
@@ -476,6 +559,7 @@ paths:
   /board/{id}/image:
     get:
       description: Returns a slice of board's items
+      operationId: ListBoardImages
       parameters:
       - description: Board ID
         format: int64
@@ -513,6 +597,7 @@ paths:
       tags:
       - boards
     post:
+      operationId: PostBoardImage
       parameters:
       - description: Board ID
         format: int64
@@ -546,6 +631,7 @@ paths:
       - boards
   /board/{id}/image/{imageID}:
     delete:
+      operationId: DeleteBoardImage
       parameters:
       - description: Board ID
         format: int64
@@ -580,6 +666,7 @@ paths:
       tags:
       - boards
     get:
+      operationId: GetBoardImage
       parameters:
       - description: Board ID
         format: int64
@@ -612,6 +699,7 @@ paths:
       tags:
       - boards
     patch:
+      operationId: PatchBoardImage
       parameters:
       - description: Board ID
         format: int64
@@ -656,6 +744,7 @@ paths:
   /health:
     get:
       description: Returns "ok" if server is up and running
+      operationId: GetHealthCheck
       produces:
       - application/json
       responses:
@@ -675,6 +764,7 @@ paths:
     delete:
       description: Deletes multiple images matching the query parameters (requires
         authentication)
+      operationId: DeleteImagesByQuery
       parameters:
       - description: Filter by name prefix
         in: query
@@ -716,6 +806,7 @@ paths:
       - images
     get:
       description: Returns a list of images matching the query parameters
+      operationId: GetImagesByQuery
       parameters:
       - description: Filter by name prefix
         in: query
@@ -765,238 +856,11 @@ paths:
       summary: Gets images by query
       tags:
       - images
-  /image/{id}:
-    delete:
-      description: Deletes an image by its id (requires authentication)
-      parameters:
-      - description: Image id
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Deletes an image by id
-      tags:
-      - images
-  /image/{name}:
-    delete:
-      description: Deletes an image by its name (requires authentication)
-      parameters:
-      - description: Image name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Deletes an image by name
-      tags:
-      - images
-    get:
-      description: Returns image metadata by its name
-      parameters:
-      - description: Image name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ImageMetadata'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets image metadata by name
-      tags:
-      - images
-  /image/hash/{hash}:
-    get:
-      description: Returns image metadata by its hash
-      parameters:
-      - description: Image hash
-        in: path
-        name: hash
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ImageMetadata'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets image metadata by its unique hash
-      tags:
-      - images
-  /image/id/{id}:
-    get:
-      description: Returns image metadata by its numeric ID
-      parameters:
-      - description: Image ID
-        format: int64
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ImageMetadata'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets image metadata by ID
-      tags:
-      - images
-  /image/raw/{name}:
-    get:
-      description: Returns the raw image file by its name
-      parameters:
-      - description: Image name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/octet-stream
-      responses:
-        "200":
-          description: Raw image file
-          schema:
-            type: file
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets raw image by name
-      tags:
-      - images
-  /image/raw/hash/{hash}:
-    get:
-      description: Returns the raw image file by its hash
-      parameters:
-      - description: Image hash
-        in: path
-        name: hash
-        required: true
-        type: string
-      produces:
-      - application/octet-stream
-      responses:
-        "200":
-          description: Raw image file
-          schema:
-            type: file
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets raw image by hash
-      tags:
-      - images
-  /image/thumb/{name}:
-    get:
-      description: Returns the raw thumbnail image file by its name
-      parameters:
-      - description: Image thumbnail name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/octet-stream
-      responses:
-        "200":
-          description: Raw thumbnail image file
-          schema:
-            type: file
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets raw image thumbnail by name
-      tags:
-      - images
-  /image/thumb/hash/{hash}:
-    get:
-      description: Returns the raw thumbnail image file by its hash
-      parameters:
-      - description: Image hash
-        in: path
-        name: hash
-        required: true
-        type: string
-      produces:
-      - application/octet-stream
-      responses:
-        "200":
-          description: Raw thumbnail image file
-          schema:
-            type: file
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets raw image thumbnail by hash
-      tags:
-      - images
-  /image/upload:
     post:
       consumes:
       - multipart/form-data
       description: Uploads an image with metadata (requires authentication)
+      operationId: PostImage
       parameters:
       - description: Image file
         in: formData
@@ -1039,13 +903,161 @@ paths:
       summary: Uploads a single image
       tags:
       - images
-  /image/upload/batch:
+  /image/{id}:
+    delete:
+      description: Deletes an image by its ID (requires authentication)
+      operationId: DeleteImage
+      parameters:
+      - description: Image ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deletes an image by ID
+      tags:
+      - images
+    get:
+      description: Returns image metadata by its numeric ID
+      operationId: GetImage
+      parameters:
+      - description: Image ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ImageMetadata'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets image metadata by ID
+      tags:
+      - images
+    patch:
+      operationId: PatchImage
+      parameters:
+      - description: Image ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Image patch request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ImagePatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ImageMetadata'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Patches existing image metadata by ID
+      tags:
+      - images
+  /image/{id}/raw:
+    get:
+      description: Returns the raw image file by its ID
+      operationId: GetRawImage
+      parameters:
+      - description: Image ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets raw image by ID
+      tags:
+      - images
+  /image/{id}/thumb:
+    get:
+      description: Returns the raw thumbnail image file by its ID
+      operationId: GetRawThumbnail
+      parameters:
+      - description: Image ID thumbnail
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw thumbnail image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets raw image thumbnail by ID
+      tags:
+      - images
+  /image/batch:
     post:
       consumes:
       - multipart/form-data
       description: |-
         Uploads multiple images with metadata in a single request (requires authentication)
         !!Swagger to openapi conversion doesn't support file arrays
+      operationId: PostImagesBatch
       parameters:
       - description: Batch metadata (JSON)
         example: '{"data": [{"name": "img1", "tags": ["tag1"]}, {"name": "img2", "tags":
@@ -1083,9 +1095,185 @@ paths:
       summary: Uploads multiple images in batch
       tags:
       - images
+  /image/hash/{hash}:
+    get:
+      description: Returns image metadata by its hash
+      operationId: GetImageByHash
+      parameters:
+      - description: Image hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ImageMetadata'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets image metadata by its unique hash
+      tags:
+      - images
+  /image/hash/{hash}/raw:
+    get:
+      description: Returns the raw image file by its hash
+      operationId: GetRawImageByHash
+      parameters:
+      - description: Image hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets raw image by hash
+      tags:
+      - images
+  /image/hash/{hash}/thumb:
+    get:
+      description: Returns the raw thumbnail image file by its hash
+      operationId: GetRawThumbnailByHash
+      parameters:
+      - description: Image hash
+        in: path
+        name: hash
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw thumbnail image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets raw image thumbnail by hash
+      tags:
+      - images
+  /image/name/{name}:
+    delete:
+      description: Deletes an image by its name (requires authentication)
+      operationId: DeleteImageByName
+      parameters:
+      - description: Image name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deletes an image by name
+      tags:
+      - images
+    get:
+      description: Returns image metadata by its name
+      operationId: GetImageByName
+      parameters:
+      - description: Image name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ImageMetadata'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets image metadata by name
+      tags:
+      - images
+  /image/name/{name}/raw:
+    get:
+      description: Returns the raw image file by its name
+      operationId: GetRawImageByName
+      parameters:
+      - description: Image name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets raw image by name
+      tags:
+      - images
+  /image/name/{name}/thumb:
+    get:
+      description: Returns the raw thumbnail image file by its name
+      operationId: GetRawThumbnailByName
+      parameters:
+      - description: Image thumbnail name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Raw thumbnail image file
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets raw image thumbnail by name
+      tags:
+      - images
   /log:
     get:
       description: Returns a paginated list of audit log entries
+      operationId: GetAuditLogEntries
       parameters:
       - description: Pagination cursor
         in: query
@@ -1115,6 +1303,7 @@ paths:
   /tags:
     get:
       description: Returns a paginated list of all tags
+      operationId: GetTags
       parameters:
       - description: Tag name prefix
         in: query
@@ -1149,6 +1338,7 @@ paths:
       consumes:
       - application/json
       description: Creates a new tag (requires authentication)
+      operationId: PostTag
       parameters:
       - description: Tag name
         in: body
@@ -1180,11 +1370,79 @@ paths:
       summary: Creates a new tag
       tags:
       - tags
+  /tags/{id}:
+    delete:
+      operationId: DeleteTag
+      parameters:
+      - description: Tag ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete tag by id
+      tags:
+      - tags
+    patch:
+      operationId: PatchTag
+      parameters:
+      - description: Tag ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Tag patch request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/TagPatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TagResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Patches existing tag by id
+      tags:
+      - tags
   /tags/batch:
     post:
       consumes:
       - application/json
       description: Creates multiple tags in a single request (requires authentication)
+      operationId: PostTagsBatch
       parameters:
       - description: Tag names
         in: body
@@ -1216,32 +1474,39 @@ paths:
       summary: Creates multiple tags in batch
       tags:
       - tags
-  /user/{name}:
-    get:
-      description: Returns user profile by username
+  /user/{id}:
+    delete:
+      operationId: DeleteUser
       parameters:
-      - description: Username
+      - description: User ID
+        format: int64
         in: path
-        name: name
+        name: id
         required: true
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
           schema:
-            $ref: '#/definitions/UserDataResponse'
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/ErrorResponse'
-      summary: Gets user by username
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete user by id
       tags:
       - user
-  /user/id/{id}:
     get:
       description: Returns user profile by numeric ID
+      operationId: GetUser
       parameters:
       - description: User ID
         format: int64
@@ -1267,9 +1532,47 @@ paths:
       summary: Gets user by ID
       tags:
       - user
+    patch:
+      operationId: PatchUser
+      parameters:
+      - description: User ID
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User patch request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.UserPatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserDataResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Patches existing user by id
+      tags:
+      - user
   /user/me:
     get:
       description: Returns the authenticated user's profile (requires authentication)
+      operationId: GetMe
       produces:
       - application/json
       responses:
@@ -1284,6 +1587,30 @@ paths:
       security:
       - BearerAuth: []
       summary: Gets current user profile
+      tags:
+      - user
+  /user/name/{name}:
+    get:
+      description: Returns user profile by username
+      operationId: GetUserByName
+      parameters:
+      - description: Username
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserDataResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Gets user by username
       tags:
       - user
 schemes:

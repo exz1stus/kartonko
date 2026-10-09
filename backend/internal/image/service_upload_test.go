@@ -6,7 +6,7 @@ import (
 	"mime/multipart"
 	"net/textproto"
 	"server/internal/api/transaction"
-	"server/internal/embedding"
+	embeddings "server/internal/embedding"
 	"server/internal/image"
 	"server/internal/tag"
 	"server/internal/testutil"
@@ -53,10 +53,10 @@ func TestUpload_Success(t *testing.T) {
 
 	imageRepo := imageMocks.NewMockImageRepository(t)
 	imageRepo.EXPECT().
-		ExistsByHash(image.HashBytes(data)).
+		ExistsByHash(mock.Anything, image.HashBytes(data)).
 		Return(false, nil).Once()
 	imageRepo.EXPECT().
-		ExistsByName(name).
+		ExistsByName(mock.Anything, name).
 		Return(false, nil).Once()
 
 	txRepo := imageMocks.NewMockImageRepository(t)
@@ -65,14 +65,14 @@ func TestUpload_Success(t *testing.T) {
 		Return(txRepo).Once()
 
 	txRepo.EXPECT().
-		Create(mock.AnythingOfType("*image.ImageMetadata")).
-		RunAndReturn(func(actual *image.ImageMetadata) error {
+		Create(mock.Anything, mock.AnythingOfType("*image.ImageMetadata")).
+		RunAndReturn(func(ctx context.Context, actual *image.ImageMetadata) error {
 			actual.ID = 42
 			return nil
 		}).Once()
 
 	txRepo.EXPECT().
-		AttachTags(mock.AnythingOfType("uint"), mock.AnythingOfType("[]tag.Tag")).
+		AttachTags(mock.Anything, mock.AnythingOfType("uint"), mock.AnythingOfType("[]tag.Tag")).
 		Return(nil).Once()
 
 	logService := logMocks.NewMockLogService(t)
@@ -90,7 +90,7 @@ func TestUpload_Success(t *testing.T) {
 		Upsert(context.Background(), mock.AnythingOfType("uint"), data).
 		Return(nil).Once()
 
-	service := image.NewImageService(imageRepo, logService, objectsService, embeddingsService, transaction.TestRunner{})
+	service := image.NewImageService(imageRepo, nil, logService, objectsService, embeddingsService, transaction.TestRunner{})
 	resImg, err := service.Upload(
 		context.Background(),
 		userID,
@@ -113,10 +113,10 @@ func TestUpload_RejectsDuplicateName(t *testing.T) {
 	name := "duplicate.png"
 
 	repo := imageMocks.NewMockImageRepository(t)
-	repo.EXPECT().ExistsByHash(mock.Anything).Return(false, nil).Once()
-	repo.EXPECT().ExistsByName(name).Return(true, nil).Once()
+	repo.EXPECT().ExistsByHash(mock.Anything, mock.Anything).Return(false, nil).Once()
+	repo.EXPECT().ExistsByName(mock.Anything, name).Return(true, nil).Once()
 
-	service := image.NewImageService(repo, nil, nil, nil, nil)
+	service := image.NewImageService(repo, nil, nil, nil, nil, nil)
 	img, err := service.Upload(
 		context.Background(),
 		1,
@@ -133,9 +133,9 @@ func TestUpload_RejectsDuplicateHash(t *testing.T) {
 	data := testutil.MakeTestPNG(t, 10, 10)
 
 	repo := imageMocks.NewMockImageRepository(t)
-	repo.EXPECT().ExistsByHash(image.HashBytes(data)).Return(true, nil).Once()
+	repo.EXPECT().ExistsByHash(mock.Anything, image.HashBytes(data)).Return(true, nil).Once()
 
-	service := image.NewImageService(repo, nil, nil, nil, nil)
+	service := image.NewImageService(repo, nil, nil, nil, nil, nil)
 	img, err := service.Upload(
 		context.Background(),
 		1,
@@ -151,11 +151,11 @@ func TestUpload_RejectsDuplicateHash(t *testing.T) {
 func TestSearch_SemanticUsesVectorResultIDsInRankOrder(t *testing.T) {
 	imageRepo := imageMocks.NewMockImageRepository(t)
 	imageRepo.EXPECT().
-		GetByID(uint(42)).
+		Get(mock.Anything, uint(42)).
 		Return(&image.ImageMetadata{Model: gorm.Model{ID: 42}, Filename: "dog.png"}, nil).
 		Once()
 	imageRepo.EXPECT().
-		GetByID(uint(7)).
+		Get(mock.Anything, uint(7)).
 		Return(&image.ImageMetadata{Model: gorm.Model{ID: 7}, Filename: "cat.png"}, nil).
 		Once()
 
@@ -168,7 +168,7 @@ func TestSearch_SemanticUsesVectorResultIDsInRankOrder(t *testing.T) {
 		}, nil).
 		Once()
 
-	service := image.NewImageService(imageRepo, nil, nil, embeddingsService, nil)
+	service := image.NewImageService(imageRepo, nil, nil, nil, embeddingsService, nil)
 	results, err := service.Search(context.Background(), image.NewQueryBuilder().
 		Prefix("a playful pet").
 		Semantic(true).

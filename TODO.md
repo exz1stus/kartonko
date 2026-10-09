@@ -44,16 +44,15 @@ BACKEND:
 - ~~Generate DTOs from swagger~~
 - ~~Generate Orval api methods from swagger~~
 - ~~new doc frontend scalar~~
-
 - add boards
 - rewrite api to valid crud, add update, add frontend way to manipulate
+
 - revert upload to json
 - move to rabbit mq events
 - fast upload route
 - remake log
 
 - From filename to hash identification, optional names
-- Boards system
 - Api token for frontend and telegram
 - Rate limiting
     - No limits for moderator users
@@ -65,8 +64,6 @@ BACKEND:
 - comparing for duplicates with CLIP
 - searching pipeline
 - suggest similar images for boards
-
-backend:
 
 - crawling
 - image proccessing (ocr, embeddings, metadata extraction, categorization)

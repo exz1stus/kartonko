@@ -13,6 +13,7 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /health [get]
+// @ID GetHealthCheck
 func (api *Api) GetHealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

@@ -9,7 +9,7 @@ import {
     useContext,
 } from "react";
 import { UserDataResponse } from "@/lib/api/generated/model/userDataResponse";
-import { getUserMe, postAuthLogout } from "@/lib/api/generated/client";
+import { getMe, postLogout } from "@/lib/api/generated/client";
 import ApiError from "@/lib/api/error";
 
 interface AuthContextType {
@@ -61,7 +61,7 @@ const useProvideAuth = () => {
     const fetchUser = useCallback(async () => {
         setLoading(true);
         try {
-            const user = await getUserMe({ credentials: "include" });
+            const user = await getMe({ credentials: "include" });
             setUser(user);
         } catch (error) {
             if (error instanceof ApiError && error.status === 401) {
@@ -90,7 +90,7 @@ const useProvideAuth = () => {
     };
 
     const logout = async () => {
-        await postAuthLogout();
+        await postLogout();
         setUser(null);
         router.refresh();
     };

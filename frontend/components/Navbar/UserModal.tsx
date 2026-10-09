@@ -1,12 +1,12 @@
 import React, { useRef } from "react";
 import LogoutButton from "./LogoutButton";
-import { UserData } from "@/lib/user/user";
 import UsernameButton from "./UsernameButton";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import Image from "next/image";
+import { UserDataResponse } from "@/lib/api/generated/model";
 
 interface UserModalProps {
-    user: UserData;
+    user: UserDataResponse;
     shown: boolean;
     onClose: () => void;
 }
@@ -45,4 +45,4 @@ const UserModal: React.FC<UserModalProps> = ({
         </div>
     );
 };
-export { UserModal, type UserData };
+export { UserModal };

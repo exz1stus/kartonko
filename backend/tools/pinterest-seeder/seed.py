@@ -276,7 +276,7 @@ def main():
         "--endpoint",
         default=os.getenv(
             "KARTONKO_BATCH_ENDPOINT",
-            "http://localhost:3000/image/upload/batch",
+            "http://localhost:3000/image/batch",
         ),
     )
 

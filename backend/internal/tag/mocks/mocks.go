@@ -40,31 +40,20 @@ func (_m *MockTagRepository) EXPECT() *MockTagRepository_Expecter {
 }
 
 // Create provides a mock function for the type MockTagRepository
-func (_mock *MockTagRepository) Create(tag1 string) (*tag.Tag, error) {
-	ret := _mock.Called(tag1)
+func (_mock *MockTagRepository) Create(ctx context.Context, tag1 *tag.Tag) error {
+	ret := _mock.Called(ctx, tag1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 *tag.Tag
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*tag.Tag, error)); ok {
-		return returnFunc(tag1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) *tag.Tag); ok {
-		r0 = returnFunc(tag1)
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tag.Tag) error); ok {
+		r0 = returnFunc(ctx, tag1)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*tag.Tag)
-		}
+		r0 = ret.Error(0)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(tag1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
+	return r0
 }
 
 // MockTagRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
@@ -73,37 +62,100 @@ type MockTagRepository_Create_Call struct {
 }
 
 // Create is a helper method to define mock.On call
-//   - tag1 string
-func (_e *MockTagRepository_Expecter) Create(tag1 any) *MockTagRepository_Create_Call {
-	return &MockTagRepository_Create_Call{Call: _e.mock.On("Create", tag1)}
+//   - ctx context.Context
+//   - tag1 *tag.Tag
+func (_e *MockTagRepository_Expecter) Create(ctx any, tag1 any) *MockTagRepository_Create_Call {
+	return &MockTagRepository_Create_Call{Call: _e.mock.On("Create", ctx, tag1)}
 }
 
-func (_c *MockTagRepository_Create_Call) Run(run func(tag1 string)) *MockTagRepository_Create_Call {
+func (_c *MockTagRepository_Create_Call) Run(run func(ctx context.Context, tag1 *tag.Tag)) *MockTagRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *tag.Tag
+		if args[1] != nil {
+			arg1 = args[1].(*tag.Tag)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *MockTagRepository_Create_Call) Return(tag11 *tag.Tag, err error) *MockTagRepository_Create_Call {
-	_c.Call.Return(tag11, err)
+func (_c *MockTagRepository_Create_Call) Return(err error) *MockTagRepository_Create_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockTagRepository_Create_Call) RunAndReturn(run func(tag1 string) (*tag.Tag, error)) *MockTagRepository_Create_Call {
+func (_c *MockTagRepository_Create_Call) RunAndReturn(run func(ctx context.Context, tag1 *tag.Tag) error) *MockTagRepository_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockTagRepository
+func (_mock *MockTagRepository) Delete(ctx context.Context, tagID uint) error {
+	ret := _mock.Called(ctx, tagID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) error); ok {
+		r0 = returnFunc(ctx, tagID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTagRepository_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockTagRepository_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tagID uint
+func (_e *MockTagRepository_Expecter) Delete(ctx any, tagID any) *MockTagRepository_Delete_Call {
+	return &MockTagRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, tagID)}
+}
+
+func (_c *MockTagRepository_Delete_Call) Run(run func(ctx context.Context, tagID uint)) *MockTagRepository_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagRepository_Delete_Call) Return(err error) *MockTagRepository_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTagRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, tagID uint) error) *MockTagRepository_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ExistMany provides a mock function for the type MockTagRepository
-func (_mock *MockTagRepository) ExistMany(tags []tag.Tag) ([]bool, error) {
-	ret := _mock.Called(tags)
+func (_mock *MockTagRepository) ExistMany(ctx context.Context, tags []tag.Tag) ([]bool, error) {
+	ret := _mock.Called(ctx, tags)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExistMany")
@@ -111,18 +163,18 @@ func (_mock *MockTagRepository) ExistMany(tags []tag.Tag) ([]bool, error) {
 
 	var r0 []bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func([]tag.Tag) ([]bool, error)); ok {
-		return returnFunc(tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []tag.Tag) ([]bool, error)); ok {
+		return returnFunc(ctx, tags)
 	}
-	if returnFunc, ok := ret.Get(0).(func([]tag.Tag) []bool); ok {
-		r0 = returnFunc(tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []tag.Tag) []bool); ok {
+		r0 = returnFunc(ctx, tags)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]bool)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func([]tag.Tag) error); ok {
-		r1 = returnFunc(tags)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []tag.Tag) error); ok {
+		r1 = returnFunc(ctx, tags)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -135,19 +187,25 @@ type MockTagRepository_ExistMany_Call struct {
 }
 
 // ExistMany is a helper method to define mock.On call
+//   - ctx context.Context
 //   - tags []tag.Tag
-func (_e *MockTagRepository_Expecter) ExistMany(tags any) *MockTagRepository_ExistMany_Call {
-	return &MockTagRepository_ExistMany_Call{Call: _e.mock.On("ExistMany", tags)}
+func (_e *MockTagRepository_Expecter) ExistMany(ctx any, tags any) *MockTagRepository_ExistMany_Call {
+	return &MockTagRepository_ExistMany_Call{Call: _e.mock.On("ExistMany", ctx, tags)}
 }
 
-func (_c *MockTagRepository_ExistMany_Call) Run(run func(tags []tag.Tag)) *MockTagRepository_ExistMany_Call {
+func (_c *MockTagRepository_ExistMany_Call) Run(run func(ctx context.Context, tags []tag.Tag)) *MockTagRepository_ExistMany_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 []tag.Tag
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].([]tag.Tag)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []tag.Tag
+		if args[1] != nil {
+			arg1 = args[1].([]tag.Tag)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -158,74 +216,148 @@ func (_c *MockTagRepository_ExistMany_Call) Return(bools []bool, err error) *Moc
 	return _c
 }
 
-func (_c *MockTagRepository_ExistMany_Call) RunAndReturn(run func(tags []tag.Tag) ([]bool, error)) *MockTagRepository_ExistMany_Call {
+func (_c *MockTagRepository_ExistMany_Call) RunAndReturn(run func(ctx context.Context, tags []tag.Tag) ([]bool, error)) *MockTagRepository_ExistMany_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Exists provides a mock function for the type MockTagRepository
-func (_mock *MockTagRepository) Exists(name string) (bool, error) {
-	ret := _mock.Called(name)
+// ExistsByName provides a mock function for the type MockTagRepository
+func (_mock *MockTagRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Exists")
+		panic("no return value specified for ExistsByName")
 	}
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockTagRepository_Exists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Exists'
-type MockTagRepository_Exists_Call struct {
+// MockTagRepository_ExistsByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExistsByName'
+type MockTagRepository_ExistsByName_Call struct {
 	*mock.Call
 }
 
-// Exists is a helper method to define mock.On call
+// ExistsByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockTagRepository_Expecter) Exists(name any) *MockTagRepository_Exists_Call {
-	return &MockTagRepository_Exists_Call{Call: _e.mock.On("Exists", name)}
+func (_e *MockTagRepository_Expecter) ExistsByName(ctx any, name any) *MockTagRepository_ExistsByName_Call {
+	return &MockTagRepository_ExistsByName_Call{Call: _e.mock.On("ExistsByName", ctx, name)}
 }
 
-func (_c *MockTagRepository_Exists_Call) Run(run func(name string)) *MockTagRepository_Exists_Call {
+func (_c *MockTagRepository_ExistsByName_Call) Run(run func(ctx context.Context, name string)) *MockTagRepository_ExistsByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *MockTagRepository_Exists_Call) Return(b bool, err error) *MockTagRepository_Exists_Call {
+func (_c *MockTagRepository_ExistsByName_Call) Return(b bool, err error) *MockTagRepository_ExistsByName_Call {
 	_c.Call.Return(b, err)
 	return _c
 }
 
-func (_c *MockTagRepository_Exists_Call) RunAndReturn(run func(name string) (bool, error)) *MockTagRepository_Exists_Call {
+func (_c *MockTagRepository_ExistsByName_Call) RunAndReturn(run func(ctx context.Context, name string) (bool, error)) *MockTagRepository_ExistsByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Get provides a mock function for the type MockTagRepository
+func (_mock *MockTagRepository) Get(ctx context.Context, tagID uint) (*tag.Tag, error) {
+	ret := _mock.Called(ctx, tagID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 *tag.Tag
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) (*tag.Tag, error)); ok {
+		return returnFunc(ctx, tagID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) *tag.Tag); ok {
+		r0 = returnFunc(ctx, tagID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tag.Tag)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uint) error); ok {
+		r1 = returnFunc(ctx, tagID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTagRepository_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockTagRepository_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tagID uint
+func (_e *MockTagRepository_Expecter) Get(ctx any, tagID any) *MockTagRepository_Get_Call {
+	return &MockTagRepository_Get_Call{Call: _e.mock.On("Get", ctx, tagID)}
+}
+
+func (_c *MockTagRepository_Get_Call) Run(run func(ctx context.Context, tagID uint)) *MockTagRepository_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagRepository_Get_Call) Return(tag1 *tag.Tag, err error) *MockTagRepository_Get_Call {
+	_c.Call.Return(tag1, err)
+	return _c
+}
+
+func (_c *MockTagRepository_Get_Call) RunAndReturn(run func(ctx context.Context, tagID uint) (*tag.Tag, error)) *MockTagRepository_Get_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SearchPrefix provides a mock function for the type MockTagRepository
-func (_mock *MockTagRepository) SearchPrefix(prefix string, cursor int, limit int) ([]tag.Tag, error) {
-	ret := _mock.Called(prefix, cursor, limit)
+func (_mock *MockTagRepository) SearchPrefix(ctx context.Context, prefix string, cursor int, limit int) ([]tag.Tag, error) {
+	ret := _mock.Called(ctx, prefix, cursor, limit)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SearchPrefix")
@@ -233,18 +365,18 @@ func (_mock *MockTagRepository) SearchPrefix(prefix string, cursor int, limit in
 
 	var r0 []tag.Tag
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, int, int) ([]tag.Tag, error)); ok {
-		return returnFunc(prefix, cursor, limit)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) ([]tag.Tag, error)); ok {
+		return returnFunc(ctx, prefix, cursor, limit)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, int, int) []tag.Tag); ok {
-		r0 = returnFunc(prefix, cursor, limit)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) []tag.Tag); ok {
+		r0 = returnFunc(ctx, prefix, cursor, limit)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]tag.Tag)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, int, int) error); ok {
-		r1 = returnFunc(prefix, cursor, limit)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) error); ok {
+		r1 = returnFunc(ctx, prefix, cursor, limit)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -257,31 +389,37 @@ type MockTagRepository_SearchPrefix_Call struct {
 }
 
 // SearchPrefix is a helper method to define mock.On call
+//   - ctx context.Context
 //   - prefix string
 //   - cursor int
 //   - limit int
-func (_e *MockTagRepository_Expecter) SearchPrefix(prefix any, cursor any, limit any) *MockTagRepository_SearchPrefix_Call {
-	return &MockTagRepository_SearchPrefix_Call{Call: _e.mock.On("SearchPrefix", prefix, cursor, limit)}
+func (_e *MockTagRepository_Expecter) SearchPrefix(ctx any, prefix any, cursor any, limit any) *MockTagRepository_SearchPrefix_Call {
+	return &MockTagRepository_SearchPrefix_Call{Call: _e.mock.On("SearchPrefix", ctx, prefix, cursor, limit)}
 }
 
-func (_c *MockTagRepository_SearchPrefix_Call) Run(run func(prefix string, cursor int, limit int)) *MockTagRepository_SearchPrefix_Call {
+func (_c *MockTagRepository_SearchPrefix_Call) Run(run func(ctx context.Context, prefix string, cursor int, limit int)) *MockTagRepository_SearchPrefix_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(string)
 		}
 		var arg2 int
 		if args[2] != nil {
 			arg2 = args[2].(int)
 		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -292,7 +430,64 @@ func (_c *MockTagRepository_SearchPrefix_Call) Return(tags []tag.Tag, err error)
 	return _c
 }
 
-func (_c *MockTagRepository_SearchPrefix_Call) RunAndReturn(run func(prefix string, cursor int, limit int) ([]tag.Tag, error)) *MockTagRepository_SearchPrefix_Call {
+func (_c *MockTagRepository_SearchPrefix_Call) RunAndReturn(run func(ctx context.Context, prefix string, cursor int, limit int) ([]tag.Tag, error)) *MockTagRepository_SearchPrefix_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockTagRepository
+func (_mock *MockTagRepository) Update(ctx context.Context, tag1 *tag.Tag) error {
+	ret := _mock.Called(ctx, tag1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tag.Tag) error); ok {
+		r0 = returnFunc(ctx, tag1)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTagRepository_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockTagRepository_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tag1 *tag.Tag
+func (_e *MockTagRepository_Expecter) Update(ctx any, tag1 any) *MockTagRepository_Update_Call {
+	return &MockTagRepository_Update_Call{Call: _e.mock.On("Update", ctx, tag1)}
+}
+
+func (_c *MockTagRepository_Update_Call) Run(run func(ctx context.Context, tag1 *tag.Tag)) *MockTagRepository_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *tag.Tag
+		if args[1] != nil {
+			arg1 = args[1].(*tag.Tag)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagRepository_Update_Call) Return(err error) *MockTagRepository_Update_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTagRepository_Update_Call) RunAndReturn(run func(ctx context.Context, tag1 *tag.Tag) error) *MockTagRepository_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -378,8 +573,8 @@ func (_m *MockTagService) EXPECT() *MockTagService_Expecter {
 }
 
 // Create provides a mock function for the type MockTagService
-func (_mock *MockTagService) Create(ctx context.Context, tag1 string, userID uint) (*tag.Tag, error) {
-	ret := _mock.Called(ctx, tag1, userID)
+func (_mock *MockTagService) Create(ctx context.Context, req *tag.TagPostRequest, userID uint) (*tag.Tag, error) {
+	ret := _mock.Called(ctx, req, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -387,18 +582,18 @@ func (_mock *MockTagService) Create(ctx context.Context, tag1 string, userID uin
 
 	var r0 *tag.Tag
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, uint) (*tag.Tag, error)); ok {
-		return returnFunc(ctx, tag1, userID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tag.TagPostRequest, uint) (*tag.Tag, error)); ok {
+		return returnFunc(ctx, req, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, uint) *tag.Tag); ok {
-		r0 = returnFunc(ctx, tag1, userID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tag.TagPostRequest, uint) *tag.Tag); ok {
+		r0 = returnFunc(ctx, req, userID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*tag.Tag)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, uint) error); ok {
-		r1 = returnFunc(ctx, tag1, userID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *tag.TagPostRequest, uint) error); ok {
+		r1 = returnFunc(ctx, req, userID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -412,21 +607,21 @@ type MockTagService_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - tag1 string
+//   - req *tag.TagPostRequest
 //   - userID uint
-func (_e *MockTagService_Expecter) Create(ctx any, tag1 any, userID any) *MockTagService_Create_Call {
-	return &MockTagService_Create_Call{Call: _e.mock.On("Create", ctx, tag1, userID)}
+func (_e *MockTagService_Expecter) Create(ctx any, req any, userID any) *MockTagService_Create_Call {
+	return &MockTagService_Create_Call{Call: _e.mock.On("Create", ctx, req, userID)}
 }
 
-func (_c *MockTagService_Create_Call) Run(run func(ctx context.Context, tag1 string, userID uint)) *MockTagService_Create_Call {
+func (_c *MockTagService_Create_Call) Run(run func(ctx context.Context, req *tag.TagPostRequest, userID uint)) *MockTagService_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 *tag.TagPostRequest
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].(*tag.TagPostRequest)
 		}
 		var arg2 uint
 		if args[2] != nil {
@@ -441,19 +636,82 @@ func (_c *MockTagService_Create_Call) Run(run func(ctx context.Context, tag1 str
 	return _c
 }
 
-func (_c *MockTagService_Create_Call) Return(tag11 *tag.Tag, err error) *MockTagService_Create_Call {
-	_c.Call.Return(tag11, err)
+func (_c *MockTagService_Create_Call) Return(tag1 *tag.Tag, err error) *MockTagService_Create_Call {
+	_c.Call.Return(tag1, err)
 	return _c
 }
 
-func (_c *MockTagService_Create_Call) RunAndReturn(run func(ctx context.Context, tag1 string, userID uint) (*tag.Tag, error)) *MockTagService_Create_Call {
+func (_c *MockTagService_Create_Call) RunAndReturn(run func(ctx context.Context, req *tag.TagPostRequest, userID uint) (*tag.Tag, error)) *MockTagService_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockTagService
+func (_mock *MockTagService) Delete(ctx context.Context, userID uint, tagID uint) error {
+	ret := _mock.Called(ctx, userID, tagID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, uint) error); ok {
+		r0 = returnFunc(ctx, userID, tagID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTagService_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockTagService_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uint
+//   - tagID uint
+func (_e *MockTagService_Expecter) Delete(ctx any, userID any, tagID any) *MockTagService_Delete_Call {
+	return &MockTagService_Delete_Call{Call: _e.mock.On("Delete", ctx, userID, tagID)}
+}
+
+func (_c *MockTagService_Delete_Call) Run(run func(ctx context.Context, userID uint, tagID uint)) *MockTagService_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		var arg2 uint
+		if args[2] != nil {
+			arg2 = args[2].(uint)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagService_Delete_Call) Return(err error) *MockTagService_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTagService_Delete_Call) RunAndReturn(run func(ctx context.Context, userID uint, tagID uint) error) *MockTagService_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ExistMany provides a mock function for the type MockTagService
-func (_mock *MockTagService) ExistMany(tags []tag.Tag) ([]bool, error) {
-	ret := _mock.Called(tags)
+func (_mock *MockTagService) ExistMany(ctx context.Context, tags []tag.Tag) ([]bool, error) {
+	ret := _mock.Called(ctx, tags)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExistMany")
@@ -461,18 +719,18 @@ func (_mock *MockTagService) ExistMany(tags []tag.Tag) ([]bool, error) {
 
 	var r0 []bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func([]tag.Tag) ([]bool, error)); ok {
-		return returnFunc(tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []tag.Tag) ([]bool, error)); ok {
+		return returnFunc(ctx, tags)
 	}
-	if returnFunc, ok := ret.Get(0).(func([]tag.Tag) []bool); ok {
-		r0 = returnFunc(tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []tag.Tag) []bool); ok {
+		r0 = returnFunc(ctx, tags)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]bool)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func([]tag.Tag) error); ok {
-		r1 = returnFunc(tags)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []tag.Tag) error); ok {
+		r1 = returnFunc(ctx, tags)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -485,19 +743,25 @@ type MockTagService_ExistMany_Call struct {
 }
 
 // ExistMany is a helper method to define mock.On call
+//   - ctx context.Context
 //   - tags []tag.Tag
-func (_e *MockTagService_Expecter) ExistMany(tags any) *MockTagService_ExistMany_Call {
-	return &MockTagService_ExistMany_Call{Call: _e.mock.On("ExistMany", tags)}
+func (_e *MockTagService_Expecter) ExistMany(ctx any, tags any) *MockTagService_ExistMany_Call {
+	return &MockTagService_ExistMany_Call{Call: _e.mock.On("ExistMany", ctx, tags)}
 }
 
-func (_c *MockTagService_ExistMany_Call) Run(run func(tags []tag.Tag)) *MockTagService_ExistMany_Call {
+func (_c *MockTagService_ExistMany_Call) Run(run func(ctx context.Context, tags []tag.Tag)) *MockTagService_ExistMany_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 []tag.Tag
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].([]tag.Tag)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []tag.Tag
+		if args[1] != nil {
+			arg1 = args[1].([]tag.Tag)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -508,74 +772,148 @@ func (_c *MockTagService_ExistMany_Call) Return(bools []bool, err error) *MockTa
 	return _c
 }
 
-func (_c *MockTagService_ExistMany_Call) RunAndReturn(run func(tags []tag.Tag) ([]bool, error)) *MockTagService_ExistMany_Call {
+func (_c *MockTagService_ExistMany_Call) RunAndReturn(run func(ctx context.Context, tags []tag.Tag) ([]bool, error)) *MockTagService_ExistMany_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Exists provides a mock function for the type MockTagService
-func (_mock *MockTagService) Exists(name string) (bool, error) {
-	ret := _mock.Called(name)
+// ExistsByName provides a mock function for the type MockTagService
+func (_mock *MockTagService) ExistsByName(ctx context.Context, name string) (bool, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Exists")
+		panic("no return value specified for ExistsByName")
 	}
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockTagService_Exists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Exists'
-type MockTagService_Exists_Call struct {
+// MockTagService_ExistsByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExistsByName'
+type MockTagService_ExistsByName_Call struct {
 	*mock.Call
 }
 
-// Exists is a helper method to define mock.On call
+// ExistsByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockTagService_Expecter) Exists(name any) *MockTagService_Exists_Call {
-	return &MockTagService_Exists_Call{Call: _e.mock.On("Exists", name)}
+func (_e *MockTagService_Expecter) ExistsByName(ctx any, name any) *MockTagService_ExistsByName_Call {
+	return &MockTagService_ExistsByName_Call{Call: _e.mock.On("ExistsByName", ctx, name)}
 }
 
-func (_c *MockTagService_Exists_Call) Run(run func(name string)) *MockTagService_Exists_Call {
+func (_c *MockTagService_ExistsByName_Call) Run(run func(ctx context.Context, name string)) *MockTagService_ExistsByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *MockTagService_Exists_Call) Return(b bool, err error) *MockTagService_Exists_Call {
+func (_c *MockTagService_ExistsByName_Call) Return(b bool, err error) *MockTagService_ExistsByName_Call {
 	_c.Call.Return(b, err)
 	return _c
 }
 
-func (_c *MockTagService_Exists_Call) RunAndReturn(run func(name string) (bool, error)) *MockTagService_Exists_Call {
+func (_c *MockTagService_ExistsByName_Call) RunAndReturn(run func(ctx context.Context, name string) (bool, error)) *MockTagService_ExistsByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Get provides a mock function for the type MockTagService
+func (_mock *MockTagService) Get(ctx context.Context, tagID uint) (*tag.Tag, error) {
+	ret := _mock.Called(ctx, tagID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 *tag.Tag
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) (*tag.Tag, error)); ok {
+		return returnFunc(ctx, tagID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) *tag.Tag); ok {
+		r0 = returnFunc(ctx, tagID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tag.Tag)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uint) error); ok {
+		r1 = returnFunc(ctx, tagID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTagService_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockTagService_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tagID uint
+func (_e *MockTagService_Expecter) Get(ctx any, tagID any) *MockTagService_Get_Call {
+	return &MockTagService_Get_Call{Call: _e.mock.On("Get", ctx, tagID)}
+}
+
+func (_c *MockTagService_Get_Call) Run(run func(ctx context.Context, tagID uint)) *MockTagService_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagService_Get_Call) Return(tag1 *tag.Tag, err error) *MockTagService_Get_Call {
+	_c.Call.Return(tag1, err)
+	return _c
+}
+
+func (_c *MockTagService_Get_Call) RunAndReturn(run func(ctx context.Context, tagID uint) (*tag.Tag, error)) *MockTagService_Get_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SearchPrefix provides a mock function for the type MockTagService
-func (_mock *MockTagService) SearchPrefix(prefix string, cursor int, limit int) ([]tag.Tag, error) {
-	ret := _mock.Called(prefix, cursor, limit)
+func (_mock *MockTagService) SearchPrefix(ctx context.Context, prefix string, cursor int, limit int) ([]tag.Tag, error) {
+	ret := _mock.Called(ctx, prefix, cursor, limit)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SearchPrefix")
@@ -583,18 +921,18 @@ func (_mock *MockTagService) SearchPrefix(prefix string, cursor int, limit int) 
 
 	var r0 []tag.Tag
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, int, int) ([]tag.Tag, error)); ok {
-		return returnFunc(prefix, cursor, limit)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) ([]tag.Tag, error)); ok {
+		return returnFunc(ctx, prefix, cursor, limit)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, int, int) []tag.Tag); ok {
-		r0 = returnFunc(prefix, cursor, limit)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) []tag.Tag); ok {
+		r0 = returnFunc(ctx, prefix, cursor, limit)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]tag.Tag)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, int, int) error); ok {
-		r1 = returnFunc(prefix, cursor, limit)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) error); ok {
+		r1 = returnFunc(ctx, prefix, cursor, limit)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -607,31 +945,37 @@ type MockTagService_SearchPrefix_Call struct {
 }
 
 // SearchPrefix is a helper method to define mock.On call
+//   - ctx context.Context
 //   - prefix string
 //   - cursor int
 //   - limit int
-func (_e *MockTagService_Expecter) SearchPrefix(prefix any, cursor any, limit any) *MockTagService_SearchPrefix_Call {
-	return &MockTagService_SearchPrefix_Call{Call: _e.mock.On("SearchPrefix", prefix, cursor, limit)}
+func (_e *MockTagService_Expecter) SearchPrefix(ctx any, prefix any, cursor any, limit any) *MockTagService_SearchPrefix_Call {
+	return &MockTagService_SearchPrefix_Call{Call: _e.mock.On("SearchPrefix", ctx, prefix, cursor, limit)}
 }
 
-func (_c *MockTagService_SearchPrefix_Call) Run(run func(prefix string, cursor int, limit int)) *MockTagService_SearchPrefix_Call {
+func (_c *MockTagService_SearchPrefix_Call) Run(run func(ctx context.Context, prefix string, cursor int, limit int)) *MockTagService_SearchPrefix_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(string)
 		}
 		var arg2 int
 		if args[2] != nil {
 			arg2 = args[2].(int)
 		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -642,7 +986,87 @@ func (_c *MockTagService_SearchPrefix_Call) Return(tags []tag.Tag, err error) *M
 	return _c
 }
 
-func (_c *MockTagService_SearchPrefix_Call) RunAndReturn(run func(prefix string, cursor int, limit int) ([]tag.Tag, error)) *MockTagService_SearchPrefix_Call {
+func (_c *MockTagService_SearchPrefix_Call) RunAndReturn(run func(ctx context.Context, prefix string, cursor int, limit int) ([]tag.Tag, error)) *MockTagService_SearchPrefix_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockTagService
+func (_mock *MockTagService) Update(ctx context.Context, userID uint, tagID uint, req *tag.TagPatchRequest) (*tag.Tag, error) {
+	ret := _mock.Called(ctx, userID, tagID, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *tag.Tag
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, uint, *tag.TagPatchRequest) (*tag.Tag, error)); ok {
+		return returnFunc(ctx, userID, tagID, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, uint, *tag.TagPatchRequest) *tag.Tag); ok {
+		r0 = returnFunc(ctx, userID, tagID, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*tag.Tag)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uint, uint, *tag.TagPatchRequest) error); ok {
+		r1 = returnFunc(ctx, userID, tagID, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTagService_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockTagService_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uint
+//   - tagID uint
+//   - req *tag.TagPatchRequest
+func (_e *MockTagService_Expecter) Update(ctx any, userID any, tagID any, req any) *MockTagService_Update_Call {
+	return &MockTagService_Update_Call{Call: _e.mock.On("Update", ctx, userID, tagID, req)}
+}
+
+func (_c *MockTagService_Update_Call) Run(run func(ctx context.Context, userID uint, tagID uint, req *tag.TagPatchRequest)) *MockTagService_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		var arg2 uint
+		if args[2] != nil {
+			arg2 = args[2].(uint)
+		}
+		var arg3 *tag.TagPatchRequest
+		if args[3] != nil {
+			arg3 = args[3].(*tag.TagPatchRequest)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagService_Update_Call) Return(tag1 *tag.Tag, err error) *MockTagService_Update_Call {
+	_c.Call.Return(tag1, err)
+	return _c
+}
+
+func (_c *MockTagService_Update_Call) RunAndReturn(run func(ctx context.Context, userID uint, tagID uint, req *tag.TagPatchRequest) (*tag.Tag, error)) *MockTagService_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

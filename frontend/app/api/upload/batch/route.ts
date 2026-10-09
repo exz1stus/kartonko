@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
             formData.set("metadata", JSON.stringify(metadata));
 
-            const res = await serverFetch("/image/upload/batch", {
+            const res = await serverFetch("/image/batch", {
                 method: "POST",
                 body: formData,
             });

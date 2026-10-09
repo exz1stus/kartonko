@@ -52,6 +52,7 @@ func WriteFilePart(w *multipart.Writer, fieldName string, filename string, conte
 func RespondJSON(c *gin.Context, status int, data any) {
 	if data == nil {
 		data = gin.H{}
+		status = http.StatusNoContent
 	}
 	c.JSON(status, data)
 }
@@ -131,7 +132,7 @@ func GetJSON[T any](c *gin.Context, dst *T, requiredFields ...string) error {
 	return nil
 }
 
-func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error), toResponse func(T) any) {
+func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error), toResponse func(*T) any) {
 	cursor, limit, err := GetCursorLimit(c)
 	if err != nil {
 		errors.RespondError(c, err)
@@ -145,7 +146,7 @@ func HandleList[T any](c *gin.Context, fetch func(cursor, limit int) ([]T, error
 	}
 	resp := make([]any, len(items))
 	for i, item := range items {
-		resp[i] = toResponse(item)
+		resp[i] = toResponse(&item)
 	}
 	RespondJSON(c, http.StatusOK, resp)
 }

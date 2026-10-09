@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface BoardBoardCreateRequest {
-  description: string;
-  name: string;
+export interface UserUserPatchRequest {
+  pictureURL?: string;
+  username?: string;
 }

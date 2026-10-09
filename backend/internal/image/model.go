@@ -15,8 +15,8 @@ type ImageMetadata struct {
 	Format   string    `json:"format" gorm:"not null"`
 	Width    uint      `json:"width" gorm:"not null"`
 	Height   uint      `json:"height" gorm:"not null"`
-	UserID   uint      `json:"user_id" gorm:"not null;default:1"`
-	User     user.User `json:"user"`
+	UserID   uint      `json:"user_id" gorm:"not null"`
+	User     user.User `json:"user" gorm:"foreignKey:UserID"`
 }
 
 // image model from DB must guarantee parsable format
@@ -26,7 +26,7 @@ func (img *ImageMetadata) ParseFormat() Format {
 }
 
 func ConstructImageMetadata(name string, hash string, tagsNames []string, format Format, width uint, height uint, userID uint) *ImageMetadata {
-	tags := tag.ConstructTagsByNames(tagsNames)
+	tags := tag.TagsByNames(tagsNames)
 	image := &ImageMetadata{
 		Filename: name,
 		Hash:     hash,

@@ -2,10 +2,9 @@
 import { useState } from "react";
 import { UserModal } from "./UserModal";
 import UserPicture from "./UserPicture";
-import { UserData } from "@/lib/user/user";
-
+import { UserDataResponse } from "@/lib/api/generated/model";
 interface Props {
-    user: UserData;
+    user: UserDataResponse;
 }
 
 const UserProfile = ({ user }: Props) => {

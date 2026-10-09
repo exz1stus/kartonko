@@ -121,7 +121,7 @@ func TestPostImage_TagsAdded(t *testing.T) {
 	ctx.AssertTags(resp.Tags, []string{"animal", "cat"}, "response")
 
 	// Verify tags are persisted in database
-	img, err := ctx.ImageService.GetByName("tagged.png")
+	img, err := ctx.ImageService.GetByName(ctx.T.Context(), "tagged.png")
 	if err != nil {
 		t.Fatalf("failed to get image from DB: %v", err)
 	}

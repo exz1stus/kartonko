@@ -1,12 +1,10 @@
 "use server";
 import { isModerator } from "@/lib/user/user";
-import { forbidden, notFound } from "next/navigation";
 import Image from "next/image";
 import GalleryServer from "@/components/Gallery/GalleryServer";
 import TimeField from "@/components/TimeField";
 import EditUser from "@/components/EditUser";
-import { getUserName } from "@/lib/api/generated/server";
-import { UserDataResponse } from "@/lib/api/generated/model";
+import { getUserByName } from "@/lib/api/generated/server";
 import { getLoggedUser } from "@/lib/user/user.server";
 
 const UserPage = async ({
@@ -16,7 +14,7 @@ const UserPage = async ({
 }) => {
     const { username } = await params;
 
-    let user = await getUserName(username);
+    let user = await getUserByName(username);
     let loggedUser = await getLoggedUser();
 
     let hasEditPermission =

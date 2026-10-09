@@ -2,6 +2,11 @@ package user
 
 import "time"
 
+type UserPatchRequest struct {
+	Username   *string
+	PictureURL *string
+}
+
 func NewUserData(u *User) UserResponce {
 	res := UserResponce{
 		ID:        u.ID,

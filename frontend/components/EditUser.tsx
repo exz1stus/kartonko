@@ -3,7 +3,7 @@ import { Trash2 } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { deleteImage } from "@/lib/api/generated/client";
+import { deleteImagesByQuery } from "@/lib/api/generated/client";
 import { UserDataResponse } from "@/lib/api/generated/model/userDataResponse";
 
 interface Props {
@@ -16,7 +16,7 @@ const EditUser = ({ user, hasPermission }: Props) => {
 
     const deleteUsersImages = useCallback(async () => {
         toast.promise(
-            deleteImage({ user_id: user.id }, { credentials: "include" }),
+            deleteImagesByQuery({ user_id: user.id }, { credentials: "include" }),
             {
                 loading: "Loading...",
                 success: () => {

@@ -104,7 +104,7 @@ func TestDeleteImageByQuery(t *testing.T) {
 				ctx.SeedImage(img.request, testutil.MakeUniqueTestPNG(ctx.T, 10, 10, i), img.userID)
 			}
 
-			initialCount64, err := ctx.ImageService.Count(nil)
+			initialCount64, err := ctx.ImageService.Count(ctx.T.Context(), nil)
 			initialCount := int(initialCount64)
 			if err != nil {
 				t.Fatal("failed to count test initial images count")

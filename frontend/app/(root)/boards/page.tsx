@@ -1,5 +1,5 @@
 "use client";
-import { getBoard } from "@/lib/api/generated/client";
+import { listBoards } from "@/lib/api/generated/client";
 import { BoardResponse } from "@/lib/api/generated/model";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 
@@ -17,7 +17,7 @@ const BoardsPage = () => {
         cursor: number,
         limit: number,
     ): Promise<BoardResponse[]> => {
-        return getBoard({ cursor, limit });
+        return listBoards({ cursor, limit });
     };
 
     const { items, loading, reachedEnd, sentinelRef } = useInfiniteScroll<

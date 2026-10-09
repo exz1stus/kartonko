@@ -33,12 +33,13 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Success 200 {array} log.EntryResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Router /log [get]
+// @ID GetAuditLogEntries
 func (h *Handler) GetAuditLogEntries(c *gin.Context) {
-	helpers.HandleList(c, func(cursor, limit int) ([]EntryResponse, error) {
+	helpers.HandleList(c, func(cursor, limit int) ([]logpkg.EntryResponse, error) {
 		entries, err := h.logService.GetEntries(cursor, limit)
 		if err != nil {
 			return nil, err
 		}
-		return FromServiceEntries(entries), nil
-	}, func(entry EntryResponse) any { return entry })
+		return entries, nil
+	}, func(entry *logpkg.EntryResponse) any { return entry })
 }

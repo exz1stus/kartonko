@@ -9,7 +9,6 @@ import (
 	"io"
 	"server/internal/image"
 	"server/internal/tag"
-	"server/internal/user"
 
 	mock "github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
@@ -574,16 +573,16 @@ func (_m *MockImageRepository) EXPECT() *MockImageRepository_Expecter {
 }
 
 // AttachTags provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) AttachTags(imageID uint, tags []tag.Tag) error {
-	ret := _mock.Called(imageID, tags)
+func (_mock *MockImageRepository) AttachTags(ctx context.Context, imageID uint, tags []tag.Tag) error {
+	ret := _mock.Called(ctx, imageID, tags)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AttachTags")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(uint, []tag.Tag) error); ok {
-		r0 = returnFunc(imageID, tags)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, []tag.Tag) error); ok {
+		r0 = returnFunc(ctx, imageID, tags)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -596,25 +595,31 @@ type MockImageRepository_AttachTags_Call struct {
 }
 
 // AttachTags is a helper method to define mock.On call
+//   - ctx context.Context
 //   - imageID uint
 //   - tags []tag.Tag
-func (_e *MockImageRepository_Expecter) AttachTags(imageID any, tags any) *MockImageRepository_AttachTags_Call {
-	return &MockImageRepository_AttachTags_Call{Call: _e.mock.On("AttachTags", imageID, tags)}
+func (_e *MockImageRepository_Expecter) AttachTags(ctx any, imageID any, tags any) *MockImageRepository_AttachTags_Call {
+	return &MockImageRepository_AttachTags_Call{Call: _e.mock.On("AttachTags", ctx, imageID, tags)}
 }
 
-func (_c *MockImageRepository_AttachTags_Call) Run(run func(imageID uint, tags []tag.Tag)) *MockImageRepository_AttachTags_Call {
+func (_c *MockImageRepository_AttachTags_Call) Run(run func(ctx context.Context, imageID uint, tags []tag.Tag)) *MockImageRepository_AttachTags_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 uint
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(uint)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 []tag.Tag
+		var arg1 uint
 		if args[1] != nil {
-			arg1 = args[1].([]tag.Tag)
+			arg1 = args[1].(uint)
+		}
+		var arg2 []tag.Tag
+		if args[2] != nil {
+			arg2 = args[2].([]tag.Tag)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -625,14 +630,14 @@ func (_c *MockImageRepository_AttachTags_Call) Return(err error) *MockImageRepos
 	return _c
 }
 
-func (_c *MockImageRepository_AttachTags_Call) RunAndReturn(run func(imageID uint, tags []tag.Tag) error) *MockImageRepository_AttachTags_Call {
+func (_c *MockImageRepository_AttachTags_Call) RunAndReturn(run func(ctx context.Context, imageID uint, tags []tag.Tag) error) *MockImageRepository_AttachTags_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Count provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) Count(query *image.Query) (int64, error) {
-	ret := _mock.Called(query)
+func (_mock *MockImageRepository) Count(ctx context.Context, query *image.Query) (int64, error) {
+	ret := _mock.Called(ctx, query)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Count")
@@ -640,16 +645,16 @@ func (_mock *MockImageRepository) Count(query *image.Query) (int64, error) {
 
 	var r0 int64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*image.Query) (int64, error)); ok {
-		return returnFunc(query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.Query) (int64, error)); ok {
+		return returnFunc(ctx, query)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*image.Query) int64); ok {
-		r0 = returnFunc(query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.Query) int64); ok {
+		r0 = returnFunc(ctx, query)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
-	if returnFunc, ok := ret.Get(1).(func(*image.Query) error); ok {
-		r1 = returnFunc(query)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *image.Query) error); ok {
+		r1 = returnFunc(ctx, query)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -662,19 +667,25 @@ type MockImageRepository_Count_Call struct {
 }
 
 // Count is a helper method to define mock.On call
+//   - ctx context.Context
 //   - query *image.Query
-func (_e *MockImageRepository_Expecter) Count(query any) *MockImageRepository_Count_Call {
-	return &MockImageRepository_Count_Call{Call: _e.mock.On("Count", query)}
+func (_e *MockImageRepository_Expecter) Count(ctx any, query any) *MockImageRepository_Count_Call {
+	return &MockImageRepository_Count_Call{Call: _e.mock.On("Count", ctx, query)}
 }
 
-func (_c *MockImageRepository_Count_Call) Run(run func(query *image.Query)) *MockImageRepository_Count_Call {
+func (_c *MockImageRepository_Count_Call) Run(run func(ctx context.Context, query *image.Query)) *MockImageRepository_Count_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *image.Query
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*image.Query)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *image.Query
+		if args[1] != nil {
+			arg1 = args[1].(*image.Query)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -685,22 +696,22 @@ func (_c *MockImageRepository_Count_Call) Return(n int64, err error) *MockImageR
 	return _c
 }
 
-func (_c *MockImageRepository_Count_Call) RunAndReturn(run func(query *image.Query) (int64, error)) *MockImageRepository_Count_Call {
+func (_c *MockImageRepository_Count_Call) RunAndReturn(run func(ctx context.Context, query *image.Query) (int64, error)) *MockImageRepository_Count_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Create provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) Create(image1 *image.ImageMetadata) error {
-	ret := _mock.Called(image1)
+func (_mock *MockImageRepository) Create(ctx context.Context, image1 *image.ImageMetadata) error {
+	ret := _mock.Called(ctx, image1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(*image.ImageMetadata) error); ok {
-		r0 = returnFunc(image1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.ImageMetadata) error); ok {
+		r0 = returnFunc(ctx, image1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -713,19 +724,25 @@ type MockImageRepository_Create_Call struct {
 }
 
 // Create is a helper method to define mock.On call
+//   - ctx context.Context
 //   - image1 *image.ImageMetadata
-func (_e *MockImageRepository_Expecter) Create(image1 any) *MockImageRepository_Create_Call {
-	return &MockImageRepository_Create_Call{Call: _e.mock.On("Create", image1)}
+func (_e *MockImageRepository_Expecter) Create(ctx any, image1 any) *MockImageRepository_Create_Call {
+	return &MockImageRepository_Create_Call{Call: _e.mock.On("Create", ctx, image1)}
 }
 
-func (_c *MockImageRepository_Create_Call) Run(run func(image1 *image.ImageMetadata)) *MockImageRepository_Create_Call {
+func (_c *MockImageRepository_Create_Call) Run(run func(ctx context.Context, image1 *image.ImageMetadata)) *MockImageRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *image.ImageMetadata
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*image.ImageMetadata)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *image.ImageMetadata
+		if args[1] != nil {
+			arg1 = args[1].(*image.ImageMetadata)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -736,73 +753,79 @@ func (_c *MockImageRepository_Create_Call) Return(err error) *MockImageRepositor
 	return _c
 }
 
-func (_c *MockImageRepository_Create_Call) RunAndReturn(run func(image1 *image.ImageMetadata) error) *MockImageRepository_Create_Call {
+func (_c *MockImageRepository_Create_Call) RunAndReturn(run func(ctx context.Context, image1 *image.ImageMetadata) error) *MockImageRepository_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// DeleteByID provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) DeleteByID(id uint) error {
-	ret := _mock.Called(id)
+// Delete provides a mock function for the type MockImageRepository
+func (_mock *MockImageRepository) Delete(ctx context.Context, id uint) error {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteByID")
+		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(uint) error); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) error); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// MockImageRepository_DeleteByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteByID'
-type MockImageRepository_DeleteByID_Call struct {
+// MockImageRepository_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockImageRepository_Delete_Call struct {
 	*mock.Call
 }
 
-// DeleteByID is a helper method to define mock.On call
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id uint
-func (_e *MockImageRepository_Expecter) DeleteByID(id any) *MockImageRepository_DeleteByID_Call {
-	return &MockImageRepository_DeleteByID_Call{Call: _e.mock.On("DeleteByID", id)}
+func (_e *MockImageRepository_Expecter) Delete(ctx any, id any) *MockImageRepository_Delete_Call {
+	return &MockImageRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
 }
 
-func (_c *MockImageRepository_DeleteByID_Call) Run(run func(id uint)) *MockImageRepository_DeleteByID_Call {
+func (_c *MockImageRepository_Delete_Call) Run(run func(ctx context.Context, id uint)) *MockImageRepository_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 uint
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(uint)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *MockImageRepository_DeleteByID_Call) Return(err error) *MockImageRepository_DeleteByID_Call {
+func (_c *MockImageRepository_Delete_Call) Return(err error) *MockImageRepository_Delete_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockImageRepository_DeleteByID_Call) RunAndReturn(run func(id uint) error) *MockImageRepository_DeleteByID_Call {
+func (_c *MockImageRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, id uint) error) *MockImageRepository_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteByIDs provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) DeleteByIDs(ids []uint) error {
-	ret := _mock.Called(ids)
+func (_mock *MockImageRepository) DeleteByIDs(ctx context.Context, ids []uint) error {
+	ret := _mock.Called(ctx, ids)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteByIDs")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func([]uint) error); ok {
-		r0 = returnFunc(ids)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []uint) error); ok {
+		r0 = returnFunc(ctx, ids)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -815,19 +838,25 @@ type MockImageRepository_DeleteByIDs_Call struct {
 }
 
 // DeleteByIDs is a helper method to define mock.On call
+//   - ctx context.Context
 //   - ids []uint
-func (_e *MockImageRepository_Expecter) DeleteByIDs(ids any) *MockImageRepository_DeleteByIDs_Call {
-	return &MockImageRepository_DeleteByIDs_Call{Call: _e.mock.On("DeleteByIDs", ids)}
+func (_e *MockImageRepository_Expecter) DeleteByIDs(ctx any, ids any) *MockImageRepository_DeleteByIDs_Call {
+	return &MockImageRepository_DeleteByIDs_Call{Call: _e.mock.On("DeleteByIDs", ctx, ids)}
 }
 
-func (_c *MockImageRepository_DeleteByIDs_Call) Run(run func(ids []uint)) *MockImageRepository_DeleteByIDs_Call {
+func (_c *MockImageRepository_DeleteByIDs_Call) Run(run func(ctx context.Context, ids []uint)) *MockImageRepository_DeleteByIDs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 []uint
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].([]uint)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []uint
+		if args[1] != nil {
+			arg1 = args[1].([]uint)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -838,14 +867,14 @@ func (_c *MockImageRepository_DeleteByIDs_Call) Return(err error) *MockImageRepo
 	return _c
 }
 
-func (_c *MockImageRepository_DeleteByIDs_Call) RunAndReturn(run func(ids []uint) error) *MockImageRepository_DeleteByIDs_Call {
+func (_c *MockImageRepository_DeleteByIDs_Call) RunAndReturn(run func(ctx context.Context, ids []uint) error) *MockImageRepository_DeleteByIDs_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ExistsByHash provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) ExistsByHash(hash string) (bool, error) {
-	ret := _mock.Called(hash)
+func (_mock *MockImageRepository) ExistsByHash(ctx context.Context, hash string) (bool, error) {
+	ret := _mock.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExistsByHash")
@@ -853,16 +882,16 @@ func (_mock *MockImageRepository) ExistsByHash(hash string) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(hash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(hash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, hash)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(hash)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -875,19 +904,25 @@ type MockImageRepository_ExistsByHash_Call struct {
 }
 
 // ExistsByHash is a helper method to define mock.On call
+//   - ctx context.Context
 //   - hash string
-func (_e *MockImageRepository_Expecter) ExistsByHash(hash any) *MockImageRepository_ExistsByHash_Call {
-	return &MockImageRepository_ExistsByHash_Call{Call: _e.mock.On("ExistsByHash", hash)}
+func (_e *MockImageRepository_Expecter) ExistsByHash(ctx any, hash any) *MockImageRepository_ExistsByHash_Call {
+	return &MockImageRepository_ExistsByHash_Call{Call: _e.mock.On("ExistsByHash", ctx, hash)}
 }
 
-func (_c *MockImageRepository_ExistsByHash_Call) Run(run func(hash string)) *MockImageRepository_ExistsByHash_Call {
+func (_c *MockImageRepository_ExistsByHash_Call) Run(run func(ctx context.Context, hash string)) *MockImageRepository_ExistsByHash_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -898,14 +933,14 @@ func (_c *MockImageRepository_ExistsByHash_Call) Return(b bool, err error) *Mock
 	return _c
 }
 
-func (_c *MockImageRepository_ExistsByHash_Call) RunAndReturn(run func(hash string) (bool, error)) *MockImageRepository_ExistsByHash_Call {
+func (_c *MockImageRepository_ExistsByHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (bool, error)) *MockImageRepository_ExistsByHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ExistsByName provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) ExistsByName(name string) (bool, error) {
-	ret := _mock.Called(name)
+func (_mock *MockImageRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExistsByName")
@@ -913,16 +948,16 @@ func (_mock *MockImageRepository) ExistsByName(name string) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -935,19 +970,25 @@ type MockImageRepository_ExistsByName_Call struct {
 }
 
 // ExistsByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockImageRepository_Expecter) ExistsByName(name any) *MockImageRepository_ExistsByName_Call {
-	return &MockImageRepository_ExistsByName_Call{Call: _e.mock.On("ExistsByName", name)}
+func (_e *MockImageRepository_Expecter) ExistsByName(ctx any, name any) *MockImageRepository_ExistsByName_Call {
+	return &MockImageRepository_ExistsByName_Call{Call: _e.mock.On("ExistsByName", ctx, name)}
 }
 
-func (_c *MockImageRepository_ExistsByName_Call) Run(run func(name string)) *MockImageRepository_ExistsByName_Call {
+func (_c *MockImageRepository_ExistsByName_Call) Run(run func(ctx context.Context, name string)) *MockImageRepository_ExistsByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -958,14 +999,82 @@ func (_c *MockImageRepository_ExistsByName_Call) Return(b bool, err error) *Mock
 	return _c
 }
 
-func (_c *MockImageRepository_ExistsByName_Call) RunAndReturn(run func(name string) (bool, error)) *MockImageRepository_ExistsByName_Call {
+func (_c *MockImageRepository_ExistsByName_Call) RunAndReturn(run func(ctx context.Context, name string) (bool, error)) *MockImageRepository_ExistsByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Get provides a mock function for the type MockImageRepository
+func (_mock *MockImageRepository) Get(ctx context.Context, id uint) (*image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 *image.ImageMetadata
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) (*image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint) *image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*image.ImageMetadata)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uint) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockImageRepository_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockImageRepository_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uint
+func (_e *MockImageRepository_Expecter) Get(ctx any, id any) *MockImageRepository_Get_Call {
+	return &MockImageRepository_Get_Call{Call: _e.mock.On("Get", ctx, id)}
+}
+
+func (_c *MockImageRepository_Get_Call) Run(run func(ctx context.Context, id uint)) *MockImageRepository_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockImageRepository_Get_Call) Return(imageMetadata *image.ImageMetadata, err error) *MockImageRepository_Get_Call {
+	_c.Call.Return(imageMetadata, err)
+	return _c
+}
+
+func (_c *MockImageRepository_Get_Call) RunAndReturn(run func(ctx context.Context, id uint) (*image.ImageMetadata, error)) *MockImageRepository_Get_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetByHash provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) GetByHash(hash string) (*image.ImageMetadata, error) {
-	ret := _mock.Called(hash)
+func (_mock *MockImageRepository) GetByHash(ctx context.Context, hash string) (*image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByHash")
@@ -973,18 +1082,18 @@ func (_mock *MockImageRepository) GetByHash(hash string) (*image.ImageMetadata, 
 
 	var r0 *image.ImageMetadata
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*image.ImageMetadata, error)); ok {
-		return returnFunc(hash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *image.ImageMetadata); ok {
-		r0 = returnFunc(hash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, hash)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*image.ImageMetadata)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(hash)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -997,19 +1106,25 @@ type MockImageRepository_GetByHash_Call struct {
 }
 
 // GetByHash is a helper method to define mock.On call
+//   - ctx context.Context
 //   - hash string
-func (_e *MockImageRepository_Expecter) GetByHash(hash any) *MockImageRepository_GetByHash_Call {
-	return &MockImageRepository_GetByHash_Call{Call: _e.mock.On("GetByHash", hash)}
+func (_e *MockImageRepository_Expecter) GetByHash(ctx any, hash any) *MockImageRepository_GetByHash_Call {
+	return &MockImageRepository_GetByHash_Call{Call: _e.mock.On("GetByHash", ctx, hash)}
 }
 
-func (_c *MockImageRepository_GetByHash_Call) Run(run func(hash string)) *MockImageRepository_GetByHash_Call {
+func (_c *MockImageRepository_GetByHash_Call) Run(run func(ctx context.Context, hash string)) *MockImageRepository_GetByHash_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1020,76 +1135,14 @@ func (_c *MockImageRepository_GetByHash_Call) Return(imageMetadata *image.ImageM
 	return _c
 }
 
-func (_c *MockImageRepository_GetByHash_Call) RunAndReturn(run func(hash string) (*image.ImageMetadata, error)) *MockImageRepository_GetByHash_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetByID provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) GetByID(id uint) (*image.ImageMetadata, error) {
-	ret := _mock.Called(id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetByID")
-	}
-
-	var r0 *image.ImageMetadata
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(uint) (*image.ImageMetadata, error)); ok {
-		return returnFunc(id)
-	}
-	if returnFunc, ok := ret.Get(0).(func(uint) *image.ImageMetadata); ok {
-		r0 = returnFunc(id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*image.ImageMetadata)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(uint) error); ok {
-		r1 = returnFunc(id)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockImageRepository_GetByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByID'
-type MockImageRepository_GetByID_Call struct {
-	*mock.Call
-}
-
-// GetByID is a helper method to define mock.On call
-//   - id uint
-func (_e *MockImageRepository_Expecter) GetByID(id any) *MockImageRepository_GetByID_Call {
-	return &MockImageRepository_GetByID_Call{Call: _e.mock.On("GetByID", id)}
-}
-
-func (_c *MockImageRepository_GetByID_Call) Run(run func(id uint)) *MockImageRepository_GetByID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 uint
-		if args[0] != nil {
-			arg0 = args[0].(uint)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockImageRepository_GetByID_Call) Return(imageMetadata *image.ImageMetadata, err error) *MockImageRepository_GetByID_Call {
-	_c.Call.Return(imageMetadata, err)
-	return _c
-}
-
-func (_c *MockImageRepository_GetByID_Call) RunAndReturn(run func(id uint) (*image.ImageMetadata, error)) *MockImageRepository_GetByID_Call {
+func (_c *MockImageRepository_GetByHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*image.ImageMetadata, error)) *MockImageRepository_GetByHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetByName provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) GetByName(name string) (*image.ImageMetadata, error) {
-	ret := _mock.Called(name)
+func (_mock *MockImageRepository) GetByName(ctx context.Context, name string) (*image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByName")
@@ -1097,18 +1150,18 @@ func (_mock *MockImageRepository) GetByName(name string) (*image.ImageMetadata, 
 
 	var r0 *image.ImageMetadata
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*image.ImageMetadata, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *image.ImageMetadata); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*image.ImageMetadata)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1121,19 +1174,25 @@ type MockImageRepository_GetByName_Call struct {
 }
 
 // GetByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockImageRepository_Expecter) GetByName(name any) *MockImageRepository_GetByName_Call {
-	return &MockImageRepository_GetByName_Call{Call: _e.mock.On("GetByName", name)}
+func (_e *MockImageRepository_Expecter) GetByName(ctx any, name any) *MockImageRepository_GetByName_Call {
+	return &MockImageRepository_GetByName_Call{Call: _e.mock.On("GetByName", ctx, name)}
 }
 
-func (_c *MockImageRepository_GetByName_Call) Run(run func(name string)) *MockImageRepository_GetByName_Call {
+func (_c *MockImageRepository_GetByName_Call) Run(run func(ctx context.Context, name string)) *MockImageRepository_GetByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1144,14 +1203,14 @@ func (_c *MockImageRepository_GetByName_Call) Return(imageMetadata *image.ImageM
 	return _c
 }
 
-func (_c *MockImageRepository_GetByName_Call) RunAndReturn(run func(name string) (*image.ImageMetadata, error)) *MockImageRepository_GetByName_Call {
+func (_c *MockImageRepository_GetByName_Call) RunAndReturn(run func(ctx context.Context, name string) (*image.ImageMetadata, error)) *MockImageRepository_GetByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Search provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) Search(query *image.Query) ([]image.ImageMetadata, error) {
-	ret := _mock.Called(query)
+func (_mock *MockImageRepository) Search(ctx context.Context, query *image.Query) ([]image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, query)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Search")
@@ -1159,18 +1218,18 @@ func (_mock *MockImageRepository) Search(query *image.Query) ([]image.ImageMetad
 
 	var r0 []image.ImageMetadata
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*image.Query) ([]image.ImageMetadata, error)); ok {
-		return returnFunc(query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.Query) ([]image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, query)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*image.Query) []image.ImageMetadata); ok {
-		r0 = returnFunc(query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.Query) []image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, query)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]image.ImageMetadata)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*image.Query) error); ok {
-		r1 = returnFunc(query)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *image.Query) error); ok {
+		r1 = returnFunc(ctx, query)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1183,19 +1242,25 @@ type MockImageRepository_Search_Call struct {
 }
 
 // Search is a helper method to define mock.On call
+//   - ctx context.Context
 //   - query *image.Query
-func (_e *MockImageRepository_Expecter) Search(query any) *MockImageRepository_Search_Call {
-	return &MockImageRepository_Search_Call{Call: _e.mock.On("Search", query)}
+func (_e *MockImageRepository_Expecter) Search(ctx any, query any) *MockImageRepository_Search_Call {
+	return &MockImageRepository_Search_Call{Call: _e.mock.On("Search", ctx, query)}
 }
 
-func (_c *MockImageRepository_Search_Call) Run(run func(query *image.Query)) *MockImageRepository_Search_Call {
+func (_c *MockImageRepository_Search_Call) Run(run func(ctx context.Context, query *image.Query)) *MockImageRepository_Search_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *image.Query
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*image.Query)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *image.Query
+		if args[1] != nil {
+			arg1 = args[1].(*image.Query)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1206,22 +1271,22 @@ func (_c *MockImageRepository_Search_Call) Return(imageMetadatas []image.ImageMe
 	return _c
 }
 
-func (_c *MockImageRepository_Search_Call) RunAndReturn(run func(query *image.Query) ([]image.ImageMetadata, error)) *MockImageRepository_Search_Call {
+func (_c *MockImageRepository_Search_Call) RunAndReturn(run func(ctx context.Context, query *image.Query) ([]image.ImageMetadata, error)) *MockImageRepository_Search_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Update provides a mock function for the type MockImageRepository
-func (_mock *MockImageRepository) Update(image1 *image.ImageMetadata) error {
-	ret := _mock.Called(image1)
+func (_mock *MockImageRepository) Update(ctx context.Context, image1 *image.ImageMetadata) error {
+	ret := _mock.Called(ctx, image1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(*image.ImageMetadata) error); ok {
-		r0 = returnFunc(image1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.ImageMetadata) error); ok {
+		r0 = returnFunc(ctx, image1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1234,19 +1299,25 @@ type MockImageRepository_Update_Call struct {
 }
 
 // Update is a helper method to define mock.On call
+//   - ctx context.Context
 //   - image1 *image.ImageMetadata
-func (_e *MockImageRepository_Expecter) Update(image1 any) *MockImageRepository_Update_Call {
-	return &MockImageRepository_Update_Call{Call: _e.mock.On("Update", image1)}
+func (_e *MockImageRepository_Expecter) Update(ctx any, image1 any) *MockImageRepository_Update_Call {
+	return &MockImageRepository_Update_Call{Call: _e.mock.On("Update", ctx, image1)}
 }
 
-func (_c *MockImageRepository_Update_Call) Run(run func(image1 *image.ImageMetadata)) *MockImageRepository_Update_Call {
+func (_c *MockImageRepository_Update_Call) Run(run func(ctx context.Context, image1 *image.ImageMetadata)) *MockImageRepository_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *image.ImageMetadata
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*image.ImageMetadata)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *image.ImageMetadata
+		if args[1] != nil {
+			arg1 = args[1].(*image.ImageMetadata)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1257,7 +1328,7 @@ func (_c *MockImageRepository_Update_Call) Return(err error) *MockImageRepositor
 	return _c
 }
 
-func (_c *MockImageRepository_Update_Call) RunAndReturn(run func(image1 *image.ImageMetadata) error) *MockImageRepository_Update_Call {
+func (_c *MockImageRepository_Update_Call) RunAndReturn(run func(ctx context.Context, image1 *image.ImageMetadata) error) *MockImageRepository_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1343,8 +1414,8 @@ func (_m *MockImageService) EXPECT() *MockImageService_Expecter {
 }
 
 // Count provides a mock function for the type MockImageService
-func (_mock *MockImageService) Count(query *image.Query) (int64, error) {
-	ret := _mock.Called(query)
+func (_mock *MockImageService) Count(ctx context.Context, query *image.Query) (int64, error) {
+	ret := _mock.Called(ctx, query)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Count")
@@ -1352,16 +1423,16 @@ func (_mock *MockImageService) Count(query *image.Query) (int64, error) {
 
 	var r0 int64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*image.Query) (int64, error)); ok {
-		return returnFunc(query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.Query) (int64, error)); ok {
+		return returnFunc(ctx, query)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*image.Query) int64); ok {
-		r0 = returnFunc(query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *image.Query) int64); ok {
+		r0 = returnFunc(ctx, query)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
-	if returnFunc, ok := ret.Get(1).(func(*image.Query) error); ok {
-		r1 = returnFunc(query)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *image.Query) error); ok {
+		r1 = returnFunc(ctx, query)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1374,19 +1445,25 @@ type MockImageService_Count_Call struct {
 }
 
 // Count is a helper method to define mock.On call
+//   - ctx context.Context
 //   - query *image.Query
-func (_e *MockImageService_Expecter) Count(query any) *MockImageService_Count_Call {
-	return &MockImageService_Count_Call{Call: _e.mock.On("Count", query)}
+func (_e *MockImageService_Expecter) Count(ctx any, query any) *MockImageService_Count_Call {
+	return &MockImageService_Count_Call{Call: _e.mock.On("Count", ctx, query)}
 }
 
-func (_c *MockImageService_Count_Call) Run(run func(query *image.Query)) *MockImageService_Count_Call {
+func (_c *MockImageService_Count_Call) Run(run func(ctx context.Context, query *image.Query)) *MockImageService_Count_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *image.Query
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*image.Query)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *image.Query
+		if args[1] != nil {
+			arg1 = args[1].(*image.Query)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1397,50 +1474,50 @@ func (_c *MockImageService_Count_Call) Return(n int64, err error) *MockImageServ
 	return _c
 }
 
-func (_c *MockImageService_Count_Call) RunAndReturn(run func(query *image.Query) (int64, error)) *MockImageService_Count_Call {
+func (_c *MockImageService_Count_Call) RunAndReturn(run func(ctx context.Context, query *image.Query) (int64, error)) *MockImageService_Count_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// DeleteByID provides a mock function for the type MockImageService
-func (_mock *MockImageService) DeleteByID(ctx context.Context, user1 *user.User, id uint) error {
-	ret := _mock.Called(ctx, user1, id)
+// Delete provides a mock function for the type MockImageService
+func (_mock *MockImageService) Delete(ctx context.Context, userID uint, id uint) error {
+	ret := _mock.Called(ctx, userID, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for DeleteByID")
+		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *user.User, uint) error); ok {
-		r0 = returnFunc(ctx, user1, id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, uint) error); ok {
+		r0 = returnFunc(ctx, userID, id)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// MockImageService_DeleteByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteByID'
-type MockImageService_DeleteByID_Call struct {
+// MockImageService_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockImageService_Delete_Call struct {
 	*mock.Call
 }
 
-// DeleteByID is a helper method to define mock.On call
+// Delete is a helper method to define mock.On call
 //   - ctx context.Context
-//   - user1 *user.User
+//   - userID uint
 //   - id uint
-func (_e *MockImageService_Expecter) DeleteByID(ctx any, user1 any, id any) *MockImageService_DeleteByID_Call {
-	return &MockImageService_DeleteByID_Call{Call: _e.mock.On("DeleteByID", ctx, user1, id)}
+func (_e *MockImageService_Expecter) Delete(ctx any, userID any, id any) *MockImageService_Delete_Call {
+	return &MockImageService_Delete_Call{Call: _e.mock.On("Delete", ctx, userID, id)}
 }
 
-func (_c *MockImageService_DeleteByID_Call) Run(run func(ctx context.Context, user1 *user.User, id uint)) *MockImageService_DeleteByID_Call {
+func (_c *MockImageService_Delete_Call) Run(run func(ctx context.Context, userID uint, id uint)) *MockImageService_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *user.User
+		var arg1 uint
 		if args[1] != nil {
-			arg1 = args[1].(*user.User)
+			arg1 = args[1].(uint)
 		}
 		var arg2 uint
 		if args[2] != nil {
@@ -1455,27 +1532,27 @@ func (_c *MockImageService_DeleteByID_Call) Run(run func(ctx context.Context, us
 	return _c
 }
 
-func (_c *MockImageService_DeleteByID_Call) Return(err error) *MockImageService_DeleteByID_Call {
+func (_c *MockImageService_Delete_Call) Return(err error) *MockImageService_Delete_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockImageService_DeleteByID_Call) RunAndReturn(run func(ctx context.Context, user1 *user.User, id uint) error) *MockImageService_DeleteByID_Call {
+func (_c *MockImageService_Delete_Call) RunAndReturn(run func(ctx context.Context, userID uint, id uint) error) *MockImageService_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteByName provides a mock function for the type MockImageService
-func (_mock *MockImageService) DeleteByName(ctx context.Context, user1 *user.User, name string) error {
-	ret := _mock.Called(ctx, user1, name)
+func (_mock *MockImageService) DeleteByName(ctx context.Context, userID uint, name string) error {
+	ret := _mock.Called(ctx, userID, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteByName")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *user.User, string) error); ok {
-		r0 = returnFunc(ctx, user1, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, string) error); ok {
+		r0 = returnFunc(ctx, userID, name)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1489,21 +1566,21 @@ type MockImageService_DeleteByName_Call struct {
 
 // DeleteByName is a helper method to define mock.On call
 //   - ctx context.Context
-//   - user1 *user.User
+//   - userID uint
 //   - name string
-func (_e *MockImageService_Expecter) DeleteByName(ctx any, user1 any, name any) *MockImageService_DeleteByName_Call {
-	return &MockImageService_DeleteByName_Call{Call: _e.mock.On("DeleteByName", ctx, user1, name)}
+func (_e *MockImageService_Expecter) DeleteByName(ctx any, userID any, name any) *MockImageService_DeleteByName_Call {
+	return &MockImageService_DeleteByName_Call{Call: _e.mock.On("DeleteByName", ctx, userID, name)}
 }
 
-func (_c *MockImageService_DeleteByName_Call) Run(run func(ctx context.Context, user1 *user.User, name string)) *MockImageService_DeleteByName_Call {
+func (_c *MockImageService_DeleteByName_Call) Run(run func(ctx context.Context, userID uint, name string)) *MockImageService_DeleteByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *user.User
+		var arg1 uint
 		if args[1] != nil {
-			arg1 = args[1].(*user.User)
+			arg1 = args[1].(uint)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -1523,22 +1600,22 @@ func (_c *MockImageService_DeleteByName_Call) Return(err error) *MockImageServic
 	return _c
 }
 
-func (_c *MockImageService_DeleteByName_Call) RunAndReturn(run func(ctx context.Context, user1 *user.User, name string) error) *MockImageService_DeleteByName_Call {
+func (_c *MockImageService_DeleteByName_Call) RunAndReturn(run func(ctx context.Context, userID uint, name string) error) *MockImageService_DeleteByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteByQuery provides a mock function for the type MockImageService
-func (_mock *MockImageService) DeleteByQuery(ctx context.Context, user1 *user.User, query *image.Query) []error {
-	ret := _mock.Called(ctx, user1, query)
+func (_mock *MockImageService) DeleteByQuery(ctx context.Context, userID uint, query *image.Query) []error {
+	ret := _mock.Called(ctx, userID, query)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteByQuery")
 	}
 
 	var r0 []error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *user.User, *image.Query) []error); ok {
-		r0 = returnFunc(ctx, user1, query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, *image.Query) []error); ok {
+		r0 = returnFunc(ctx, userID, query)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]error)
@@ -1554,21 +1631,21 @@ type MockImageService_DeleteByQuery_Call struct {
 
 // DeleteByQuery is a helper method to define mock.On call
 //   - ctx context.Context
-//   - user1 *user.User
+//   - userID uint
 //   - query *image.Query
-func (_e *MockImageService_Expecter) DeleteByQuery(ctx any, user1 any, query any) *MockImageService_DeleteByQuery_Call {
-	return &MockImageService_DeleteByQuery_Call{Call: _e.mock.On("DeleteByQuery", ctx, user1, query)}
+func (_e *MockImageService_Expecter) DeleteByQuery(ctx any, userID any, query any) *MockImageService_DeleteByQuery_Call {
+	return &MockImageService_DeleteByQuery_Call{Call: _e.mock.On("DeleteByQuery", ctx, userID, query)}
 }
 
-func (_c *MockImageService_DeleteByQuery_Call) Run(run func(ctx context.Context, user1 *user.User, query *image.Query)) *MockImageService_DeleteByQuery_Call {
+func (_c *MockImageService_DeleteByQuery_Call) Run(run func(ctx context.Context, userID uint, query *image.Query)) *MockImageService_DeleteByQuery_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *user.User
+		var arg1 uint
 		if args[1] != nil {
-			arg1 = args[1].(*user.User)
+			arg1 = args[1].(uint)
 		}
 		var arg2 *image.Query
 		if args[2] != nil {
@@ -1588,14 +1665,14 @@ func (_c *MockImageService_DeleteByQuery_Call) Return(errs []error) *MockImageSe
 	return _c
 }
 
-func (_c *MockImageService_DeleteByQuery_Call) RunAndReturn(run func(ctx context.Context, user1 *user.User, query *image.Query) []error) *MockImageService_DeleteByQuery_Call {
+func (_c *MockImageService_DeleteByQuery_Call) RunAndReturn(run func(ctx context.Context, userID uint, query *image.Query) []error) *MockImageService_DeleteByQuery_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ExistsByHash provides a mock function for the type MockImageService
-func (_mock *MockImageService) ExistsByHash(hash string) (bool, error) {
-	ret := _mock.Called(hash)
+func (_mock *MockImageService) ExistsByHash(ctx context.Context, hash string) (bool, error) {
+	ret := _mock.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExistsByHash")
@@ -1603,16 +1680,16 @@ func (_mock *MockImageService) ExistsByHash(hash string) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(hash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(hash)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, hash)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(hash)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1625,19 +1702,25 @@ type MockImageService_ExistsByHash_Call struct {
 }
 
 // ExistsByHash is a helper method to define mock.On call
+//   - ctx context.Context
 //   - hash string
-func (_e *MockImageService_Expecter) ExistsByHash(hash any) *MockImageService_ExistsByHash_Call {
-	return &MockImageService_ExistsByHash_Call{Call: _e.mock.On("ExistsByHash", hash)}
+func (_e *MockImageService_Expecter) ExistsByHash(ctx any, hash any) *MockImageService_ExistsByHash_Call {
+	return &MockImageService_ExistsByHash_Call{Call: _e.mock.On("ExistsByHash", ctx, hash)}
 }
 
-func (_c *MockImageService_ExistsByHash_Call) Run(run func(hash string)) *MockImageService_ExistsByHash_Call {
+func (_c *MockImageService_ExistsByHash_Call) Run(run func(ctx context.Context, hash string)) *MockImageService_ExistsByHash_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1648,14 +1731,14 @@ func (_c *MockImageService_ExistsByHash_Call) Return(b bool, err error) *MockIma
 	return _c
 }
 
-func (_c *MockImageService_ExistsByHash_Call) RunAndReturn(run func(hash string) (bool, error)) *MockImageService_ExistsByHash_Call {
+func (_c *MockImageService_ExistsByHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (bool, error)) *MockImageService_ExistsByHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ExistsByName provides a mock function for the type MockImageService
-func (_mock *MockImageService) ExistsByName(name string) (bool, error) {
-	ret := _mock.Called(name)
+func (_mock *MockImageService) ExistsByName(ctx context.Context, name string) (bool, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExistsByName")
@@ -1663,16 +1746,16 @@ func (_mock *MockImageService) ExistsByName(name string) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1685,19 +1768,25 @@ type MockImageService_ExistsByName_Call struct {
 }
 
 // ExistsByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockImageService_Expecter) ExistsByName(name any) *MockImageService_ExistsByName_Call {
-	return &MockImageService_ExistsByName_Call{Call: _e.mock.On("ExistsByName", name)}
+func (_e *MockImageService_Expecter) ExistsByName(ctx any, name any) *MockImageService_ExistsByName_Call {
+	return &MockImageService_ExistsByName_Call{Call: _e.mock.On("ExistsByName", ctx, name)}
 }
 
-func (_c *MockImageService_ExistsByName_Call) Run(run func(name string)) *MockImageService_ExistsByName_Call {
+func (_c *MockImageService_ExistsByName_Call) Run(run func(ctx context.Context, name string)) *MockImageService_ExistsByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1708,79 +1797,17 @@ func (_c *MockImageService_ExistsByName_Call) Return(b bool, err error) *MockIma
 	return _c
 }
 
-func (_c *MockImageService_ExistsByName_Call) RunAndReturn(run func(name string) (bool, error)) *MockImageService_ExistsByName_Call {
+func (_c *MockImageService_ExistsByName_Call) RunAndReturn(run func(ctx context.Context, name string) (bool, error)) *MockImageService_ExistsByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetByHash provides a mock function for the type MockImageService
-func (_mock *MockImageService) GetByHash(hash string) (*image.ImageMetadata, error) {
-	ret := _mock.Called(hash)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetByHash")
-	}
-
-	var r0 *image.ImageMetadata
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*image.ImageMetadata, error)); ok {
-		return returnFunc(hash)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) *image.ImageMetadata); ok {
-		r0 = returnFunc(hash)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*image.ImageMetadata)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(hash)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockImageService_GetByHash_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByHash'
-type MockImageService_GetByHash_Call struct {
-	*mock.Call
-}
-
-// GetByHash is a helper method to define mock.On call
-//   - hash string
-func (_e *MockImageService_Expecter) GetByHash(hash any) *MockImageService_GetByHash_Call {
-	return &MockImageService_GetByHash_Call{Call: _e.mock.On("GetByHash", hash)}
-}
-
-func (_c *MockImageService_GetByHash_Call) Run(run func(hash string)) *MockImageService_GetByHash_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockImageService_GetByHash_Call) Return(imageMetadata *image.ImageMetadata, err error) *MockImageService_GetByHash_Call {
-	_c.Call.Return(imageMetadata, err)
-	return _c
-}
-
-func (_c *MockImageService_GetByHash_Call) RunAndReturn(run func(hash string) (*image.ImageMetadata, error)) *MockImageService_GetByHash_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetByID provides a mock function for the type MockImageService
-func (_mock *MockImageService) GetByID(ctx context.Context, id uint) (*image.ImageMetadata, error) {
+// Get provides a mock function for the type MockImageService
+func (_mock *MockImageService) Get(ctx context.Context, id uint) (*image.ImageMetadata, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetByID")
+		panic("no return value specified for Get")
 	}
 
 	var r0 *image.ImageMetadata
@@ -1803,19 +1830,19 @@ func (_mock *MockImageService) GetByID(ctx context.Context, id uint) (*image.Ima
 	return r0, r1
 }
 
-// MockImageService_GetByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByID'
-type MockImageService_GetByID_Call struct {
+// MockImageService_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockImageService_Get_Call struct {
 	*mock.Call
 }
 
-// GetByID is a helper method to define mock.On call
+// Get is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uint
-func (_e *MockImageService_Expecter) GetByID(ctx any, id any) *MockImageService_GetByID_Call {
-	return &MockImageService_GetByID_Call{Call: _e.mock.On("GetByID", ctx, id)}
+func (_e *MockImageService_Expecter) Get(ctx any, id any) *MockImageService_Get_Call {
+	return &MockImageService_Get_Call{Call: _e.mock.On("Get", ctx, id)}
 }
 
-func (_c *MockImageService_GetByID_Call) Run(run func(ctx context.Context, id uint)) *MockImageService_GetByID_Call {
+func (_c *MockImageService_Get_Call) Run(run func(ctx context.Context, id uint)) *MockImageService_Get_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1833,19 +1860,87 @@ func (_c *MockImageService_GetByID_Call) Run(run func(ctx context.Context, id ui
 	return _c
 }
 
-func (_c *MockImageService_GetByID_Call) Return(imageMetadata *image.ImageMetadata, err error) *MockImageService_GetByID_Call {
+func (_c *MockImageService_Get_Call) Return(imageMetadata *image.ImageMetadata, err error) *MockImageService_Get_Call {
 	_c.Call.Return(imageMetadata, err)
 	return _c
 }
 
-func (_c *MockImageService_GetByID_Call) RunAndReturn(run func(ctx context.Context, id uint) (*image.ImageMetadata, error)) *MockImageService_GetByID_Call {
+func (_c *MockImageService_Get_Call) RunAndReturn(run func(ctx context.Context, id uint) (*image.ImageMetadata, error)) *MockImageService_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetByHash provides a mock function for the type MockImageService
+func (_mock *MockImageService) GetByHash(ctx context.Context, hash string) (*image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, hash)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByHash")
+	}
+
+	var r0 *image.ImageMetadata
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, hash)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, hash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*image.ImageMetadata)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, hash)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockImageService_GetByHash_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByHash'
+type MockImageService_GetByHash_Call struct {
+	*mock.Call
+}
+
+// GetByHash is a helper method to define mock.On call
+//   - ctx context.Context
+//   - hash string
+func (_e *MockImageService_Expecter) GetByHash(ctx any, hash any) *MockImageService_GetByHash_Call {
+	return &MockImageService_GetByHash_Call{Call: _e.mock.On("GetByHash", ctx, hash)}
+}
+
+func (_c *MockImageService_GetByHash_Call) Run(run func(ctx context.Context, hash string)) *MockImageService_GetByHash_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockImageService_GetByHash_Call) Return(imageMetadata *image.ImageMetadata, err error) *MockImageService_GetByHash_Call {
+	_c.Call.Return(imageMetadata, err)
+	return _c
+}
+
+func (_c *MockImageService_GetByHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*image.ImageMetadata, error)) *MockImageService_GetByHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetByName provides a mock function for the type MockImageService
-func (_mock *MockImageService) GetByName(name string) (*image.ImageMetadata, error) {
-	ret := _mock.Called(name)
+func (_mock *MockImageService) GetByName(ctx context.Context, name string) (*image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByName")
@@ -1853,18 +1948,18 @@ func (_mock *MockImageService) GetByName(name string) (*image.ImageMetadata, err
 
 	var r0 *image.ImageMetadata
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*image.ImageMetadata, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *image.ImageMetadata); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*image.ImageMetadata)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1877,19 +1972,25 @@ type MockImageService_GetByName_Call struct {
 }
 
 // GetByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockImageService_Expecter) GetByName(name any) *MockImageService_GetByName_Call {
-	return &MockImageService_GetByName_Call{Call: _e.mock.On("GetByName", name)}
+func (_e *MockImageService_Expecter) GetByName(ctx any, name any) *MockImageService_GetByName_Call {
+	return &MockImageService_GetByName_Call{Call: _e.mock.On("GetByName", ctx, name)}
 }
 
-func (_c *MockImageService_GetByName_Call) Run(run func(name string)) *MockImageService_GetByName_Call {
+func (_c *MockImageService_GetByName_Call) Run(run func(ctx context.Context, name string)) *MockImageService_GetByName_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1900,7 +2001,7 @@ func (_c *MockImageService_GetByName_Call) Return(imageMetadata *image.ImageMeta
 	return _c
 }
 
-func (_c *MockImageService_GetByName_Call) RunAndReturn(run func(name string) (*image.ImageMetadata, error)) *MockImageService_GetByName_Call {
+func (_c *MockImageService_GetByName_Call) RunAndReturn(run func(ctx context.Context, name string) (*image.ImageMetadata, error)) *MockImageService_GetByName_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1969,6 +2070,86 @@ func (_c *MockImageService_Search_Call) Return(imageMetadatas []image.ImageMetad
 }
 
 func (_c *MockImageService_Search_Call) RunAndReturn(run func(ctx context.Context, query *image.Query) ([]image.ImageMetadata, error)) *MockImageService_Search_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockImageService
+func (_mock *MockImageService) Update(ctx context.Context, userID uint, imageID uint, image1 *image.ImagePatchRequest) (*image.ImageMetadata, error) {
+	ret := _mock.Called(ctx, userID, imageID, image1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *image.ImageMetadata
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, uint, *image.ImagePatchRequest) (*image.ImageMetadata, error)); ok {
+		return returnFunc(ctx, userID, imageID, image1)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, uint, *image.ImagePatchRequest) *image.ImageMetadata); ok {
+		r0 = returnFunc(ctx, userID, imageID, image1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*image.ImageMetadata)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uint, uint, *image.ImagePatchRequest) error); ok {
+		r1 = returnFunc(ctx, userID, imageID, image1)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockImageService_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockImageService_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uint
+//   - imageID uint
+//   - image1 *image.ImagePatchRequest
+func (_e *MockImageService_Expecter) Update(ctx any, userID any, imageID any, image1 any) *MockImageService_Update_Call {
+	return &MockImageService_Update_Call{Call: _e.mock.On("Update", ctx, userID, imageID, image1)}
+}
+
+func (_c *MockImageService_Update_Call) Run(run func(ctx context.Context, userID uint, imageID uint, image1 *image.ImagePatchRequest)) *MockImageService_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		var arg2 uint
+		if args[2] != nil {
+			arg2 = args[2].(uint)
+		}
+		var arg3 *image.ImagePatchRequest
+		if args[3] != nil {
+			arg3 = args[3].(*image.ImagePatchRequest)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockImageService_Update_Call) Return(imageMetadata *image.ImageMetadata, err error) *MockImageService_Update_Call {
+	_c.Call.Return(imageMetadata, err)
+	return _c
+}
+
+func (_c *MockImageService_Update_Call) RunAndReturn(run func(ctx context.Context, userID uint, imageID uint, image1 *image.ImagePatchRequest) (*image.ImageMetadata, error)) *MockImageService_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

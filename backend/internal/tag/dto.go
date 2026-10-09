@@ -1,22 +1,49 @@
 package tag
 
-type TagPostBatchRequest struct {
-	Names []string
-}
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type TagPostRequest struct {
 	Name string
-}
+} // @name TagPostRequest
+
+type TagPostBatchRequest struct {
+	Names []string `json:"names" binding:"required,min=1"`
+} // @name TagPostBatchRequest
+
+type TagPatchRequest struct {
+	Name *string
+} // @name TagPatchRequest
 
 type TagResponse struct {
-	ID   uint
-	Name string
-}
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+} // @name TagResponse
 
 type TagBatchResponse struct {
-	Successes []TagResponse
+	Successes []TagResponse `json:"successes"`
 	Failures  []struct {
-		Name  string
-		Error string
+		Name  string `json:"name"`
+		Error string `json:"error"`
+	} `json:"failures,omitempty"`
+} // @name TagBatchResponse
+
+func NewTagResponse(tag *Tag) TagResponse {
+	return TagResponse{
+		ID:   tag.ID,
+		Name: tag.Name,
 	}
+}
+
+func ParseTagsFromJSONString(tagsString string) ([]string, error) {
+	var tags []string
+
+	err := json.Unmarshal([]byte(tagsString), &tags)
+	if err != nil {
+		return nil, fmt.Errorf("Failed parsing tags from json: %w", err)
+	}
+
+	return tags, nil
 }

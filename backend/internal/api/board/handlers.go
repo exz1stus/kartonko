@@ -48,6 +48,7 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 // @Success 200 {array} BoardResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Router /board [get]
+// @ID ListBoards
 func (h *Handler) ListBoards(c *gin.Context) {
 	cursor, limit, err := helpers.GetCursorLimit(c)
 	if err != nil {
@@ -78,6 +79,7 @@ func (h *Handler) ListBoards(c *gin.Context) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /board/{id} [get]
+// @ID GetBoard
 func (h *Handler) GetBoard(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
@@ -103,6 +105,7 @@ func (h *Handler) GetBoard(c *gin.Context) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /board [post]
+// @ID PostBoard
 func (h *Handler) PostBoard(c *gin.Context) {
 	helpers.WithUser(c, func(user *user.User) error {
 		var req board.BoardCreateRequest
@@ -131,6 +134,7 @@ func (h *Handler) PostBoard(c *gin.Context) {
 // @Failure 404 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /board/{id} [patch]
+// @ID PatchBoard
 func (h *Handler) PatchBoard(c *gin.Context) {
 	helpers.WithUser(c, func(user *user.User) error {
 		id, err := helpers.ParseID(c)
@@ -163,6 +167,7 @@ func (h *Handler) PatchBoard(c *gin.Context) {
 // @Failure 404 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /board/{id} [delete]
+// @ID DeleteBoard
 func (h *Handler) DeleteBoard(c *gin.Context) {
 	helpers.WithUser(c, func(user *user.User) error {
 		id, err := helpers.ParseID(c)
@@ -192,6 +197,7 @@ func (h *Handler) DeleteBoard(c *gin.Context) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /board/{id}/image [get]
+// @ID ListBoardImages
 func (h *Handler) ListBoardImages(c *gin.Context) {
 	boardID, err := helpers.ParseID(c)
 	if err != nil {
@@ -241,6 +247,7 @@ func parseBoardImageIDs(c *gin.Context) (uint, uint, error) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /board/{id}/image [post]
+// @ID PostBoardImage
 func (h *Handler) PostBoardImage(c *gin.Context) {
 	helpers.WithUser(c, func(user *user.User) error {
 		id, err := helpers.ParseID(c)
@@ -273,6 +280,7 @@ func (h *Handler) PostBoardImage(c *gin.Context) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /board/{id}/image/{imageID} [get]
+// @ID GetBoardImage
 func (h *Handler) GetBoardImage(c *gin.Context) {
 	id, imageID, err := parseBoardImageIDs(c)
 	if err != nil {
@@ -301,6 +309,7 @@ func (h *Handler) GetBoardImage(c *gin.Context) {
 // @Failure 404 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /board/{id}/image/{imageID} [patch]
+// @ID PatchBoardImage
 func (h *Handler) PatchBoardImage(c *gin.Context) {
 	errors.RespondError(c, errors.ErrNotFound)
 	// helpers.WithUser(c, func(user *user.User) error {
@@ -329,6 +338,7 @@ func (h *Handler) PatchBoardImage(c *gin.Context) {
 // @Failure 404 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /board/{id}/image/{imageID} [delete]
+// @ID DeleteBoardImage
 func (h *Handler) DeleteBoardImage(c *gin.Context) {
 	helpers.WithUser(c, func(user *user.User) error {
 		id, imageID, err := parseBoardImageIDs(c)

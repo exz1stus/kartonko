@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface BoardBoardPatchRequest {
-  description: string;
-  name: string;
+export interface ImagePatchRequest {
+  filename: string;
+  tags: string[];
 }

@@ -1,6 +1,7 @@
 package repository_integration_tests
 
 import (
+	"context"
 	"server/internal/image"
 	"server/internal/tag"
 	"server/internal/user"
@@ -33,12 +34,12 @@ func TestImageRepository_AttachTags_TagsExist(t *testing.T) {
 	require.NoError(t, db.Create(&img).Error)
 
 	tags := []tag.Tag{
-		{Name: "cat"},
-		{Name: "animal"},
+		{Name: "cat", UserID: 1},
+		{Name: "animal", UserID: 1},
 	}
 	require.NoError(t, db.Create(&tags).Error)
 
-	err := repo.AttachTags(img.ID, tags)
+	err := repo.AttachTags(context.Background(), img.ID, tags)
 
 	require.NoError(t, err)
 
@@ -79,11 +80,11 @@ func TestImageRepository_AttachTags_RejectsTagDoesntExist(t *testing.T) {
 	require.NoError(t, db.Create(&img).Error)
 
 	tags := []tag.Tag{
-		{Name: "animal"},
+		{Name: "animal", UserID: 1},
 	}
 	require.NoError(t, db.Create(&tags).Error)
 
-	err := repo.AttachTags(img.ID, append(tags, tag.Tag{Name: "cat"}))
+	err := repo.AttachTags(context.Background(), img.ID, append(tags, tag.Tag{Name: "cat", UserID: 1}))
 
 	require.Error(t, err)
 }

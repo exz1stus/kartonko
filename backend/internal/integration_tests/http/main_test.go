@@ -58,7 +58,7 @@ func createTestUsers(t *testing.T, db *gorm.DB, userService user.UserService) {
 	}
 
 	for _, u := range users {
-		if err := userService.Create(u); err != nil {
+		if err := userService.Create(t.Context(), u); err != nil {
 			t.Fatalf("failed creating test user %s: %v", u.Username, err)
 		}
 	}

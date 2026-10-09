@@ -11,7 +11,7 @@ import (
 
 func buildDeleteRequest(t *testing.T, url, filename string) *http.Request {
 	t.Helper()
-	resourceUrl := url + "/" + filename
+	resourceUrl := url + "/name/" + filename
 	req := httptest.NewRequest(http.MethodDelete, resourceUrl, http.NoBody)
 	return req
 }
@@ -71,7 +71,7 @@ func TestDeleteImage(t *testing.T) {
 				t.Errorf("failed retrieving store images count: %v", err)
 			}
 
-			dbCount, err := ctx.ImageService.Count(nil)
+			dbCount, err := ctx.ImageService.Count(ctx.T.Context(), nil)
 			if err != nil {
 				t.Errorf("failed retrieving images count: %v", err)
 			}

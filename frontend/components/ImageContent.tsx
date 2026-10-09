@@ -1,4 +1,3 @@
-import ImageMetadata from "@/lib/image/image";
 import Image from "next/image";
 import React from "react";
 import TagSpan from "./Tags/TagSpan";
@@ -6,8 +5,9 @@ import UserElement from "./UserElement";
 import TimeField from "./TimeField";
 import { isModerator } from "@/lib/user/user";
 import EditImage from "./EditImage";
-import { getUserIdId } from "@/lib/api/generated/server";
+import { getUser } from "@/lib/api/generated/server";
 import { getLoggedUser } from "@/lib/user/user.server";
+import { ImageMetadata } from "@/lib/api/generated/model";
 
 interface Props {
     image: ImageMetadata;
@@ -15,7 +15,7 @@ interface Props {
 
 const ImageContent: React.FC<Props> = async ({ image }) => {
     const user = await getLoggedUser();
-    const imageOwner = await getUserIdId(image.user_id);
+    const imageOwner = await getUser(image.user_id);
 
     const { filename } = image;
 
@@ -34,7 +34,7 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
             <div className="flex lg:flex-row flex-col items-stretch gap-6 mx-auto w-full h-full">
                 <div className="relative flex flex-1 justify-center items-center bg-black/5 rounded-2xl min-w-0 min-h-0">
                     <Image
-                        src={`/apilocal/image/raw/${filename}`}
+                        src={`/apilocal/image/name/${filename}/raw`}
                         alt={filename}
                         width={image.width}
                         height={image.height}
@@ -46,7 +46,7 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                         <span className="text-3xl">
                             {image.filename}.{image.format}
                         </span>
-                        <span className="text-l text-secondary shrink-0 overflow-">
+                        <span className="overflow- text-l text-secondary shrink-0">
                             {image.hash}
                         </span>
                         <span className="text-l">

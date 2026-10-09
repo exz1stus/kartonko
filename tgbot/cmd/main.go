@@ -87,8 +87,8 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		name := url.QueryEscape(img.Filename)
 		photo := tgbotapi.NewInlineQueryResultPhotoWithThumb(
 			fmt.Sprintf("%d", img.ID),
-			API_ORIGIN+"/image/raw/"+name,
-			API_ORIGIN+"/image/thumb/"+name+"."+img.Format,
+			API_ORIGIN+"/image/name/"+name+"/raw",
+			API_ORIGIN+"/image/name/"+name+"."+img.Format+"/thumb",
 		)
 		photo.Title = img.Filename
 		photo.Caption = img.Filename

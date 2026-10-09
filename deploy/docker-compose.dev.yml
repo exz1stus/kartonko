@@ -150,8 +150,8 @@ services:
         image: dpage/pgadmin4
         container_name: pgadmin_gui
         environment:
-            PGADMIN_DEFAULT_EMAIL: admin@admin.com
-            PGADMIN_DEFAULT_PASSWORD: adminpassword
+            PGADMIN_DEFAULT_EMAIL: admin@email.com
+            PGADMIN_DEFAULT_PASSWORD: admin
         ports:
             - "5050:80"
         depends_on:

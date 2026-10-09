@@ -3,6 +3,7 @@ package image
 import (
 	"context"
 	"encoding/json"
+	goerrors "errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -158,6 +159,33 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 	return response, nil
 }
 
+// GetImage godoc
+// @Summary Gets image metadata by ID
+// @Description Returns image metadata by its numeric ID
+// @Tags images
+// @Produce json
+// @Param id path uint64 true "Image ID"
+// @Success 200 {object} ImageResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/{id} [get]
+// @ID GetImage
+func (h *Handler) GetImage(c *gin.Context) {
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+
+	item, err := h.imageService.Get(c, id)
+	if err != nil {
+		errors.RespondError(c, err)
+		return
+	}
+
+	helpers.RespondJSON(c, http.StatusOK, NewImageResponse(item))
+}
+
 // GetImageByName godoc
 // @Summary Gets image metadata by name
 // @Description Returns image metadata by its name
@@ -166,9 +194,10 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 // @Param name path string true "Image name"
 // @Success 200 {object} ImageResponse
 // @Failure 404 {object} errors.ErrorResponse
-// @Router /image/{name} [get]
+// @Router /image/name/{name} [get]
+// @ID GetImageByName
 func (h *Handler) GetImageByName(c *gin.Context) {
-	img, err := h.imageService.GetByName(c.Param("name"))
+	img, err := h.imageService.GetByName(c, c.Param("name"))
 	if err != nil {
 		errors.RespondError(c, err)
 		return
@@ -185,8 +214,9 @@ func (h *Handler) GetImageByName(c *gin.Context) {
 // @Success 200 {object} ImageResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/hash/{hash} [get]
+// @ID GetImageByHash
 func (h *Handler) GetImageByHash(c *gin.Context) {
-	img, err := h.imageService.GetByHash(c.Param("hash"))
+	img, err := h.imageService.GetByHash(c, c.Param("hash"))
 	if err != nil {
 		errors.RespondError(c, err)
 		return
@@ -194,30 +224,28 @@ func (h *Handler) GetImageByHash(c *gin.Context) {
 	helpers.RespondJSON(c, http.StatusOK, NewImageResponse(img))
 }
 
-// GetImageByID godoc
-// @Summary Gets image metadata by ID
-// @Description Returns image metadata by its numeric ID
+// GetRawImage godoc
+// @Summary Gets raw image by ID
+// @Description Returns the raw image file by its ID
 // @Tags images
-// @Produce json
+// @Produce application/octet-stream
 // @Param id path uint64 true "Image ID"
-// @Success 200 {object} ImageResponse
-// @Failure 400 {object} errors.ErrorResponse
+// @Success 200 {file} binary "Raw image file"
 // @Failure 404 {object} errors.ErrorResponse
-// @Router /image/id/{id} [get]
-func (h *Handler) GetImageByID(c *gin.Context) {
+// @Router /image/{id}/raw [get]
+// @ID GetRawImage
+func (h *Handler) GetRawImage(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		errors.RespondError(c, err)
-		return
 	}
-
-	item, err := h.imageService.GetByID(c, id)
-	if err != nil {
-		errors.RespondError(c, err)
-		return
-	}
-
-	helpers.RespondJSON(c, http.StatusOK, NewImageResponse(item))
+	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		img, err := h.imageService.Get(c, id)
+		if err != nil {
+			return nil, nil, err
+		}
+		return h.objectService.GetRawImageByHash(ctx, img.Hash)
+	}, getRawContentType)
 }
 
 // GetRawImageByName godoc
@@ -228,35 +256,16 @@ func (h *Handler) GetImageByID(c *gin.Context) {
 // @Param name path string true "Image name"
 // @Success 200 {file} binary "Raw image file"
 // @Failure 404 {object} errors.ErrorResponse
-// @Router /image/raw/{name} [get]
+// @Router /image/name/{name}/raw [get]
+// @ID GetRawImageByName
 func (h *Handler) GetRawImageByName(c *gin.Context) {
 	name := c.Param("name")
 	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
-		img, err := h.imageService.GetByName(name)
+		img, err := h.imageService.GetByName(c, name)
 		if err != nil {
 			return nil, nil, err
 		}
 		return h.objectService.GetRawImageByHash(ctx, img.Hash)
-	}, getRawContentType)
-}
-
-// GetRawThumbnailByName godoc
-// @Summary Gets raw image thumbnail by name
-// @Description Returns the raw thumbnail image file by its name
-// @Tags images
-// @Produce application/octet-stream
-// @Param name path string true "Image thumbnail name"
-// @Success 200 {file} binary "Raw thumbnail image file"
-// @Failure 404 {object} errors.ErrorResponse
-// @Router /image/thumb/{name} [get]
-func (h *Handler) GetRawThumbnailByName(c *gin.Context) {
-	name := c.Param("name")
-	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
-		img, err := h.imageService.GetByName(name)
-		if err != nil {
-			return nil, nil, err
-		}
-		return h.objectService.GetRawThumbnailByHash(ctx, img.Hash)
 	}, getRawContentType)
 }
 
@@ -268,11 +277,57 @@ func (h *Handler) GetRawThumbnailByName(c *gin.Context) {
 // @Param hash path string true "Image hash"
 // @Success 200 {file} binary "Raw image file"
 // @Failure 404 {object} errors.ErrorResponse
-// @Router /image/raw/hash/{hash} [get]
+// @Router /image/hash/{hash}/raw [get]
+// @ID GetRawImageByHash
 func (h *Handler) GetRawImageByHash(c *gin.Context) {
 	hash := c.Param("hash")
 	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
 		return h.objectService.GetRawImageByHash(ctx, hash)
+	}, getRawContentType)
+}
+
+// GetRawThumbnail godoc
+// @Summary Gets raw image thumbnail by ID
+// @Description Returns the raw thumbnail image file by its ID
+// @Tags images
+// @Produce application/octet-stream
+// @Param id path uint64 true "Image ID thumbnail"
+// @Success 200 {file} binary "Raw thumbnail image file"
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/{id}/thumb [get]
+// @ID GetRawThumbnail
+func (h *Handler) GetRawThumbnail(c *gin.Context) {
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		errors.RespondError(c, err)
+	}
+	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		img, err := h.imageService.Get(c, id)
+		if err != nil {
+			return nil, nil, err
+		}
+		return h.objectService.GetRawThumbnailByHash(ctx, img.Hash)
+	}, getRawContentType)
+}
+
+// GetRawThumbnailByName godoc
+// @Summary Gets raw image thumbnail by name
+// @Description Returns the raw thumbnail image file by its name
+// @Tags images
+// @Produce application/octet-stream
+// @Param name path string true "Image thumbnail name"
+// @Success 200 {file} binary "Raw thumbnail image file"
+// @Failure 404 {object} errors.ErrorResponse
+// @Router /image/name/{name}/thumb [get]
+// @ID GetRawThumbnailByName
+func (h *Handler) GetRawThumbnailByName(c *gin.Context) {
+	name := c.Param("name")
+	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
+		img, err := h.imageService.GetByName(c, name)
+		if err != nil {
+			return nil, nil, err
+		}
+		return h.objectService.GetRawThumbnailByHash(ctx, img.Hash)
 	}, getRawContentType)
 }
 
@@ -284,7 +339,8 @@ func (h *Handler) GetRawImageByHash(c *gin.Context) {
 // @Param hash path string true "Image hash"
 // @Success 200 {file} binary "Raw thumbnail image file"
 // @Failure 404 {object} errors.ErrorResponse
-// @Router /image/thumb/hash/{hash} [get]
+// @Router /image/hash/{hash}/thumb [get]
+// @ID GetRawThumbnailByHash
 func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 	hash := c.Param("hash")
 	helpers.HandleStream(c, func(ctx context.Context) (io.ReadCloser, any, error) {
@@ -307,6 +363,7 @@ func (h *Handler) GetRawThumbnailByHash(c *gin.Context) {
 // @Success 200 {array} ImageResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Router /image [get]
+// @ID GetImagesByQuery
 func (h *Handler) GetImagesByQuery(c *gin.Context) {
 	helpers.WithQuery(c, h.newQueryFromContext, func(query *image.Query) error {
 		images, err := h.imageService.Search(c, query)
@@ -318,19 +375,20 @@ func (h *Handler) GetImagesByQuery(c *gin.Context) {
 	})
 }
 
-// DeleteImageByID godoc
-// @Summary Deletes an image by id
-// @Description Deletes an image by its id (requires authentication)
+// DeleteImage godoc
+// @Summary Deletes an image by ID
+// @Description Deletes an image by its ID (requires authentication)
 // @Tags images
 // @Security BearerAuth
 // @Produce json
-// @Param id path uint true "Image id"
+// @Param id path uint true "Image ID"
 // @Success 204 "No Content"
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 403 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
 // @Router /image/{id} [delete]
-func (h *Handler) DeleteImageByID(c *gin.Context) {
+// @ID DeleteImage
+func (h *Handler) DeleteImage(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		errors.RespondError(c, err)
@@ -338,7 +396,7 @@ func (h *Handler) DeleteImageByID(c *gin.Context) {
 	}
 
 	helpers.WithUser(c, func(usr *user.User) error {
-		return h.imageService.DeleteByID(c, usr, id)
+		return h.imageService.Delete(c, usr.ID, id)
 	})
 }
 
@@ -353,11 +411,12 @@ func (h *Handler) DeleteImageByID(c *gin.Context) {
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 403 {object} errors.ErrorResponse
 // @Failure 404 {object} errors.ErrorResponse
-// @Router /image/{name} [delete]
+// @Router /image/name/{name} [delete]
+// @ID DeleteImageByName
 func (h *Handler) DeleteImageByName(c *gin.Context) {
 	name := strings.ToLower(c.Param("name"))
 	helpers.WithUser(c, func(usr *user.User) error {
-		return h.imageService.DeleteByName(c, usr, name)
+		return h.imageService.DeleteByName(c, usr.ID, name)
 	})
 }
 
@@ -376,25 +435,61 @@ func (h *Handler) DeleteImageByName(c *gin.Context) {
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 403 {object} errors.ErrorResponse
 // @Router /image [delete]
+// @ID DeleteImagesByQuery
 func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 	helpers.WithUserAndQuery(c, h.newQueryFromContext, func(usr *user.User, query *image.Query) error {
 		query.Limit = 0
-		errs := h.imageService.DeleteByQuery(c, usr, query)
+		errs := h.imageService.DeleteByQuery(c, usr.ID, query)
 		if errs != nil {
 			hasPermissionError := false
 			messages := make([]string, len(errs))
 			for i, err := range errs {
 				messages[i] = err.Error()
-				if err == errors.ErrPermissionDenied {
+				if goerrors.Is(err, errors.ErrPermissionDenied) {
 					hasPermissionError = true
 				}
 			}
+
 			if hasPermissionError {
 				c.JSON(http.StatusForbidden, gin.H{"errors": messages})
 				return nil
 			}
 			c.JSON(http.StatusBadRequest, gin.H{"errors": messages})
 		}
+		return nil
+	})
+}
+
+// PatchImage godoc
+// @Summary Patches existing image metadata by ID
+// @Tags images
+// @Produce json
+// @Param id path uint64 true "Image ID"
+// @Param request body ImagePatchRequest true "Image patch request"
+// @Success 200 {object} ImageResponse
+// @Failure 400 {object} errors.ErrorResponse
+// @Failure 404 {object} errors.ErrorResponse
+// @Failure 500 {object} errors.ErrorResponse
+// @Router /image/{id} [patch]
+// @ID PatchImage
+func (h *Handler) PatchImage(c *gin.Context) {
+	helpers.WithUser(c, func(user *user.User) error {
+		id, err := helpers.ParseID(c)
+		if err != nil {
+			return err
+		}
+
+		var req image.ImagePatchRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			return errors.WrapBadRequest(err)
+		}
+
+		image, err := h.imageService.Update(c, user.ID, id, &req)
+		if err != nil {
+			return err
+		}
+
+		helpers.RespondJSON(c, http.StatusOK, NewImageResponse(image))
 		return nil
 	})
 }
@@ -413,13 +508,14 @@ func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
-// @Router /image/upload [post]
+// @Router /image [post]
+// @ID PostImage
 func (h *Handler) PostImage(c *gin.Context) {
 	name := c.PostForm("name")
 	tags := c.PostFormArray("tags")
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		errors.RespondError(c, err)
+		errors.RespondError(c, errors.WrapBadRequest(err))
 		return
 	}
 
@@ -445,7 +541,8 @@ func (h *Handler) PostImage(c *gin.Context) {
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
-// @Router /image/upload/batch [post]
+// @Router /image/batch [post]
+// @ID PostImagesBatch
 func (h *Handler) PostImagesBatch(c *gin.Context) {
 	formData := c.PostForm("metadata")
 	form, err := c.MultipartForm()
@@ -541,13 +638,13 @@ func (h *Handler) newQueryFromContext(c *gin.Context) (*image.Query, error) {
 		if err != nil {
 			return nil, errors.WrapBadRequest(err)
 		}
-		user, err := h.userService.GetByID(c, userID)
+		user, err := h.userService.Get(c, userID)
 		if err != nil {
 			return nil, err
 		}
 		builder.User(user)
 	} else if username != "" {
-		user, err := h.userService.GetByName(username)
+		user, err := h.userService.GetByUsername(c, username)
 		if err != nil {
 			return nil, err
 		}

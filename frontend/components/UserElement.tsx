@@ -1,8 +1,9 @@
-import { isModerator, UserData } from "@/lib/user/user";
+import { isModerator } from "@/lib/user/user";
+import { UserDataResponse } from "@/lib/api/generated/model";
 import UserPicture from "@/components/Navbar/UserPicture";
 import Link from "next/link";
 
-const UserElement = ({ user }: { user: UserData | null }) => {
+const UserElement = ({ user }: { user: UserDataResponse | null }) => {
     if (!user) return <div>Not found</div>;
 
     return (

@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export type PostImageUploadBatchBody = {
+export type PostImageBatchBody = {
   /** Batch metadata (JSON) */
   metadata: string;
   /** Files to upload */

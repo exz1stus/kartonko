@@ -111,7 +111,7 @@ func TestPostImagesBatch_RejectsFewerFilesThanInMetadata(t *testing.T) {
 	require.NoError(t, err, "failed marshaling")
 	appendedDatasJSONstr := string(appendedDatasJSON)
 
-	req := buildBatchUploadRequest(t, "/image/upload/batch", appendedDatasJSONstr, fileDatas)
+	req := buildBatchUploadRequest(t, "/image/batch", appendedDatasJSONstr, fileDatas)
 	req = WithTestUser(req, 1)
 	rec := httptest.NewRecorder()
 	ctx.Router.ServeHTTP(rec, req)

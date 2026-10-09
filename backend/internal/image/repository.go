@@ -1,6 +1,7 @@
 package image
 
 import (
+	"context"
 	"fmt"
 	"server/internal/errors"
 	"server/internal/tag"
@@ -11,24 +12,24 @@ import (
 type ImageRepository interface {
 	WithTx(tx *gorm.DB) ImageRepository
 
-	Create(image *ImageMetadata) error
+	Create(ctx context.Context, image *ImageMetadata) error
 
-	Update(image *ImageMetadata) error
+	Get(ctx context.Context, id uint) (*ImageMetadata, error)
+	GetByName(ctx context.Context, name string) (*ImageMetadata, error)
+	GetByHash(ctx context.Context, hash string) (*ImageMetadata, error)
 
-	GetByID(id uint) (*ImageMetadata, error)
-	GetByName(name string) (*ImageMetadata, error)
-	GetByHash(hash string) (*ImageMetadata, error)
-	Search(query *Query) ([]ImageMetadata, error)
+	Update(ctx context.Context, image *ImageMetadata) error
 
-	DeleteByID(id uint) error
-	DeleteByIDs(ids []uint) error
+	Delete(ctx context.Context, id uint) error
+	DeleteByIDs(ctx context.Context, ids []uint) error
 
-	Count(query *Query) (int64, error)
+	Search(ctx context.Context, query *Query) ([]ImageMetadata, error)
+	Count(ctx context.Context, query *Query) (int64, error)
 
-	ExistsByHash(hash string) (bool, error)
-	ExistsByName(name string) (bool, error)
+	ExistsByHash(ctx context.Context, hash string) (bool, error)
+	ExistsByName(ctx context.Context, name string) (bool, error)
 
-	AttachTags(imageID uint, tags []tag.Tag) error
+	AttachTags(ctx context.Context, imageID uint, tags []tag.Tag) error
 }
 
 type imageRepository struct {
@@ -43,35 +44,35 @@ func (r *imageRepository) WithTx(tx *gorm.DB) ImageRepository {
 	return NewImageRepository(tx)
 }
 
-func (r *imageRepository) Create(image *ImageMetadata) error {
-	return r.db.Create(image).Error
+func (r *imageRepository) Create(ctx context.Context, image *ImageMetadata) error {
+	return r.db.WithContext(ctx).Create(image).Error
 }
 
-func (r *imageRepository) Update(image *ImageMetadata) error {
-	return r.db.Updates(image).Error
+func (r *imageRepository) Update(ctx context.Context, image *ImageMetadata) error {
+	return r.db.WithContext(ctx).Updates(image).Error
 }
 
-func (r *imageRepository) GetByID(id uint) (*ImageMetadata, error) {
+func (r *imageRepository) Get(ctx context.Context, id uint) (*ImageMetadata, error) {
 	var image ImageMetadata
-	err := r.db.Preload("Tags").Where("id = ?", id).First(&image).Error
+	err := r.db.WithContext(ctx).Preload("Tags").Where("id = ?", id).First(&image).Error
 	return &image, err
 }
 
-func (r *imageRepository) GetByName(name string) (*ImageMetadata, error) {
+func (r *imageRepository) GetByName(ctx context.Context, name string) (*ImageMetadata, error) {
 	var image ImageMetadata
-	err := r.db.Preload("Tags").Where("filename = ?", name).First(&image).Error
+	err := r.db.WithContext(ctx).Preload("Tags").Where("filename = ?", name).First(&image).Error
 	return &image, err
 }
 
-func (r *imageRepository) GetByHash(hash string) (*ImageMetadata, error) {
+func (r *imageRepository) GetByHash(ctx context.Context, hash string) (*ImageMetadata, error) {
 	var image ImageMetadata
-	err := r.db.Preload("Tags").Where("hash = ?", hash).First(&image).Error
+	err := r.db.WithContext(ctx).Preload("Tags").Where("hash = ?", hash).First(&image).Error
 	return &image, err
 }
 
-func (r *imageRepository) Search(query *Query) ([]ImageMetadata, error) {
+func (r *imageRepository) Search(ctx context.Context, query *Query) ([]ImageMetadata, error) {
 	var images []ImageMetadata
-	db := r.db.Model(&ImageMetadata{}).Order("image_metadata.id desc")
+	db := r.db.WithContext(ctx).Model(&ImageMetadata{}).Order("image_metadata.id desc")
 
 	db = applyFilters(db, query)
 
@@ -89,22 +90,24 @@ func (r *imageRepository) Search(query *Query) ([]ImageMetadata, error) {
 	return images, nil
 }
 
-func (r *imageRepository) DeleteByID(id uint) error {
+func (r *imageRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.
+		WithContext(ctx).
 		Where("id = ?", id).
 		Delete(&ImageMetadata{}).
 		Error
 }
 
-func (r *imageRepository) DeleteByIDs(ids []uint) error {
+func (r *imageRepository) DeleteByIDs(ctx context.Context, ids []uint) error {
 	return r.db.
+		WithContext(ctx).
 		Where("id IN ?", ids).
 		Delete(&ImageMetadata{}).
 		Error
 }
 
-func (r *imageRepository) Count(query *Query) (int64, error) {
-	db := r.db.Model(&ImageMetadata{})
+func (r *imageRepository) Count(ctx context.Context, query *Query) (int64, error) {
+	db := r.db.WithContext(ctx).Model(&ImageMetadata{})
 	if query != nil {
 		db = applyFilters(db, query)
 	}
@@ -114,25 +117,28 @@ func (r *imageRepository) Count(query *Query) (int64, error) {
 	return count, err
 }
 
-func (r *imageRepository) ExistsByHash(hash string) (bool, error) {
+func (r *imageRepository) ExistsByHash(ctx context.Context, hash string) (bool, error) {
 	var count int64
-	err := r.db.Model(&ImageMetadata{}).Where("hash = ?", hash).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&ImageMetadata{}).Where("hash = ?", hash).Count(&count).Error
 	return count > 0, err
 }
 
-func (r *imageRepository) ExistsByName(name string) (bool, error) {
+func (r *imageRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
 	var count int64
-	err := r.db.Model(&ImageMetadata{}).Where("filename = ?", name).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&ImageMetadata{}).Where("filename = ?", name).Count(&count).Error
 	return count > 0, err
 }
 
-func (r *imageRepository) AttachTags(imageID uint, tags []tag.Tag) error {
+func (r *imageRepository) AttachTags(ctx context.Context, imageID uint, tags []tag.Tag) error {
 	tagNames := tag.TagsToStrings(tags)
 	if len(tags) == 0 {
 		return nil
 	}
+
+	db := r.db.WithContext(ctx)
+
 	var dbTags []tag.Tag
-	if err := r.db.Where("name IN ?", tagNames).Find(&dbTags).Error; err != nil {
+	if err := db.Where("name IN ?", tagNames).Find(&dbTags).Error; err != nil {
 		return fmt.Errorf("failed to retrieve tags: %w", err)
 	}
 
@@ -151,7 +157,7 @@ func (r *imageRepository) AttachTags(imageID uint, tags []tag.Tag) error {
 			ID: imageID,
 		},
 	}
-	if err := r.db.Model(image).Association("Tags").Append(&dbTags); err != nil {
+	if err := db.Model(image).Association("Tags").Append(&dbTags); err != nil {
 		return fmt.Errorf("failed to associate tags with image: %w", err)
 	}
 
@@ -164,7 +170,6 @@ func applyFilters(db *gorm.DB, query *Query) *gorm.DB {
 	}
 
 	if len(query.Tags) > 0 {
-		// Use HAVING COUNT to ensure ALL tags are present (AND logic)
 		db = db.Distinct().
 			Joins("JOIN image_tags ON image_tags.image_metadata_id = image_metadata.id").
 			Joins("JOIN tags ON tags.id = image_tags.tag_id").
@@ -174,7 +179,7 @@ func applyFilters(db *gorm.DB, query *Query) *gorm.DB {
 	}
 
 	if query.User != nil {
-		db = db.Where("user_id = ?", query.User.ID)
+		db = db.Where("image_metadata.user_id = ?", query.User.ID)
 	}
 
 	db = ApplyCursorLimit(db, query.Cursor, query.Limit)

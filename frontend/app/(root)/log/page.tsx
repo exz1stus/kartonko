@@ -4,7 +4,7 @@ import AuthGuard from "@/components/AuthGuard";
 import Scrollbar from "@/components/template/Scrollbar";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import { Loader } from "lucide-react";
-import { getLog } from "@/lib/api/generated/client";
+import { getAuditLogEntries } from "@/lib/api/generated/client";
 import { EntryResponse } from "@/lib/api/generated/model/entryResponse";
 import { notFound } from "next/navigation";
 
@@ -16,7 +16,7 @@ const Log = () => {
         cursor: number,
         limit: number,
     ): Promise<EntryResponse[]> => {
-        return getLog({ cursor, limit });
+        return getAuditLogEntries({ cursor, limit });
     };
 
     const { items, loading, reachedEnd, sentinelRef } = useInfiniteScroll<

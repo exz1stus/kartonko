@@ -6,9 +6,9 @@
  * OpenAPI spec version: 1.0
  */
 
-export type PostImageUploadBody = {
-  /** Image metadata (JSON) */
-  metadata: string;
-  /** Image file */
-  file: Blob;
+export type GetGoogleLoginParams = {
+/**
+ * Redirect URL after login
+ */
+redirect?: string;
 };

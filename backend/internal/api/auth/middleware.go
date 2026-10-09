@@ -52,7 +52,7 @@ func (h *Handler) AuthMiddleware(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.GetByID(c, uint(userId))
+	user, err := h.userService.Get(c, uint(userId))
 	if err != nil {
 		errors.RespondError(c, errors.WrapUnauthorized(fmt.Errorf("Unauthorized accesss")))
 		c.Abort()

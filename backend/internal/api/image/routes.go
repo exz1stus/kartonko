@@ -5,20 +5,24 @@ import "github.com/gin-gonic/gin"
 func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 	public.GET("", h.GetImagesByQuery)
 
-	public.GET("/:name", h.GetImageByName)
-	public.GET("/id/:id", h.GetImageByID)
+	public.GET("/:id", h.GetImage)
+	public.GET("/name/:name", h.GetImageByName)
 	public.GET("/hash/:hash", h.GetImageByHash)
 
-	public.GET("/raw/hash/:hash", h.GetRawImageByHash)
-	public.GET("/thumb/hash/:hash", h.GetRawThumbnailByHash)
+	public.GET("/:id/raw", h.GetRawImage)
+	public.GET("/name/:name/raw", h.GetRawImageByName)
+	public.GET("/hash/:hash/raw", h.GetRawImageByHash)
 
-	public.GET("/raw/:name", h.GetRawImageByName)
-	public.GET("/thumb/:name", h.GetRawThumbnailByName)
+	public.GET("/:id/thumb", h.GetRawThumbnail)
+	public.GET("/name/:name/thumb", h.GetRawThumbnailByName)
+	public.GET("/hash/:hash/thumb", h.GetRawThumbnailByHash)
 
-	protected.POST("/upload", h.PostImage)
-	protected.POST("/upload/batch", h.PostImagesBatch)
+	protected.PATCH("/:id", h.PatchImage)
+
+	protected.POST("", h.PostImage)
+	protected.POST("/batch", h.PostImagesBatch)
 
 	protected.DELETE("", h.DeleteImagesByQuery)
-	protected.DELETE("/:name", h.DeleteImageByName)
-	protected.DELETE("/id/:id", h.DeleteImageByID)
+	protected.DELETE("/:id", h.DeleteImage)
+	protected.DELETE("/name/:name", h.DeleteImageByName)
 }

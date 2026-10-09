@@ -2,7 +2,7 @@
 import { ImageMetadata } from "@/lib/api/generated/model";
 import Gallery from "./Gallery";
 import { SearchQuery } from "./ImageSearch";
-import { getImage } from "@/lib/api/generated/server";
+import { getImagesByQuery } from "@/lib/api/generated/server";
 
 interface Props {
     initialFetchSize?: number;
@@ -22,7 +22,7 @@ const GalleryServer = async ({
         intialFetchSize: number,
         initialQuery: SearchQuery,
     ) => {
-        const response = await getImage(
+        const response = await getImagesByQuery(
             {
                 ...initialQuery,
                 limit: intialFetchSize,

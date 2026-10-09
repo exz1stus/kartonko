@@ -3,48 +3,40 @@ package image
 import (
 	"context"
 	"fmt"
-	"server/internal/api/auth"
 	"server/internal/api/transaction"
 	embeddingspkg "server/internal/embedding"
 	"server/internal/errors"
 	"server/internal/log"
+	"server/internal/tag"
 	userpkg "server/internal/user"
 	"strconv"
 
 	"gorm.io/gorm"
 )
 
-func toServiceError[T any](val T, err error) (T, error) {
-	if err == nil {
-		return val, nil
-	}
-	var zero T
-	if err == gorm.ErrRecordNotFound {
-		return zero, errors.ErrNotFound
-	}
-	return zero, err
-}
-
 type ImageService interface {
 	Upload(ctx context.Context, userID uint, req UploadRequest, format Format, data []byte) (*ImageMetadata, error)
 
-	GetByID(ctx context.Context, id uint) (*ImageMetadata, error)
-	GetByName(name string) (*ImageMetadata, error)
-	GetByHash(hash string) (*ImageMetadata, error)
+	Get(ctx context.Context, id uint) (*ImageMetadata, error)
+	GetByName(ctx context.Context, name string) (*ImageMetadata, error)
+	GetByHash(ctx context.Context, hash string) (*ImageMetadata, error)
+
+	Update(ctx context.Context, userID uint, imageID uint, image *ImagePatchRequest) (*ImageMetadata, error)
+
+	Delete(ctx context.Context, userID uint, id uint) error
+	DeleteByName(ctx context.Context, userID uint, name string) error
+	DeleteByQuery(ctx context.Context, userID uint, query *Query) []error
+
 	Search(ctx context.Context, query *Query) ([]ImageMetadata, error)
+	Count(ctx context.Context, query *Query) (int64, error)
 
-	DeleteByID(ctx context.Context, user *userpkg.User, id uint) error
-	DeleteByName(ctx context.Context, user *userpkg.User, name string) error
-	DeleteByQuery(ctx context.Context, user *userpkg.User, query *Query) []error
-
-	Count(query *Query) (int64, error)
-
-	ExistsByHash(hash string) (bool, error)
-	ExistsByName(name string) (bool, error)
+	ExistsByHash(ctx context.Context, hash string) (bool, error)
+	ExistsByName(ctx context.Context, name string) (bool, error)
 }
 
 type imageService struct {
 	images     ImageRepository
+	users      userpkg.UserRepository
 	logs       log.LogService
 	objects    ObjectService
 	embeddings embeddingspkg.EmbeddingsService
@@ -54,6 +46,7 @@ type imageService struct {
 
 func NewImageService(
 	images ImageRepository,
+	users userpkg.UserRepository,
 	logs log.LogService,
 	objects ObjectService,
 	embeddings embeddingspkg.EmbeddingsService,
@@ -61,6 +54,7 @@ func NewImageService(
 ) ImageService {
 	return &imageService{
 		images,
+		users,
 		logs,
 		objects,
 		embeddings,
@@ -68,21 +62,46 @@ func NewImageService(
 	}
 }
 
-func (s *imageService) GetByID(ctx context.Context, id uint) (*ImageMetadata, error) {
-	return toServiceError(s.images.GetByID(id))
+func (s *imageService) Get(ctx context.Context, id uint) (*ImageMetadata, error) {
+	return s.images.Get(ctx, id)
 }
 
-func (s *imageService) GetByName(name string) (*ImageMetadata, error) {
-	return toServiceError(s.images.GetByName(name))
+func (s *imageService) GetByName(ctx context.Context, name string) (*ImageMetadata, error) {
+	return s.images.GetByName(ctx, name)
 }
 
-func (s *imageService) GetByHash(hash string) (*ImageMetadata, error) {
-	return toServiceError(s.images.GetByHash(hash))
+func (s *imageService) GetByHash(ctx context.Context, hash string) (*ImageMetadata, error) {
+	return s.images.GetByHash(ctx, hash)
+}
+
+func (s *imageService) Update(ctx context.Context, userID uint, imageID uint, req *ImagePatchRequest) (*ImageMetadata, error) {
+	img, err := s.images.Get(ctx, imageID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkUserPermission(ctx, img.UserID, userID); err != nil {
+		return nil, err
+	}
+
+	if req.Filename != nil {
+		img.Filename = *req.Filename
+	}
+
+	if req.Tags != nil {
+		tags := tag.TagsByNames(req.Tags)
+		img.Tags = tags
+	}
+
+	if err := s.images.Update(ctx, img); err != nil {
+		return nil, err
+	}
+
+	return img, err
 }
 
 func (s *imageService) Search(ctx context.Context, query *Query) ([]ImageMetadata, error) {
 	if !query.Semantic || query.Prefix == "" {
-		return s.images.Search(query)
+		return s.images.Search(ctx, query)
 	}
 
 	// Fetch enough candidates to apply relational filters locally and then apply
@@ -103,7 +122,7 @@ func (s *imageService) Search(ctx context.Context, query *Query) ([]ImageMetadat
 		if err != nil {
 			continue
 		}
-		img, err := s.GetByID(ctx, id)
+		img, err := s.Get(ctx, id)
 		if err != nil {
 			continue
 		}
@@ -179,37 +198,46 @@ func matchesSemanticFilters(img *ImageMetadata, query *Query) bool {
 	return true
 }
 
-func (s *imageService) Count(query *Query) (int64, error) {
-	return s.images.Count(query)
+func (s *imageService) Count(ctx context.Context, query *Query) (int64, error) {
+	return s.images.Count(ctx, query)
 }
 
-func (s *imageService) ExistsByHash(hash string) (bool, error) {
-	return s.images.ExistsByHash(hash)
+func (s *imageService) ExistsByHash(ctx context.Context, hash string) (bool, error) {
+	return s.images.ExistsByHash(ctx, hash)
 }
 
-func (s *imageService) ExistsByName(name string) (bool, error) {
-	return s.images.ExistsByName(name)
+func (s *imageService) ExistsByName(ctx context.Context, name string) (bool, error) {
+	return s.images.ExistsByName(ctx, name)
 }
 
-func (s *imageService) DeleteByID(ctx context.Context, user *userpkg.User, id uint) error {
-	if user == nil {
-		return fmt.Errorf("deleting image: received nil user")
-	}
-	img, err := s.images.GetByID(id)
+func (s *imageService) checkUserPermission(ctx context.Context, imageOwnerID, userID uint) error {
+	user, err := s.users.Get(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("failed getting image for deletion: %v", err)
+		return err
 	}
 
-	if !auth.CanEdit(user.ID, user.Privilege, img.UserID) {
+	if !userpkg.CanEdit(user.ID, user.Privilege, imageOwnerID) {
 		return errors.ErrPermissionDenied
+	}
+
+	return nil
+}
+
+func (s *imageService) Delete(ctx context.Context, userID, id uint) error {
+	img, err := s.images.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := s.checkUserPermission(ctx, img.UserID, userID); err != nil {
+		return err
 	}
 
 	if err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
 		imagesRepoTx := s.images.WithTx(tx)
-		if err := imagesRepoTx.DeleteByID(id); err != nil {
+		if err := imagesRepoTx.Delete(ctx, id); err != nil {
 			return err
 		}
-		if err := s.logs.Log(tx, "delete", "image", user.ID, img.ID, nil); err != nil {
+		if err := s.logs.Log(tx, "delete", "image", userID, img.ID, nil); err != nil {
 			return err
 		}
 
@@ -228,40 +256,55 @@ func (s *imageService) DeleteByID(ctx context.Context, user *userpkg.User, id ui
 	}
 
 	if err := s.objects.DeleteImageObjects(ctx, img.Hash, format.String()); err != nil {
-		return fmt.Errorf("failed deleting image: %v", err)
+		return fmt.Errorf("failed deleting image: %w", err)
 	}
 
 	return nil
 }
 
-func (s *imageService) DeleteByQuery(ctx context.Context, user *userpkg.User, query *Query) []error {
-	if user == nil {
-		return []error{fmt.Errorf("deleting image: received nil user")}
+func (s *imageService) checkUserPermissionForMany(ctx context.Context, images []ImageMetadata, userID uint) []error {
+	user, err := s.users.Get(ctx, userID)
+	if err != nil {
+		return []error{err}
 	}
-	imgs, err := s.images.Search(query)
+
+	var errs []error
+	for _, image := range images {
+		if !userpkg.CanEdit(user.ID, user.Privilege, image.UserID) {
+			errs = append(errs, errors.WrapPermissionDenied(
+				fmt.Errorf("user ID: %d lacks permission for image ID: %d", user.ID, image.ID),
+			))
+		}
+	}
+
+	return errs
+}
+
+func (s *imageService) DeleteByQuery(ctx context.Context, userID uint, query *Query) []error {
+	imgs, err := s.images.Search(ctx, query)
 	var errs []error
 	if err != nil {
 		errs = append(errs, fmt.Errorf("failed querying for deletion %w", err))
 		return errs
 	}
 
+	if errs := s.checkUserPermissionForMany(ctx, imgs, userID); len(errs) > 0 {
+		return errs
+	}
+
 	ids := make([]uint, 0, len(imgs))
 	for _, img := range imgs {
-		if !auth.CanEdit(user.ID, user.Privilege, img.UserID) {
-			return []error{errors.ErrPermissionDenied}
-		}
-
 		ids = append(ids, img.ID)
 	}
 
 	if err = s.transactions.Within(ctx, func(tx *gorm.DB) error {
 		imagesRepoTx := s.images.WithTx(tx)
-		if err := imagesRepoTx.DeleteByIDs(ids); err != nil {
+		if err := imagesRepoTx.DeleteByIDs(ctx, ids); err != nil {
 			return fmt.Errorf("failed deleting images by query %w", err)
 		}
 
 		for _, id := range ids {
-			if err := s.logs.Log(tx, "delete", "image", user.ID, id, nil); err != nil {
+			if err := s.logs.Log(tx, "delete", "image", userID, id, nil); err != nil {
 				return err
 			}
 		}
@@ -291,17 +334,17 @@ func (s *imageService) DeleteByQuery(ctx context.Context, user *userpkg.User, qu
 	return nil
 }
 
-func (s *imageService) DeleteByName(ctx context.Context, user *userpkg.User, name string) error {
-	img, err := s.GetByName(name)
+func (s *imageService) DeleteByName(ctx context.Context, userID uint, name string) error {
+	img, err := s.GetByName(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	return s.DeleteByID(ctx, user, img.ID)
+	return s.Delete(ctx, userID, img.ID)
 }
 
-func (s *imageService) validateNewImage(img *ImageMetadata) error {
-	exists, err := s.images.ExistsByHash(img.Hash)
+func (s *imageService) validateNewImage(ctx context.Context, img *ImageMetadata) error {
+	exists, err := s.images.ExistsByHash(ctx, img.Hash)
 	if err != nil {
 		return fmt.Errorf("check duplicate hash: %w", err)
 	}
@@ -309,7 +352,7 @@ func (s *imageService) validateNewImage(img *ImageMetadata) error {
 		return fmt.Errorf("duplicate hash")
 	}
 
-	exists, err = s.images.ExistsByName(img.Filename)
+	exists, err = s.images.ExistsByName(ctx, img.Filename)
 	if err != nil {
 		return fmt.Errorf("check duplicate name: %w", err)
 	}
@@ -323,12 +366,12 @@ func (s *imageService) validateNewImage(img *ImageMetadata) error {
 func (s *imageService) Upload(ctx context.Context, userID uint, req UploadRequest, format Format, data []byte) (*ImageMetadata, error) {
 	imgWidth, imgHeight, err := GetDimensionsBytes(data)
 	if err != nil {
-		return nil, fmt.Errorf("error getting image dimensions: %v", err)
+		return nil, fmt.Errorf("error getting image dimensions: %w", err)
 	}
 
 	img := ConstructImageMetadata(req.Name, HashBytes(data), req.Tags, format, imgWidth, imgHeight, userID)
 
-	if err := s.validateNewImage(img); err != nil {
+	if err := s.validateNewImage(ctx, img); err != nil {
 		return nil, err
 	}
 
@@ -343,11 +386,11 @@ func (s *imageService) Upload(ctx context.Context, userID uint, req UploadReques
 		tagsToAttach := img.Tags
 		img.Tags = nil
 
-		if err := imgRepoTx.Create(img); err != nil {
+		if err := imgRepoTx.Create(ctx, img); err != nil {
 			return fmt.Errorf("error saving the image to database: %w", err)
 		}
 
-		if err := imgRepoTx.AttachTags(img.ID, tagsToAttach); err != nil {
+		if err := imgRepoTx.AttachTags(ctx, img.ID, tagsToAttach); err != nil {
 			return err
 		}
 		img.Tags = tagsToAttach

@@ -1,7 +1,7 @@
-import { UserData } from "@/lib/user/user";
+import { UserDataResponse } from "@/lib/api/generated/model";
 
 interface Props {
-    user: UserData;
+    user: UserDataResponse;
 }
 
 const UserPicture = ({ user }: Props) => {

@@ -18,6 +18,10 @@ import { useShallow } from "zustand/react/shallow";
 import ImageCarousel from "@/components/UploadImage/ImageCarousel";
 import { cn } from "@/lib/utils";
 import ApiError from "@/lib/api/error";
+import {
+    ImageBatchUploadRequest,
+    ImageUploadRequest,
+} from "@/lib/image/upload";
 
 const UploadPage = () => {
     const {

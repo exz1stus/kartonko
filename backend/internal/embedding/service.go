@@ -6,7 +6,6 @@ import (
 	"io"
 )
 
-// ObjectService is the interface for object storage operations needed by embeddings
 type ObjectService interface {
 	GetRawImageData(ctx context.Context, id uint) (io.ReadCloser, error)
 }

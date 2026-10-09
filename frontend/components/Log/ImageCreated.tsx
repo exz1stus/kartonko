@@ -1,5 +1,5 @@
 "use client";
-import { getImageIdId } from "@/lib/api/generated/client";
+import { getImage } from "@/lib/api/generated/client";
 import { ImageMetadata } from "@/lib/api/generated/model";
 import { LogEntryData, ParseLogData, ImageEntryData } from "@/lib/log";
 import Link from "next/link";
@@ -14,7 +14,7 @@ const ImageCreated = ({ data }: Props) => {
     const [image, setImage] = useState<ImageMetadata | null>(null);
 
     const fetchImageData = async () => {
-        const img = await getImageIdId(data.affected_obj_id);
+        const img = await getImage(data.affected_obj_id);
         setImage(img);
     };
 

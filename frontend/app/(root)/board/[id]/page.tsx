@@ -1,4 +1,4 @@
-import { getBoardId } from "@/lib/api/generated/server";
+import { getBoard } from "@/lib/api/generated/server";
 
 interface Props {
     id: number;
@@ -7,7 +7,7 @@ interface Props {
 const ImagePage = async ({ params }: { params: Promise<Props> }) => {
     const { id } = await params;
 
-    let board = await getBoardId(id);
+    let board = await getBoard(id);
 
     return (
         <div className="flex justify-center items-center w-full h-full">

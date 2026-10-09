@@ -4,8 +4,7 @@ import { Delete, Trash, Trash2 } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { deleteImageName } from "@/lib/api/generated/client";
-import { ErrorResponse } from "@/lib/api/generated/server";
+import { deleteImageByName } from "@/lib/api/generated/client";
 
 interface Props {
     image: ImageMetadata;
@@ -21,7 +20,7 @@ interface ApiResponse {
 const EditImage = ({ image, hasPermission, onDelete }: Props) => {
     const router = useRouter();
     const fetchDelete = useCallback(async () => {
-        const res = await deleteImageName(image.filename, {
+        const res = await deleteImageByName(image.filename, {
             credentials: "include",
         });
     }, [image.filename]);

@@ -1,6 +1,7 @@
 package tag
 
 import (
+	"context"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -9,12 +10,15 @@ import (
 type TagRepository interface {
 	WithTx(tx *gorm.DB) TagRepository
 
-	Create(tag string) (*Tag, error)
+	Create(ctx context.Context, tag *Tag) error
+	Get(ctx context.Context, tagID uint) (*Tag, error)
+	Update(ctx context.Context, tag *Tag) error
+	Delete(ctx context.Context, tagID uint) error
 
-	SearchPrefix(prefix string, cursor int, limit int) ([]Tag, error)
+	SearchPrefix(ctx context.Context, prefix string, cursor int, limit int) ([]Tag, error)
 
-	Exists(name string) (bool, error)
-	ExistMany(tags []Tag) ([]bool, error)
+	ExistsByName(ctx context.Context, name string) (bool, error)
+	ExistMany(ctx context.Context, tags []Tag) ([]bool, error)
 }
 
 type tagRepository struct {
@@ -29,18 +33,39 @@ func (r *tagRepository) WithTx(tx *gorm.DB) TagRepository {
 	return NewTagRepository(tx)
 }
 
-func (r *tagRepository) Create(tag string) (*Tag, error) {
-	newTag := &Tag{Name: tag}
-	if err := r.db.Create(newTag).Error; err != nil {
-		return nil, fmt.Errorf("failed to insert tag: %w", err)
-	}
-
-	return newTag, nil
+func (r *tagRepository) Get(ctx context.Context, tagID uint) (*Tag, error) {
+	var tag Tag
+	err := r.db.WithContext(ctx).Where("id = ?", tagID).First(&tag).Error
+	return &tag, err
 }
 
-func (r *tagRepository) SearchPrefix(prefix string, cursor int, limit int) ([]Tag, error) {
+func (r *tagRepository) Update(ctx context.Context, tag *Tag) error {
+	result := r.db.WithContext(ctx).Updates(tag)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}
+
+func (r *tagRepository) Delete(ctx context.Context, tagID uint) error {
+	return r.db.
+		WithContext(ctx).
+		Where("id = ?", tagID).
+		Delete(&Tag{}).
+		Error
+}
+
+func (r *tagRepository) Create(ctx context.Context, tag *Tag) error {
+	return r.db.WithContext(ctx).Create(tag).Error
+}
+
+func (r *tagRepository) SearchPrefix(ctx context.Context, prefix string, cursor int, limit int) ([]Tag, error) {
 	var tags []Tag
-	if err := r.db.Model(&Tag{}).
+	if err := r.db.WithContext(ctx).Model(&Tag{}).
 		Where("name LIKE ?", prefix+"%").
 		Offset(cursor).
 		Limit(limit).
@@ -51,13 +76,13 @@ func (r *tagRepository) SearchPrefix(prefix string, cursor int, limit int) ([]Ta
 	return tags, nil
 }
 
-func (r *tagRepository) Exists(name string) (bool, error) {
+func (r *tagRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
 	var count int64
-	err := r.db.Model(&Tag{}).Where("name = ?", name).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&Tag{}).Where("name = ?", name).Count(&count).Error
 	return count > 0, err
 }
 
-func (r *tagRepository) ExistMany(tags []Tag) ([]bool, error) {
+func (r *tagRepository) ExistMany(ctx context.Context, tags []Tag) ([]bool, error) {
 	tagNames := make([]string, len(tags))
 
 	for i, tag := range tags {
@@ -66,6 +91,7 @@ func (r *tagRepository) ExistMany(tags []Tag) ([]bool, error) {
 
 	var retrievedTags []Tag
 	if err := r.db.
+		WithContext(ctx).
 		Where("name IN ?", tagNames).
 		Find(&retrievedTags).
 		Error; err != nil {

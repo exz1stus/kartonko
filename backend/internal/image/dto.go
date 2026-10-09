@@ -14,3 +14,8 @@ type ImageError struct {
 	Name  string
 	Error string
 }
+
+type ImagePatchRequest struct {
+	Filename *string  `json:"filename"`
+	Tags     []string `json:"tags"`
+} // @name ImagePatchRequest

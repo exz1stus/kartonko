@@ -11,7 +11,7 @@ import usePreUpload from "@/hooks/usePreUpload";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import Loading from "../Loading";
 import { ImageIcon } from "lucide-react";
-import { getImage } from "@/lib/api/generated/client";
+import { getImagesByQuery } from "@/lib/api/generated/client";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -36,7 +36,7 @@ const Gallery: React.FC<Props> = ({
             cursor: number,
             requestSize: number,
         ): Promise<ImageMetadata[]> => {
-            return await getImage({
+            return await getImagesByQuery({
                 ...searchQuery,
                 semantic: true,
                 cursor: cursor,
