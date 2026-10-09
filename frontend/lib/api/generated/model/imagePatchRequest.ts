@@ -7,6 +7,6 @@
  */
 
 export interface ImagePatchRequest {
-  filename: string;
-  tags: string[];
+  filename?: string;
+  tags?: string[];
 }

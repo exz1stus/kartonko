@@ -82,7 +82,7 @@ func WithQuery[Q any](c *gin.Context, parseFn func(*gin.Context) (Q, error), fn 
 func WithUserAndQuery[Q any](c *gin.Context, parseFn func(*gin.Context) (Q, error), fn func(*user.User, Q) error) {
 	user, err := auth.GetUserFromContext(c)
 	if err != nil {
-		errors.RespondError(c, errors.WrapBadRequest(err))
+		errors.RespondError(c, errors.WrapUnauthorized(err))
 		return
 	}
 	query, err := parseFn(c)

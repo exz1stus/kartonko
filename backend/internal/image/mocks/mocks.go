@@ -1208,6 +1208,69 @@ func (_c *MockImageRepository_GetByName_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// ReplaceTags provides a mock function for the type MockImageRepository
+func (_mock *MockImageRepository) ReplaceTags(ctx context.Context, imageID uint, tags []tag.Tag) error {
+	ret := _mock.Called(ctx, imageID, tags)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReplaceTags")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uint, []tag.Tag) error); ok {
+		r0 = returnFunc(ctx, imageID, tags)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockImageRepository_ReplaceTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReplaceTags'
+type MockImageRepository_ReplaceTags_Call struct {
+	*mock.Call
+}
+
+// ReplaceTags is a helper method to define mock.On call
+//   - ctx context.Context
+//   - imageID uint
+//   - tags []tag.Tag
+func (_e *MockImageRepository_Expecter) ReplaceTags(ctx any, imageID any, tags any) *MockImageRepository_ReplaceTags_Call {
+	return &MockImageRepository_ReplaceTags_Call{Call: _e.mock.On("ReplaceTags", ctx, imageID, tags)}
+}
+
+func (_c *MockImageRepository_ReplaceTags_Call) Run(run func(ctx context.Context, imageID uint, tags []tag.Tag)) *MockImageRepository_ReplaceTags_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uint
+		if args[1] != nil {
+			arg1 = args[1].(uint)
+		}
+		var arg2 []tag.Tag
+		if args[2] != nil {
+			arg2 = args[2].([]tag.Tag)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockImageRepository_ReplaceTags_Call) Return(err error) *MockImageRepository_ReplaceTags_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockImageRepository_ReplaceTags_Call) RunAndReturn(run func(ctx context.Context, imageID uint, tags []tag.Tag) error) *MockImageRepository_ReplaceTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Search provides a mock function for the type MockImageRepository
 func (_mock *MockImageRepository) Search(ctx context.Context, query *image.Query) ([]image.ImageMetadata, error) {
 	ret := _mock.Called(ctx, query)

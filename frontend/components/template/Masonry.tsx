@@ -13,6 +13,7 @@ interface Props {
     maxCols?: number;
     minCols?: number;
     colWidthPx?: number;
+    maxColWidthPx?: number;
     gap?: number;
 }
 
@@ -27,6 +28,7 @@ const Masonry: React.FC<Props> = ({
     maxCols = 0,
     minCols = 1,
     colWidthPx = 200,
+    maxColWidthPx = 0,
     gap = 16,
 }: Props) => {
     const [columns, setColumns] = useState<Column[]>([]);
@@ -88,8 +90,16 @@ const Masonry: React.FC<Props> = ({
         return () => observer.disconnect();
     }, [childrenArray, colWidthPx, gap, maxCols, minCols]);
 
+    const limitedColumnCount =
+        maxCols > 0
+            ? Math.min(childrenArray.length, maxCols)
+            : childrenArray.length;
     const maxWidthStyle =
-        maxCols > 0 ? `${(maxCols + 1) * colWidthPx}px` : "100%";
+        maxColWidthPx > 0 && limitedColumnCount > 0
+            ? `${limitedColumnCount * maxColWidthPx + Math.max(0, limitedColumnCount - 1) * gap}px`
+            : maxCols > 0
+              ? `${(maxCols + 1) * colWidthPx}px`
+              : undefined;
 
     return (
         <div

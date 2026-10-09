@@ -7,6 +7,6 @@
  */
 
 export interface UserUserPatchRequest {
-  pictureURL?: string;
+  picture_url?: string;
   username?: string;
 }

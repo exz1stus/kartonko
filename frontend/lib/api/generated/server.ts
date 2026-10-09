@@ -11,8 +11,6 @@ export interface AuthRequest {
   username: string;
 }
 
-export interface BoardItemPatchRequest { [key: string]: unknown }
-
 export interface BoardItemPostRequest {
   image_id: number;
 }
@@ -35,8 +33,8 @@ export interface BoardItemResponse {
 }
 
 export interface BoardPatchRequest {
-  description: string;
-  name: string;
+  description?: string;
+  name?: string;
 }
 
 export interface BoardPostRequest {
@@ -46,7 +44,9 @@ export interface BoardPostRequest {
 
 export interface BoardResponse {
   description: string;
+  id: number;
   name: string;
+  user_id: number;
 }
 
 export type EntryResponseData = { [key: string]: unknown };
@@ -71,8 +71,8 @@ export interface ImageError {
 }
 
 export interface ImagePatchRequest {
-  filename: string;
-  tags: string[];
+  filename?: string;
+  tags?: string[];
 }
 
 export interface ImagePostBatchResponse {
@@ -120,7 +120,7 @@ export interface TagPostBatchRequest {
 }
 
 export interface TagPostRequest {
-  name?: string;
+  name: string;
 }
 
 export interface UserDataResponse {
@@ -134,7 +134,7 @@ export interface UserDataResponse {
 }
 
 export interface UserUserPatchRequest {
-  pictureURL?: string;
+  picture_url?: string;
   username?: string;
 }
 
@@ -617,7 +617,7 @@ export const getPostBoardImageUrl = (id: number,) => {
  * @summary Adds image to a board
  */
 export const postBoardImage = async (id: number,
-    boardItemPostRequest: BoardItemPostRequest, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
+    boardItemPostRequest: BoardItemPostRequest, options?: Parameters<typeof serverMutator>[1]): Promise<BoardItemResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -625,7 +625,7 @@ export const postBoardImage = async (id: number,
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return serverMutator<BoardResponse>(getPostBoardImageUrl(id),
+return serverMutator<BoardItemResponse>(getPostBoardImageUrl(id),
   {
     ...options,
     method: 'POST',
@@ -683,39 +683,6 @@ export const deleteBoardImage = async (id: number,
     method: 'DELETE'
 
 
-  }
-);}
-
-
-
-export const getPatchBoardImageUrl = (id: number,
-    imageID: number,) => {
-
-
-
-
-  return `/board/${id}/image/${imageID}`
-}
-
-/**
- * @summary Patches existing board image
- */
-export const patchBoardImage = async (id: number,
-    imageID: number,
-    boardItemPatchRequest: BoardItemPatchRequest, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Array.isArray(h)) return Object.fromEntries(h);
-    return h;
-  };
-return serverMutator<BoardResponse>(getPatchBoardImageUrl(id,imageID),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(boardItemPatchRequest)
   }
 );}
 

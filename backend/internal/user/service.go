@@ -2,8 +2,12 @@ package user
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"server/internal/errors"
+	"strings"
+
+	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -35,8 +39,9 @@ func NewUserService(users UserRepository) UserService {
 }
 
 func (s *userService) Create(ctx context.Context, user *User) error {
+	user.Username = strings.TrimSpace(user.Username)
 	if user.Username == "" {
-		return fmt.Errorf("username cannot be empty")
+		return errors.ErrBadRequest
 	}
 
 	exists, err := s.ExistsByUsername(ctx, user.Username)
@@ -44,7 +49,7 @@ func (s *userService) Create(ctx context.Context, user *User) error {
 		return fmt.Errorf("check duplicate username error: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("user with username %s already exists", user.Username)
+		return fmt.Errorf("%w: %s", errors.ErrDuplicateName, user.Username)
 	}
 
 	if err := s.users.Create(ctx, user); err != nil {
@@ -132,11 +137,24 @@ func (s *userService) Update(ctx context.Context, userID uint, targetID uint, re
 	}
 
 	if req.Username != nil {
-		user.Username = *req.Username
+		username := strings.TrimSpace(*req.Username)
+		if username == "" {
+			return nil, errors.ErrBadRequest
+		}
+		if username != user.Username {
+			existing, lookupErr := s.GetByUsername(ctx, username)
+			switch {
+			case lookupErr == nil && existing.ID != user.ID:
+				return nil, fmt.Errorf("%w: %s", errors.ErrDuplicateName, username)
+			case lookupErr != nil && !stderrors.Is(lookupErr, gorm.ErrRecordNotFound):
+				return nil, fmt.Errorf("check duplicate username: %w", lookupErr)
+			}
+		}
+		user.Username = username
 	}
 
 	if req.PictureURL != nil {
-		user.Username = *req.Username
+		user.PictureURL = *req.PictureURL
 	}
 
 	if err := s.users.Update(ctx, user); err != nil {

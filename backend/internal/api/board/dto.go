@@ -7,8 +7,10 @@ import (
 )
 
 type BoardResponse struct {
+	ID          uint   `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	UserID      uint   `json:"user_id"`
 } // @name BoardResponse
 
 type BoardItemResponse struct {
@@ -20,10 +22,6 @@ type BoardItemPostRequest struct {
 	ImageID uint64 `json:"image_id" binding:"required"`
 } // @name BoardItemPostRequest
 
-type BoardItemPatchRequest struct {
-	//TODO: add request when image have some additional data
-} // @name BoardItemPatchRequest
-
 func NewBoardItemResponse(item *board.BoardItem) BoardItemResponse {
 	return BoardItemResponse{
 		Added: item.CreatedAt,
@@ -33,7 +31,9 @@ func NewBoardItemResponse(item *board.BoardItem) BoardItemResponse {
 
 func NewBoardResponse(board *board.Board) BoardResponse {
 	return BoardResponse{
+		ID:          board.ID,
 		Name:        board.Name,
 		Description: board.Description,
+		UserID:      board.UserID,
 	}
 }

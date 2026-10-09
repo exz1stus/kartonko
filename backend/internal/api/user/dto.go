@@ -25,9 +25,7 @@ func NewUserDataResponse(u *user.User) UserDataResponse {
 		LastSeen:  u.LastSeen.Format(time.DateTime),
 	}
 
-	if u.IsOauth() {
-		res.PictureURL = u.PictureURL
-	}
+	res.PictureURL = u.PictureURL
 
 	return res
 }

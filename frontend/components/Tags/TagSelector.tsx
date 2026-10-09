@@ -66,6 +66,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
         const newTagsSet = new Set(newTags);
         const remainingGlobalTags = globalNewTags
             .filter((tag) => !newTagsSet.has(tag))
+            .filter((tag) => !tags.includes(tag))
             .filter((tag) => tag.startsWith(query));
 
         const disableAutocomplete = useRef<boolean>(false);
@@ -123,7 +124,11 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
         const saveTag = async (tagToSend?: string) => {
             const finalTag = tagToSend || currentHint;
 
-            if (finalTag.length <= 0 || tags.some((tag) => tag === finalTag)) {
+            if (
+                finalTag.length <= 0 ||
+                tags.includes(finalTag) ||
+                newTags?.includes(finalTag)
+            ) {
                 noUse();
                 return;
             }
@@ -159,6 +164,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
 
         const addNewTag = (tag: string) => {
             if (!newTags || !onNewTagsUpdate) return;
+            if (tags.includes(tag) || newTags.includes(tag)) return;
 
             onNewTagsUpdate(newTags.concat(tag));
             setQuery("");

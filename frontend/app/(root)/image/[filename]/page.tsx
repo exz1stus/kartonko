@@ -1,6 +1,4 @@
-import { ImageMetadata } from "@/lib/api/generated/model/imageMetadata";
 import ImageContent from "@/components/ImageContent";
-import { notFound } from "next/navigation";
 import { getImageByName } from "@/lib/api/generated/server";
 
 interface Props {

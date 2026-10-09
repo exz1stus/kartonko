@@ -3,8 +3,8 @@ package user
 import "time"
 
 type UserPatchRequest struct {
-	Username   *string
-	PictureURL *string
+	Username   *string `json:"username,omitempty"`
+	PictureURL *string `json:"picture_url,omitempty"`
 }
 
 func NewUserData(u *User) UserResponce {
@@ -16,9 +16,7 @@ func NewUserData(u *User) UserResponce {
 		LastSeen:  u.LastSeen.Format(time.DateTime),
 	}
 
-	if u.IsOauth() {
-		res.PictureURL = u.PictureURL
-	}
+	res.PictureURL = u.PictureURL
 
 	return res
 }

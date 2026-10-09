@@ -4,6 +4,7 @@ import (
 	"context"
 	"server/internal/errors"
 	userpkg "server/internal/user"
+	"strings"
 )
 
 type BoardService interface {
@@ -16,7 +17,6 @@ type BoardService interface {
 
 	AddImage(ctx context.Context, boardID, imageID, userID uint) (*BoardItem, error)
 	GetImage(ctx context.Context, boardID, imageID uint) (*BoardItem, error)
-	// UpdateImage(ctx context.Context, boardID, ..., userID uint) (*BoardItem, error)
 	RemoveImage(ctx context.Context, boardID, imageID, userID uint) error
 
 	ListImages(ctx context.Context, boardID uint, cursor, limit int) ([]BoardItem, error)
@@ -36,6 +36,10 @@ func (s *boardService) List(ctx context.Context, cursor, limit int) ([]Board, er
 }
 
 func (s *boardService) Create(ctx context.Context, userID uint, req *BoardCreateRequest) (*Board, error) {
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		return nil, errors.ErrBadRequest
+	}
 	board := &Board{
 		Name:        req.Name,
 		Description: req.Description,
@@ -72,7 +76,11 @@ func (s *boardService) Update(ctx context.Context, userID uint, boardID uint, re
 	}
 
 	if req.Name != nil {
-		board.Name = *req.Name
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, errors.ErrBadRequest
+		}
+		board.Name = name
 	}
 
 	if req.Description != nil {
@@ -126,7 +134,7 @@ func (s *boardService) AddImage(ctx context.Context, boardID uint, imageID uint,
 		return nil, err
 	}
 
-	return item, nil
+	return s.boards.GetItem(ctx, boardID, imageID)
 }
 
 func (s *boardService) RemoveImage(ctx context.Context, boardID uint, imageID uint, userID uint) error {
@@ -136,17 +144,3 @@ func (s *boardService) RemoveImage(ctx context.Context, boardID uint, imageID ui
 
 	return s.boards.DeleteItem(ctx, boardID, imageID)
 }
-
-// func (s *boardService) UpdateImage(ctx context.Context, boardID uint, item *BoardItemPatchRequest, userID uint) (*BoardItem, error) {
-// 	if err := s.checkUserPermission(ctx, boardID, userID); err != nil {
-// 		return nil, err
-// 	}
-
-// 	//TODO
-
-// 	if err := s.boards.UpdateItem(boardID, item); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return item, nil
-// }

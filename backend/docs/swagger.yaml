@@ -9,8 +9,6 @@ definitions:
     - password
     - username
     type: object
-  BoardItemPatchRequest:
-    type: object
   BoardItemPostRequest:
     properties:
       image_id:
@@ -34,9 +32,6 @@ definitions:
         type: string
       name:
         type: string
-    required:
-    - description
-    - name
     type: object
   BoardPostRequest:
     properties:
@@ -52,11 +47,17 @@ definitions:
     properties:
       description:
         type: string
+      id:
+        type: integer
       name:
         type: string
+      user_id:
+        type: integer
     required:
     - description
+    - id
     - name
+    - user_id
     type: object
   EntryResponse:
     properties:
@@ -141,9 +142,6 @@ definitions:
         items:
           type: string
         type: array
-    required:
-    - filename
-    - tags
     type: object
   ImagePostBatchResponse:
     properties:
@@ -209,6 +207,8 @@ definitions:
     properties:
       name:
         type: string
+    required:
+    - name
     type: object
   TagResponse:
     properties:
@@ -247,7 +247,7 @@ definitions:
     type: object
   user.UserPatchRequest:
     properties:
-      pictureURL:
+      picture_url:
         type: string
       username:
         type: string
@@ -617,7 +617,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/BoardResponse'
+            $ref: '#/definitions/BoardItemResponse'
         "400":
           description: Bad Request
           schema:
@@ -696,49 +696,6 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Gets image from the board
-      tags:
-      - boards
-    patch:
-      operationId: PatchBoardImage
-      parameters:
-      - description: Board ID
-        format: int64
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Image ID
-        format: int64
-        in: path
-        name: imageID
-        required: true
-        type: integer
-      - description: Board item patch request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/BoardItemPatchRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/BoardResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Patches existing board image
       tags:
       - boards
   /health:

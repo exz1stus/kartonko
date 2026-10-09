@@ -18,6 +18,10 @@ func Migrate(db *gorm.DB) {
 }
 
 func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
+	if config == nil {
+		config = &gorm.Config{}
+	}
+	config.TranslateError = true
 	db, err := gorm.Open(dialector, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)

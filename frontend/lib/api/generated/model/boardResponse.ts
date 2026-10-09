@@ -8,5 +8,7 @@
 
 export interface BoardResponse {
   description: string;
+  id: number;
   name: string;
+  user_id: number;
 }

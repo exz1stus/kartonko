@@ -6,7 +6,7 @@ import (
 )
 
 type TagPostRequest struct {
-	Name string
+	Name string `json:"name" binding:"required"`
 } // @name TagPostRequest
 
 type TagPostBatchRequest struct {
@@ -14,7 +14,7 @@ type TagPostBatchRequest struct {
 } // @name TagPostBatchRequest
 
 type TagPatchRequest struct {
-	Name *string
+	Name *string `json:"name,omitempty"`
 } // @name TagPatchRequest
 
 type TagResponse struct {

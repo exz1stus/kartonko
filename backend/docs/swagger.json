@@ -523,7 +523,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/BoardResponse"
+                            "$ref": "#/definitions/BoardItemResponse"
                         }
                     },
                     "400": {
@@ -620,69 +620,6 @@
                 "responses": {
                     "204": {
                         "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "boards"
-                ],
-                "summary": "Patches existing board image",
-                "operationId": "PatchBoardImage",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "Board ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "Image ID",
-                        "name": "imageID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Board item patch request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/BoardItemPatchRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/BoardResponse"
-                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2032,9 +1969,6 @@
                 }
             }
         },
-        "BoardItemPatchRequest": {
-            "type": "object"
-        },
         "BoardItemPostRequest": {
             "type": "object",
             "required": [
@@ -2063,10 +1997,6 @@
         },
         "BoardPatchRequest": {
             "type": "object",
-            "required": [
-                "description",
-                "name"
-            ],
             "properties": {
                 "description": {
                     "type": "string"
@@ -2095,14 +2025,22 @@
             "type": "object",
             "required": [
                 "description",
-                "name"
+                "id",
+                "name",
+                "user_id"
             ],
             "properties": {
                 "description": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2215,10 +2153,6 @@
         },
         "ImagePatchRequest": {
             "type": "object",
-            "required": [
-                "filename",
-                "tags"
-            ],
             "properties": {
                 "filename": {
                     "type": "string"
@@ -2324,6 +2258,9 @@
         },
         "TagPostRequest": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "name": {
                     "type": "string"
@@ -2383,7 +2320,7 @@
         "user.UserPatchRequest": {
             "type": "object",
             "properties": {
-                "pictureURL": {
+                "picture_url": {
                     "type": "string"
                 },
                 "username": {

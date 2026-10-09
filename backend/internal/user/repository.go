@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+	stderrors "errors"
+	apperrors "server/internal/errors"
 
 	"gorm.io/gorm"
 )
@@ -80,6 +82,9 @@ func (r *userRepository) Update(ctx context.Context, user *User) error {
 		Updates(user)
 
 	if result.Error != nil {
+		if stderrors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return apperrors.ErrDuplicateName
+		}
 		return result.Error
 	}
 

@@ -199,7 +199,9 @@ func (h *Handler) DeleteTag(c *gin.Context) {
 			return err
 		}
 
-		h.tagService.Delete(c, user.ID, id)
+		if err := h.tagService.Delete(c, user.ID, id); err != nil {
+			return err
+		}
 		c.Status(http.StatusNoContent)
 		return nil
 	})

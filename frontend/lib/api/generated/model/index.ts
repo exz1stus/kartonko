@@ -8,7 +8,6 @@
 
 export * from './authRequest';
 export * from './authRequestBody';
-export * from './boardItemPatchRequest';
 export * from './boardItemPostRequest';
 export * from './boardItemResponse';
 export * from './boardPatchRequest';
@@ -37,7 +36,6 @@ export * from './imagePostBatchResponse';
 export * from './listBoardImagesParams';
 export * from './listBoardsParams';
 export * from './loginResponse';
-export * from './postAuthLogout200';
 export * from './postImageBatchBody';
 export * from './postImageBody';
 export * from './postImagesBatchBody';

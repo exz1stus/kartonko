@@ -33,8 +33,7 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 	public.GET("/:id/image", h.ListBoardImages)
 
 	protected.POST("/:id/image", h.PostBoardImage)
-	protected.GET("/:id/image/:imageId", h.GetBoardImage)
-	// protected.PATCH("/:id/image/:imageId", h.PatchBoardImage)
+	public.GET("/:id/image/:imageId", h.GetBoardImage)
 	protected.DELETE("/:id/image/:imageId", h.DeleteBoardImage)
 }
 
@@ -207,6 +206,7 @@ func (h *Handler) ListBoardImages(c *gin.Context) {
 	cursor, limit, err := helpers.GetCursorLimit(c)
 	if err != nil {
 		errors.RespondError(c, err)
+		return
 	}
 
 	items, err := h.boardService.ListImages(c, boardID, cursor, limit)
@@ -243,7 +243,7 @@ func parseBoardImageIDs(c *gin.Context) (uint, uint, error) {
 // @Produce json
 // @Param id path uint64 true "Board ID"
 // @Param request body BoardItemPostRequest true "Board item creation request"
-// @Success 201 {object} BoardResponse
+// @Success 201 {object} BoardItemResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /board/{id}/image [post]
@@ -295,36 +295,6 @@ func (h *Handler) GetBoardImage(c *gin.Context) {
 	}
 
 	helpers.RespondJSON(c, http.StatusOK, NewBoardItemResponse(item))
-}
-
-// PatchBoardImage godoc
-// @Summary Patches existing board image
-// @Tags boards
-// @Produce json
-// @Param id path uint64 true "Board ID"
-// @Param imageID path uint64 true "Image ID"
-// @Param request body BoardItemPatchRequest true "Board item patch request"
-// @Success 200 {object} BoardResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Failure 500 {object} errors.ErrorResponse
-// @Router /board/{id}/image/{imageID} [patch]
-// @ID PatchBoardImage
-func (h *Handler) PatchBoardImage(c *gin.Context) {
-	errors.RespondError(c, errors.ErrNotFound)
-	// helpers.WithUser(c, func(user *user.User) error {
-	// id, imageID, err := parseBoardImageIDs(c)
-	// if err != nil {
-	// 	return err
-	// }
-	// item, err := h.boardService.UpdateImage(c, id, imageID, user.ID)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// helpers.RespondJSON(c, http.StatusOK, item)
-	// return nil
-	// })
 }
 
 // DeleteBoardImage godoc

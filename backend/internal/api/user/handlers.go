@@ -147,7 +147,9 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 			return err
 		}
 
-		h.userService.Delete(c, user.ID, id)
+		if err := h.userService.Delete(c, user.ID, id); err != nil {
+			return err
+		}
 		c.Status(http.StatusNoContent)
 		return nil
 	})

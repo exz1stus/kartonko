@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"server/internal/errors"
 	"server/internal/tag"
@@ -30,6 +31,7 @@ type ImageRepository interface {
 	ExistsByName(ctx context.Context, name string) (bool, error)
 
 	AttachTags(ctx context.Context, imageID uint, tags []tag.Tag) error
+	ReplaceTags(ctx context.Context, imageID uint, tags []tag.Tag) error
 }
 
 type imageRepository struct {
@@ -49,7 +51,11 @@ func (r *imageRepository) Create(ctx context.Context, image *ImageMetadata) erro
 }
 
 func (r *imageRepository) Update(ctx context.Context, image *ImageMetadata) error {
-	return r.db.WithContext(ctx).Updates(image).Error
+	err := r.db.WithContext(ctx).Updates(image).Error
+	if stderrors.Is(err, gorm.ErrDuplicatedKey) {
+		return errors.ErrDuplicateName
+	}
+	return err
 }
 
 func (r *imageRepository) Get(ctx context.Context, id uint) (*ImageMetadata, error) {
@@ -161,6 +167,32 @@ func (r *imageRepository) AttachTags(ctx context.Context, imageID uint, tags []t
 		return fmt.Errorf("failed to associate tags with image: %w", err)
 	}
 
+	return nil
+}
+
+func (r *imageRepository) ReplaceTags(ctx context.Context, imageID uint, tags []tag.Tag) error {
+	db := r.db.WithContext(ctx)
+	tagNames := tag.TagsToStrings(tags)
+	var dbTags []tag.Tag
+	if len(tagNames) > 0 {
+		if err := db.Where("name IN ?", tagNames).Find(&dbTags).Error; err != nil {
+			return fmt.Errorf("failed to retrieve tags: %w", err)
+		}
+		if len(dbTags) != len(tags) {
+			return fmt.Errorf(
+				"%w: not all tags found: expected %d, got %d for tags %v",
+				errors.ErrBadRequest,
+				len(tags),
+				len(dbTags),
+				tagNames,
+			)
+		}
+	}
+
+	image := &ImageMetadata{Model: gorm.Model{ID: imageID}}
+	if err := db.Model(image).Association("Tags").Replace(&dbTags); err != nil {
+		return fmt.Errorf("failed to replace tags with image: %w", err)
+	}
 	return nil
 }
 

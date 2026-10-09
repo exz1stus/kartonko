@@ -7,7 +7,6 @@
  */
 import type {
   AuthRequestBody,
-  BoardItemPatchRequest,
   BoardItemPostRequest,
   BoardItemResponse,
   BoardPatchRequest,
@@ -378,7 +377,7 @@ export const getPostBoardImageUrl = (id: number,) => {
  * @summary Adds image to a board
  */
 export const postBoardImage = async (id: number,
-    boardItemPostRequest: BoardItemPostRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
+    boardItemPostRequest: BoardItemPostRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardItemResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -386,7 +385,7 @@ export const postBoardImage = async (id: number,
     if (Array.isArray(h)) return Object.fromEntries(h);
     return h;
   };
-return clientMutator<BoardResponse>(getPostBoardImageUrl(id),
+return clientMutator<BoardItemResponse>(getPostBoardImageUrl(id),
   {
     ...options,
     method: 'POST',
@@ -444,39 +443,6 @@ export const deleteBoardImage = async (id: number,
     method: 'DELETE'
 
 
-  }
-);}
-
-
-
-export const getPatchBoardImageUrl = (id: number,
-    imageID: number,) => {
-
-
-
-
-  return `/board/${id}/image/${imageID}`
-}
-
-/**
- * @summary Patches existing board image
- */
-export const patchBoardImage = async (id: number,
-    imageID: number,
-    boardItemPatchRequest: BoardItemPatchRequest, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Array.isArray(h)) return Object.fromEntries(h);
-    return h;
-  };
-return clientMutator<BoardResponse>(getPatchBoardImageUrl(id,imageID),
-  {
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(boardItemPatchRequest)
   }
 );}
 

@@ -2,7 +2,9 @@ package tag
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
+	apperrors "server/internal/errors"
 
 	"gorm.io/gorm"
 )
@@ -42,6 +44,9 @@ func (r *tagRepository) Get(ctx context.Context, tagID uint) (*Tag, error) {
 func (r *tagRepository) Update(ctx context.Context, tag *Tag) error {
 	result := r.db.WithContext(ctx).Updates(tag)
 	if result.Error != nil {
+		if stderrors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return apperrors.ErrDuplicateName
+		}
 		return result.Error
 	}
 	if result.RowsAffected == 0 {

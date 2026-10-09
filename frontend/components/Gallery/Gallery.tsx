@@ -72,11 +72,11 @@ const Gallery: React.FC<Props> = ({
 
     const content = (
         <div ref={galleryRef}>
-            <div className="flex justify-center grow">
+            <div className="flex justify-center grow p-4">
                 <Masonry
-                    className="p-4"
                     items={masonryItems}
                     colWidthPx={180}
+                    maxColWidthPx={320}
                     minCols={2}
                 />
             </div>

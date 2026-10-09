@@ -605,7 +605,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/BoardResponse"
+                                    "$ref": "#/components/schemas/BoardItemResponse"
                                 }
                             }
                         }
@@ -726,88 +726,6 @@
                 "responses": {
                     "204": {
                         "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "tags": [
-                    "boards"
-                ],
-                "summary": "Patches existing board image",
-                "operationId": "PatchBoardImage",
-                "parameters": [
-                    {
-                        "description": "Board ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "format": "int64"
-                        }
-                    },
-                    {
-                        "description": "Image ID",
-                        "name": "imageID",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "format": "int64"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/BoardItemPatchRequest"
-                            }
-                        }
-                    },
-                    "description": "Board item patch request",
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/BoardResponse"
-                                }
-                            }
-                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2499,9 +2417,6 @@
                     }
                 }
             },
-            "BoardItemPatchRequest": {
-                "type": "object"
-            },
             "BoardItemPostRequest": {
                 "type": "object",
                 "required": [
@@ -2530,10 +2445,6 @@
             },
             "BoardPatchRequest": {
                 "type": "object",
-                "required": [
-                    "description",
-                    "name"
-                ],
                 "properties": {
                     "description": {
                         "type": "string"
@@ -2562,14 +2473,22 @@
                 "type": "object",
                 "required": [
                     "description",
-                    "name"
+                    "id",
+                    "name",
+                    "user_id"
                 ],
                 "properties": {
                     "description": {
                         "type": "string"
                     },
+                    "id": {
+                        "type": "integer"
+                    },
                     "name": {
                         "type": "string"
+                    },
+                    "user_id": {
+                        "type": "integer"
                     }
                 }
             },
@@ -2682,10 +2601,6 @@
             },
             "ImagePatchRequest": {
                 "type": "object",
-                "required": [
-                    "filename",
-                    "tags"
-                ],
                 "properties": {
                     "filename": {
                         "type": "string"
@@ -2791,6 +2706,9 @@
             },
             "TagPostRequest": {
                 "type": "object",
+                "required": [
+                    "name"
+                ],
                 "properties": {
                     "name": {
                         "type": "string"
@@ -2850,7 +2768,7 @@
             "user.UserPatchRequest": {
                 "type": "object",
                 "properties": {
-                    "pictureURL": {
+                    "picture_url": {
                         "type": "string"
                     },
                     "username": {

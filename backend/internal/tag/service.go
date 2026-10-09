@@ -7,6 +7,7 @@ import (
 	"server/internal/errors"
 	"server/internal/log"
 	userpkg "server/internal/user"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -53,6 +54,10 @@ func (s *tagService) checkUserPermission(ctx context.Context, tagID uint, userID
 }
 
 func (s *tagService) Create(ctx context.Context, req *TagPostRequest, userID uint) (*Tag, error) {
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		return nil, errors.ErrBadRequest
+	}
 	exists, err := s.tags.ExistsByName(ctx, req.Name)
 	if err != nil {
 		return nil, fmt.Errorf("check duplicate: %w", err)
@@ -105,7 +110,20 @@ func (s *tagService) Update(ctx context.Context, userID, tagID uint, req *TagPat
 	}
 
 	if req.Name != nil {
-		board.Name = *req.Name
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, errors.ErrBadRequest
+		}
+		if name != board.Name {
+			exists, err := s.tags.ExistsByName(ctx, name)
+			if err != nil {
+				return nil, fmt.Errorf("check duplicate: %w", err)
+			}
+			if exists {
+				return nil, fmt.Errorf("%w: %s", errors.ErrDuplicateName, name)
+			}
+		}
+		board.Name = name
 	}
 
 	if err := s.tags.Update(ctx, board); err != nil {

@@ -396,7 +396,11 @@ func (h *Handler) DeleteImage(c *gin.Context) {
 	}
 
 	helpers.WithUser(c, func(usr *user.User) error {
-		return h.imageService.Delete(c, usr.ID, id)
+		if err := h.imageService.Delete(c, usr.ID, id); err != nil {
+			return err
+		}
+		c.Status(http.StatusNoContent)
+		return nil
 	})
 }
 
@@ -416,7 +420,11 @@ func (h *Handler) DeleteImage(c *gin.Context) {
 func (h *Handler) DeleteImageByName(c *gin.Context) {
 	name := strings.ToLower(c.Param("name"))
 	helpers.WithUser(c, func(usr *user.User) error {
-		return h.imageService.DeleteByName(c, usr.ID, name)
+		if err := h.imageService.DeleteByName(c, usr.ID, name); err != nil {
+			return err
+		}
+		c.Status(http.StatusNoContent)
+		return nil
 	})
 }
 
@@ -455,7 +463,9 @@ func (h *Handler) DeleteImagesByQuery(c *gin.Context) {
 				return nil
 			}
 			c.JSON(http.StatusBadRequest, gin.H{"errors": messages})
+			return nil
 		}
+		c.Status(http.StatusNoContent)
 		return nil
 	})
 }

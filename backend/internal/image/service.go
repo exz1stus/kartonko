@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"server/internal/api/transaction"
 	embeddingspkg "server/internal/embedding"
@@ -10,6 +11,7 @@ import (
 	"server/internal/tag"
 	userpkg "server/internal/user"
 	"strconv"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -84,19 +86,51 @@ func (s *imageService) Update(ctx context.Context, userID uint, imageID uint, re
 	}
 
 	if req.Filename != nil {
-		img.Filename = *req.Filename
+		filename := strings.TrimSpace(*req.Filename)
+		if filename == "" {
+			return nil, errors.ErrBadRequest
+		}
+		if filename != img.Filename {
+			existing, lookupErr := s.images.GetByName(ctx, filename)
+			switch {
+			case lookupErr == nil && existing.ID != img.ID:
+				return nil, fmt.Errorf("%w: %s", errors.ErrDuplicateName, filename)
+			case lookupErr != nil && !stderrors.Is(lookupErr, gorm.ErrRecordNotFound):
+				return nil, fmt.Errorf("check duplicate name: %w", lookupErr)
+			}
+		}
+		img.Filename = filename
 	}
 
+	var tags []tag.Tag
 	if req.Tags != nil {
-		tags := tag.TagsByNames(req.Tags)
-		img.Tags = tags
+		tags = tag.TagsByNames(req.Tags)
 	}
 
-	if err := s.images.Update(ctx, img); err != nil {
+	if err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		images := s.images.WithTx(tx)
+
+		// Associations are persisted separately from the image row. Keep them
+		// out of the ordinary update so GORM does not insert zero-valued tags.
+		img.Tags = nil
+		if err := images.Update(ctx, img); err != nil {
+			return err
+		}
+		if req.Tags != nil {
+			if err := images.ReplaceTags(ctx, img.ID, tags); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
-	return img, err
+	if req.Tags != nil {
+		img.Tags = tags
+	}
+
+	return img, nil
 }
 
 func (s *imageService) Search(ctx context.Context, query *Query) ([]ImageMetadata, error) {
@@ -349,7 +383,7 @@ func (s *imageService) validateNewImage(ctx context.Context, img *ImageMetadata)
 		return fmt.Errorf("check duplicate hash: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("duplicate hash")
+		return fmt.Errorf("duplicate hash: %w", errors.ErrDuplicateHash)
 	}
 
 	exists, err = s.images.ExistsByName(ctx, img.Filename)
@@ -357,7 +391,7 @@ func (s *imageService) validateNewImage(ctx context.Context, img *ImageMetadata)
 		return fmt.Errorf("check duplicate name: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("duplicate name %s", img.Filename)
+		return fmt.Errorf("duplicate name: %w: %s", errors.ErrDuplicateName, img.Filename)
 	}
 
 	return nil

@@ -139,7 +139,7 @@ func (h *Handler) PostRegister(c *gin.Context) {
 
 	user, err := h.userService.CreateByRegistration(c, input.Username, string(hashedPassword))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, errors.ErrorResponse{Error: fmt.Sprint("failed to create user: ", err.Error())})
+		errors.RespondError(c, err)
 		return
 	}
 

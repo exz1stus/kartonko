@@ -527,7 +527,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/BoardResponse"
+                            "$ref": "#/definitions/BoardItemResponse"
                         }
                     },
                     "400": {
@@ -624,69 +624,6 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "boards"
-                ],
-                "summary": "Patches existing board image",
-                "operationId": "PatchBoardImage",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "Board ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "Image ID",
-                        "name": "imageID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Board item patch request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/BoardItemPatchRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/BoardResponse"
-                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2036,9 +1973,6 @@ const docTemplate = `{
                 }
             }
         },
-        "BoardItemPatchRequest": {
-            "type": "object"
-        },
         "BoardItemPostRequest": {
             "type": "object",
             "required": [
@@ -2067,10 +2001,6 @@ const docTemplate = `{
         },
         "BoardPatchRequest": {
             "type": "object",
-            "required": [
-                "description",
-                "name"
-            ],
             "properties": {
                 "description": {
                     "type": "string"
@@ -2099,14 +2029,22 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "description",
-                "name"
+                "id",
+                "name",
+                "user_id"
             ],
             "properties": {
                 "description": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2219,10 +2157,6 @@ const docTemplate = `{
         },
         "ImagePatchRequest": {
             "type": "object",
-            "required": [
-                "filename",
-                "tags"
-            ],
             "properties": {
                 "filename": {
                     "type": "string"
@@ -2328,6 +2262,9 @@ const docTemplate = `{
         },
         "TagPostRequest": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "name": {
                     "type": "string"
@@ -2387,7 +2324,7 @@ const docTemplate = `{
         "user.UserPatchRequest": {
             "type": "object",
             "properties": {
-                "pictureURL": {
+                "picture_url": {
                     "type": "string"
                 },
                 "username": {

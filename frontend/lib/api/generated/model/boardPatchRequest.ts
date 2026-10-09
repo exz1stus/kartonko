@@ -7,6 +7,6 @@
  */
 
 export interface BoardPatchRequest {
-  description: string;
-  name: string;
+  description?: string;
+  name?: string;
 }
