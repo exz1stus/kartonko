@@ -5,6 +5,7 @@ interface MasonryItem {
     key: string;
     item: ReactNode;
     ratio: number;
+    extraHeightPx?: number;
 }
 
 interface Props {
@@ -15,12 +16,35 @@ interface Props {
     colWidthPx?: number;
     maxColWidthPx?: number;
     gap?: number;
+    rowGapPx?: number;
 }
 
 interface Column {
     items: MasonryItem[];
     height: number;
 }
+
+const createColumns = (
+    items: MasonryItem[],
+    count: number,
+    columnWidth: number,
+    rowGapPx: number,
+): Column[] => {
+    const cols = Array.from({ length: count }, () => ({
+        items: [] as MasonryItem[],
+        height: 0,
+    }));
+    items.forEach((item) => {
+        const h = item.ratio * columnWidth;
+        const targetCol = cols.reduce(
+            (min, c) => (c.height < min.height ? c : min),
+            cols[0],
+        );
+        targetCol.items.push(item);
+        targetCol.height += h + (item.extraHeightPx ?? 0) + rowGapPx;
+    });
+    return cols;
+};
 
 const Masonry: React.FC<Props> = ({
     items,
@@ -30,6 +54,7 @@ const Masonry: React.FC<Props> = ({
     colWidthPx = 200,
     maxColWidthPx = 0,
     gap = 16,
+    rowGapPx = 20,
 }: Props) => {
     const [columns, setColumns] = useState<Column[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -38,27 +63,6 @@ const Masonry: React.FC<Props> = ({
         () => (Array.isArray(items) ? items.flat() : [items]),
         [items],
     );
-
-    const createColumns = (
-        items: MasonryItem[],
-        count: number,
-        columnWidth: number,
-    ) => {
-        const cols = Array.from({ length: count }, () => ({
-            items: [] as MasonryItem[],
-            height: 0,
-        }));
-        items.forEach((item) => {
-            const h = item.ratio * columnWidth;
-            const targetCol = cols.reduce(
-                (min, c) => (c.height < min.height ? c : min),
-                cols[0],
-            );
-            targetCol.items.push(item);
-            targetCol.height += h + 1;
-        });
-        return cols;
-    };
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -83,12 +87,14 @@ const Masonry: React.FC<Props> = ({
             );
             const columnWidth = (width - gap * (finalCount - 1)) / finalCount;
 
-            setColumns(createColumns(childrenArray, finalCount, columnWidth));
+            setColumns(
+                createColumns(childrenArray, finalCount, columnWidth, rowGapPx),
+            );
         });
 
         if (containerRef.current) observer.observe(containerRef.current);
         return () => observer.disconnect();
-    }, [childrenArray, colWidthPx, gap, maxCols, minCols]);
+    }, [childrenArray, colWidthPx, gap, maxCols, minCols, rowGapPx]);
 
     const limitedColumnCount =
         maxCols > 0
@@ -112,7 +118,11 @@ const Masonry: React.FC<Props> = ({
             }}
         >
             {columns.map((column, i) => (
-                <div key={i} className="flex flex-col gap-5 min-w-0">
+                <div
+                    key={i}
+                    className="flex flex-col min-w-0"
+                    style={{ rowGap: `${rowGapPx}px` }}
+                >
                     {column.items.map((item) => (
                         <React.Fragment key={item.key}>
                             {item.item}

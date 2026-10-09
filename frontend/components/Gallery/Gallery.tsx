@@ -60,6 +60,8 @@ const Gallery: React.FC<Props> = ({
     const masonryItems: MasonryItem[] = items.map((image) => ({
         key: image.filename,
         ratio: image.height / image.width,
+        // ImageCard's filename is one line with leading-6.
+        extraHeightPx: 24,
         item: <ImageCard image={image} />,
     }));
 

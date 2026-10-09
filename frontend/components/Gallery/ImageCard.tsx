@@ -41,7 +41,7 @@ const ImageCard: React.FC<Props> = ({ image, className, style }) => {
                         onLoad={onLoad}
                         draggable={false}
                     />
-                    <span className="px-2 max-w-[20ch] truncate">
+                    <span className="px-2 max-w-[20ch] truncate leading-6">
                         {filename}
                     </span>
                 </div>
