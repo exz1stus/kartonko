@@ -13,6 +13,7 @@ import {
 import TagSelector from "@/components/Tags/TagSelector";
 import { sanitizeName } from "@/lib/sanitizeName";
 import ApiError from "@/lib/api/error";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 interface Props {
     image: ImageMetadata;
@@ -21,6 +22,7 @@ interface Props {
 }
 
 const EditImage = ({ image, hasPermission, onDelete }: Props) => {
+    const { t } = useTranslations();
     const router = useRouter();
     const [editing, setEditing] = useState(false);
     const [filename, setFilename] = useState(image.filename);
@@ -40,14 +42,14 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
         setPending(true);
         try {
             const nextFilename = sanitizeName(filename.trim());
-            if (!nextFilename) throw new Error("Image name cannot be empty");
+            if (!nextFilename) throw new Error(t("image.nameEmpty"));
 
             if (nextFilename !== image.filename) {
                 try {
                     const existing = await getImageByName(nextFilename);
                     if (existing.id !== image.id) {
                         throw new Error(
-                            `Image name already exists: ${nextFilename}`,
+                            t("image.nameExists", { name: nextFilename }),
                         );
                     }
                 } catch (error) {
@@ -86,7 +88,7 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
         } finally {
             setPending(false);
         }
-    }, [filename, image.id, newTags, pending, router, tags]);
+    }, [filename, image.filename, image.id, newTags, pending, router, t, tags]);
     const fetchDelete = useCallback(async () => {
         if (pending) return;
         setPending(true);
@@ -99,17 +101,17 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
 
     const removeImage = useCallback(async () => {
         if (pending) return;
-        if (!window.confirm(`Delete image "${image.filename}"?`)) return;
+        if (!window.confirm(t("image.deleteConfirm", { name: image.filename }))) return;
         toast.promise(fetchDelete, {
-            loading: "Loading...",
+            loading: t("common.loading"),
             success: () => {
                 onDelete?.();
                 router.push("/");
-                return `image has been deleted`;
+                return t("common.delete");
             },
             error: (error) => error.message,
         });
-    }, [fetchDelete, image.filename, onDelete, pending, router]);
+    }, [fetchDelete, image.filename, onDelete, pending, router, t]);
 
     if (!hasPermission) return null;
 
@@ -122,7 +124,7 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                         disabled={pending}
                         onClick={() => setEditing(true)}
                         className="disabled:opacity-50 m-2 hover:text-primary"
-                        aria-label="Edit image"
+                        aria-label={t("image.edit")}
                     >
                         <Pencil />
                     </button>
@@ -132,7 +134,7 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                     disabled={pending}
                     onClick={() => void removeImage()}
                     className="disabled:opacity-50 m-2 hover:text-red-500"
-                    aria-label="Delete image"
+                    aria-label={t("image.delete")}
                 >
                     <Trash2 />
                 </button>
@@ -140,15 +142,15 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
             {editing && (
                 <div className="flex flex-col gap-2 min-w-64">
                     <input
-                        className="bg-transparent px-2 py-1 border rounded-md"
+                        className="field-fill px-2 py-1"
                         value={filename}
                         onChange={(event) =>
                             setFilename(sanitizeName(event.target.value))
                         }
-                        aria-label="Image name"
+                        aria-label={t("image.name")}
                     />
                     <TagSelector
-                        inputStyle="flex flex-wrap gap-1 border rounded-t-md w-full h-full bg-neutral-900 px-3 py-2"
+                        inputStyle="flex flex-wrap gap-1 border rounded-t-md w-full h-full px-3 py-2"
                         tags={tags}
                         removeTag={(tag) =>
                             setTags((current) =>
@@ -170,14 +172,14 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                             disabled={pending}
                             onClick={() =>
                                 void toast.promise(save(), {
-                                    loading: "Saving...",
-                                    success: "Image updated",
+                                    loading: t("image.saving"),
+                                    success: t("image.updated"),
                                     error: (error) => error.message,
                                 })
                             }
                             className="inline-flex items-center gap-1 px-2 py-1 border hover:border-primary rounded-md"
                         >
-                            <Save size={16} /> Save
+                            <Save size={16} /> {t("common.save")}
                         </button>
                         <button
                             type="button"
@@ -190,7 +192,7 @@ const EditImage = ({ image, hasPermission, onDelete }: Props) => {
                             }}
                             className="inline-flex items-center gap-1 px-2 py-1 border rounded-md"
                         >
-                            <X size={16} /> Cancel
+                            <X size={16} /> {t("common.cancel")}
                         </button>
                     </div>
                 </div>

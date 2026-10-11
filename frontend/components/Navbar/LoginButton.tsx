@@ -1,8 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 const LoginButton: React.FC = () => {
     const router = useRouter();
+    const { t } = useTranslations();
     return (
         <button
             onClick={() =>
@@ -12,7 +14,7 @@ const LoginButton: React.FC = () => {
             }
             className="w-auto h-10 cursor-pointer"
         >
-            <span>Log in</span>
+            <span>{t("nav.login")}</span>
         </button>
     );
 };

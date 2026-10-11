@@ -30,7 +30,7 @@ func TestUpdate_RejectsDuplicateFilename(t *testing.T) {
 	users := userMocks.NewMockUserRepository(t)
 	users.EXPECT().Get(mock.Anything, owner.ID).Return(owner, nil).Once()
 
-	service := image.NewImageService(images, users, nil, nil, nil, transaction.TestRunner{})
+	service := image.NewImageService(images, users, nil, nil, nil, transaction.TestRunner{}, nil)
 	_, err := service.Update(ctx, owner.ID, current.ID, &image.ImagePatchRequest{Filename: &existing.Filename})
 
 	require.Error(t, err)
@@ -62,7 +62,7 @@ func TestUpdate_ReplacesTagsInTransaction(t *testing.T) {
 	users := userMocks.NewMockUserRepository(t)
 	users.EXPECT().Get(mock.Anything, owner.ID).Return(owner, nil).Once()
 
-	service := image.NewImageService(images, users, nil, nil, nil, transaction.TestRunner{})
+	service := image.NewImageService(images, users, nil, nil, nil, transaction.TestRunner{}, nil)
 	updated, err := service.Update(ctx, owner.ID, current.ID, &image.ImagePatchRequest{
 		Filename: &filename,
 		Tags:     tagNames,

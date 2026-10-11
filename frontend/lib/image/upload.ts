@@ -1,5 +1,6 @@
 "use client";
 import { clientMutator } from "../api/clientMutator";
+import ApiError from "../api/error";
 import { ImageMetadata, ImagePostBatchResponse } from "../api/generated/model";
 
 interface ImageUploadRequest {
@@ -12,12 +13,6 @@ interface ImageUploadRequest {
 interface ImageBatchUploadRequest {
     data: ImageUploadRequest[];
     common_tags: string[];
-}
-
-const MAXIMUM_UPLOAD_SIZE = 50 * 1024 * 1024; //50MB
-
-export function isUploadSizeValid(sizeBytes: number): boolean {
-    return sizeBytes <= MAXIMUM_UPLOAD_SIZE;
 }
 
 export async function uploadImage(
@@ -41,7 +36,8 @@ export async function uploadImage(
 export async function uploadImageBatch(
     batchMetadata: ImageBatchUploadRequest,
     files: File[],
-    captchaToken: string,
+    uploadSession: string,
+    onProgress?: (loaded: number, total: number) => void,
 ): Promise<ImagePostBatchResponse> {
     const formData = new FormData();
 
@@ -49,13 +45,39 @@ export async function uploadImageBatch(
     files.forEach((file) => {
         formData.append("files", file);
     });
-    formData.append("cf-turnstile-response", captchaToken);
+    return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open("POST", "/api/upload/batch");
+        request.setRequestHeader("x-upload-session", uploadSession);
+        request.upload.onprogress = (event) => {
+            if (event.lengthComputable) onProgress?.(event.loaded, event.total);
+        };
+        request.onerror = () => reject(new Error("Upload connection failed"));
+        request.onload = () => {
+            let data: unknown;
+            try {
+                data = JSON.parse(request.responseText);
+            } catch {
+                reject(new Error(`Upload failed with status ${request.status}`));
+                return;
+            }
+            if (request.status >= 200 && request.status < 300)
+                resolve(data as ImagePostBatchResponse);
+            else
+                reject(new ApiError(request.status, data));
+        };
+        request.send(formData);
+    });
+}
 
-    return await clientMutator(`/upload/batch`, {
+export async function createUploadSession(captchaToken: string): Promise<string> {
+    const formData = new FormData();
+    formData.append("cf-turnstile-response", captchaToken);
+    const response = await clientMutator<{ token: string }>("/upload/session", {
         method: "POST",
         body: formData,
-        credentials: "include",
     });
+    return response.token;
 }
 
 export { type ImageUploadRequest, type ImageBatchUploadRequest };

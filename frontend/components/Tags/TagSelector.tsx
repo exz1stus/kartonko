@@ -14,6 +14,7 @@ import useSanitizedField from "@/hooks/useSanitizedField";
 import { noUse } from "@/app/AudioEffects";
 import useUploadStore, { selectGlobalNewTags } from "@/hooks/useUploadStore";
 import { useShallow } from "zustand/react/shallow";
+import { useTranslations } from "@/contexts/LocaleContext";
 interface Props {
     tags: string[];
     removeTag: (tag: string) => void;
@@ -45,17 +46,18 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             removeNewTag,
             onFocus,
             onBlur,
-            placeholder = "Add a tag...",
+            placeholder,
             className,
             inputStyle = "px-3 py-1",
         },
         ref,
     ) => {
+        const { t } = useTranslations();
         const [query, setQuery] = useState<string>("");
         const [active, setActive] = useState<boolean>(false);
         const inputRef = React.useRef<HTMLInputElement>(null);
 
-        const [queryNew, setQueryNew] = useState<boolean>(false);
+        const [newTagCandidate, setNewTagCandidate] = useState("");
 
         const { sanitized, onSanitize } = useSanitizedField(
             sanitizeName,
@@ -139,10 +141,13 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
             onTagsUpdate?.(tagsQuery);
         };
 
+        const queryTrimmed = query.trim();
+        const canOfferNewTag = queryTrimmed.length > 0 && currentHint === "" && !tags.includes(queryTrimmed) && !newTags?.includes(queryTrimmed);
+        const queryNew = canOfferNewTag && newTagCandidate === queryTrimmed;
+
         useEffect(() => {
             if (!newTags) return;
             if (noHintTimerRef.current) clearTimeout(noHintTimerRef.current);
-            const queryTrimmed = query.trim();
             if (
                 queryTrimmed.length > 0 &&
                 currentHint === "" &&
@@ -150,17 +155,15 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                 !newTags.includes(queryTrimmed)
             ) {
                 noHintTimerRef.current = setTimeout(() => {
-                    setQueryNew(true);
+                    setNewTagCandidate(queryTrimmed);
                 }, NO_HINT_DELAY_MS);
-            } else {
-                setQueryNew(false);
             }
 
             return () => {
                 if (noHintTimerRef.current)
                     clearTimeout(noHintTimerRef.current);
             };
-        }, [query, currentHint, newTags, tags]);
+        }, [queryTrimmed, currentHint, newTags, tags]);
 
         const addNewTag = (tag: string) => {
             if (!newTags || !onNewTagsUpdate) return;
@@ -233,23 +236,23 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                 <div
                     onClick={() => inputRef.current?.focus()}
                     className={cn(
-                        "border-invisible inline-flex flex-wrap items-center gap-2 border w-full text-lg",
+                        "control-shell inline-flex flex-wrap items-center gap-2 w-full text-lg",
                         inputStyle,
                         active && "",
-                        !showList
-                            ? " rounded-md border-surface-10"
-                            : " rounded-t-md bg-neutral-900 ",
+                            !showList
+                            ? " rounded-md"
+                            : " rounded-t-md",
                     )}
                 >
                     <TagSpan
                         tags={tags}
                         removeTag={(t) => removeTag(t)}
-                        tagStyle={"bg-surface-20 rounded-3xl px-2"}
+                        tagStyle={"control-tag rounded-3xl px-2"}
                     />
                     <div className="relative flex-1 min-w-10">
                         <input
                             className={cn(
-                                "z-2 relative bg-transparent border-none outline-none w-full text-lg transition-colors",
+                                "z-2 relative w-full text-base transition-colors px-2 py-1",
                                 { "text-red-500": !sanitized },
                             )}
                             ref={inputRef}
@@ -270,7 +273,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                                 query.length === 0 &&
                                 tags.length === 0 &&
                                 (currentHint.length === 0 || !active)
-                                    ? placeholder
+                                    ? placeholder ?? t("tags.addTag")
                                     : ""
                             }
                         />
@@ -278,7 +281,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                             <span className="invisible whitespace-pre pointer-events-none">
                                 {query}
                             </span>
-                            <span className="text-white/25 whitespace-pre pointer-events-none">
+                            <span className="text-[var(--control-placeholder)] whitespace-pre pointer-events-none">
                                 {active && query.length > 0 && difference}
                             </span>
                         </div>
@@ -288,14 +291,14 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                             tags={newTags}
                             removeTag={(t) => removeNewTag(t)}
                             tagStyle={
-                                "bg-surface-20 rounded-3xl px-2 border border-primary"
+                                "control-tag rounded-3xl px-2 border border-primary"
                             }
                         />
                     )}
                 </div>
                 {showList && (
-                    <div className="top-full right-0 left-0 z-50 absolute bg-neutral-900 shadow-lg border-x border-b rounded-b-md max-h-60 overflow-y-auto">
-                        <ul className="py-1 text-neutral-200 text-sm">
+                    <div className="control-suggestions top-full right-0 left-0 z-50 absolute shadow-lg rounded-b-md max-h-60 overflow-y-auto">
+                        <ul className="py-1 text-sm">
                             {hints.map((hintItem: string, index: number) => (
                                 <li
                                     key={index}
@@ -304,7 +307,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                                         saveTag(hintItem);
                                     }}
                                     className={cn(
-                                        "hover:bg-neutral-800 px-4 py-2 transition-colors cursor-pointer",
+                                        "px-4 py-2 transition-colors cursor-pointer",
                                     )}
                                 >
                                     {hintItem}
@@ -317,7 +320,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                                         e.preventDefault();
                                         addNewTag(query);
                                     }}
-                                    className="hover:bg-neutral-800 px-4 py-2 border-neutral-800 border-t font-medium text-primary-400 cursor-pointer"
+                                    className="px-4 py-2 border-[var(--control-border)] border-t font-medium text-[var(--control-foreground)] cursor-pointer"
                                 >
                                     + Add new tag: &quot;{query}&quot;
                                 </li>
@@ -329,7 +332,7 @@ const TagSelector = forwardRef<TagSelectorRef, Props>(
                                         e.preventDefault();
                                         addNewTag(tag);
                                     }}
-                                    className="hover:bg-neutral-800 px-4 py-2 italic transition-colors cursor-pointer"
+                                    className="px-4 py-2 italic transition-colors cursor-pointer"
                                 >
                                     {tag}
                                 </li>

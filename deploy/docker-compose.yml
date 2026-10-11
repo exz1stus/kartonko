@@ -1,5 +1,6 @@
 services:
     backend:
+        image: kartonko-backend
         build:
             context: ../backend
             dockerfile: Dockerfile
@@ -17,6 +18,7 @@ services:
             DB_PORT: ${DB_PORT}
 
             EMBEDDINGS_PORT: ${EMBEDDINGS_PORT}
+            EMBEDDINGS_URL: ${EMBEDDINGS_URL:-}
 
             BACKEND_PORT: ${BACKEND_PORT}
             API_ORIGIN: ${API_ORIGIN}
@@ -39,6 +41,29 @@ services:
             interval: 5s
             timeout: 3s
             retries: 5
+        networks:
+            - app-network
+        restart: unless-stopped
+
+    worker:
+        image: kartonko-backend
+        container_name: worker
+        command: ["./worker"]
+        environment:
+            GARAGE_ENDPOINT: ${GARAGE_ENDPOINT}
+            GARAGE_ACCESS_KEY: ${GARAGE_ACCESS_KEY}
+            GARAGE_SECRET_KEY: ${GARAGE_SECRET_KEY}
+            GARAGE_BUCKET_NAME: ${GARAGE_BUCKET_NAME}
+            DB_HOST: ${DB_HOST}
+            DB_USER: ${DB_USER}
+            DB_PASSWORD: ${DB_PASSWORD}
+            DB_NAME: ${DB_NAME}
+            DB_PORT: ${DB_PORT}
+            EMBEDDINGS_PORT: ${EMBEDDINGS_PORT}
+            EMBEDDINGS_URL: ${EMBEDDINGS_URL:-}
+        depends_on:
+            backend:
+                condition: service_healthy
         networks:
             - app-network
         restart: unless-stopped

@@ -7,6 +7,7 @@
  */
 
 export interface ImageMetadata {
+  embedding_status: string;
   filename: string;
   format: string;
   hash: string;

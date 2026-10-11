@@ -20,7 +20,25 @@ export default function UploadQueuePersistence() {
 
         let active = true;
         let unsubscribe: (() => void) | undefined;
-        let writes = Promise.resolve();
+        let pendingSnapshot: UploadItem[] | undefined;
+        let writing = false;
+        const saveLatest = (items: UploadItem[]) => {
+            pendingSnapshot = items;
+            if (writing) return;
+            writing = true;
+            void (async () => {
+                while (pendingSnapshot !== undefined) {
+                    const snapshot = pendingSnapshot;
+                    pendingSnapshot = undefined;
+                    try {
+                        await saveUploadQueue(ownerId, snapshot);
+                    } catch (error) {
+                        console.warn("Could not save upload queue", error);
+                    }
+                }
+                writing = false;
+            })();
+        };
 
         void loadUploadQueue(ownerId)
             .catch((error) => {
@@ -42,14 +60,9 @@ export default function UploadQueuePersistence() {
                 const queueItems = mergedItems.map((item) => ({ ...item, actions: commonActions }));
                 useUploadStore.setState({ items: queueItems, commonActions, hydrated: true });
                 unsubscribe = useUploadStore.subscribe((state) => {
-                    const snapshot = state.items;
-                    writes = writes
-                        .then(() => saveUploadQueue(ownerId, snapshot))
-                        .catch((error) => console.warn("Could not save upload queue", error));
+                    saveLatest(state.items);
                 });
-                writes = writes
-                    .then(() => saveUploadQueue(ownerId, queueItems))
-                    .catch((error) => console.warn("Could not save upload queue", error));
+                if (currentItems.length > 0) saveLatest(queueItems);
             });
 
         return () => {

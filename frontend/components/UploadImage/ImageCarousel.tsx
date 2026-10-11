@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { CheckCircle2, Tags } from "lucide-react";
+import { CheckCircle2, Tags, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import useUploadStore, { UploadItem } from "@/hooks/useUploadStore";
 import TagSelector from "../Tags/TagSelector";
 import Scrollbar from "../template/Scrollbar";
 import { cn } from "@/lib/utils";
 import { beginSelection, extendSelection, SelectionGesture } from "@/lib/image/rangeSelection";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 interface Props {
     images: UploadItem[];
@@ -14,6 +15,7 @@ interface Props {
     onIndexChange: (index: number) => void;
     selectedIndices: number[];
     setSelectedIndices: React.Dispatch<React.SetStateAction<number[]>>;
+    onRemoveSelected: () => void;
     getFileUrl: (file: File) => string;
 }
 
@@ -23,8 +25,10 @@ const ImageCarousel = ({
     onIndexChange,
     selectedIndices,
     setSelectedIndices,
+    onRemoveSelected,
     getFileUrl,
 }: Props) => {
+    const { t } = useTranslations();
     const updateMetadata = useUploadStore((state) => state.updateMetadata);
     const [tags, setTags] = useState<string[]>([]);
     const [newTags, setNewTags] = useState<string[]>([]);
@@ -38,7 +42,7 @@ const ImageCarousel = ({
         if (selectedIndices.length === 0) return;
         const editableIndices = selectedIndices.filter((index) => images[index] && !images[index].uploadedImageId);
         if (editableIndices.length === 0) {
-            toast.warning("Uploaded images cannot receive new upload tags");
+            toast.warning(t("upload.tagsUnavailable"));
             return;
         }
 
@@ -52,7 +56,7 @@ const ImageCarousel = ({
             });
         });
 
-        toast.success(`Applied tags to ${editableIndices.length} images`);
+        toast.success(t("upload.tagsApplied", { count: editableIndices.length }));
         setTags([]);
         setNewTags([]);
         setSelectedIndices([]);
@@ -130,14 +134,19 @@ const ImageCarousel = ({
                 "lg:border-t-0 lg:border-l lg:w-[20%]",
             )}
         >
-            <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
                 <span className="text-gray-400 text-xs">
-                    {selectedIndices.length} selected for batch tags
+                    {selectedIndices.length} selected
                 </span>
+                {selectedIndices.length > 0 && (
+                    <button type="button" onClick={onRemoveSelected} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-red-400 hover:bg-red-500/10" aria-label="Remove selected images from upload queue">
+                        <Trash2 size={14} /> Remove
+                    </button>
+                )}
             </div>
 
             {selectedIndices.length > 0 && (
-                <div className="flex flex-col gap-2 bg-surface-0 p-2 border rounded-xl animate-in duration-200 fade-in">
+                <div className="glass flex flex-col gap-2 p-2 border rounded-xl animate-in duration-200 fade-in">
                     <div className="flex items-center gap-1.5 font-medium text-xs">
                         <Tags size={14} />
                         <span>Add Common Tags</span>
@@ -174,14 +183,14 @@ const ImageCarousel = ({
                     const tagsCount = img.newTags.length + img.tags.length;
                     return (
                         <div
-                            key={idx}
+                            key={img.id}
                             onMouseDown={(e) => handleMouseDown(idx, e)}
                             onMouseEnter={() => handleMouseEnter(idx)}
                             className={`relative group shrink-0 w-16 h-16 lg:w-full lg:h-20 rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
                                 isActive
-                                    ? "border-white"
+                                    ? "border-[var(--app-accent-color)] ring-1 ring-[var(--app-accent-foreground)]"
                                     : isSelected
-                                      ? "border-blue-500"
+                                      ? "border-[var(--app-accent-color)]"
                                       : "border-transparent hover:border-surface-30"
                             }`}
                         >
@@ -190,7 +199,7 @@ const ImageCarousel = ({
                                 alt={img.name}
                                 fill
                                 sizes="96px"
-                                className="object-cover pointer-events-none"
+                                className="loaded-content object-cover pointer-events-none"
                                 unoptimized
                                 draggable={false}
                             />
@@ -203,7 +212,7 @@ const ImageCarousel = ({
                                 }}
                                 className={`absolute top-1 left-1 w-5 h-5 rounded-md flex items-center justify-center backdrop-blur-sm transition-all ${
                                     isSelected
-                                        ? "bg-blue-500 text-white opacity-100"
+                                        ? "bg-[var(--app-accent-color)] text-[var(--app-accent-foreground)] opacity-100"
                                         : "hidden"
                                 }`}
                             >
@@ -211,7 +220,7 @@ const ImageCarousel = ({
                                     size={14}
                                     className={
                                         isSelected
-                                            ? "fill-white text-blue-500"
+                                            ? "fill-[var(--app-accent-foreground)] text-[var(--app-accent-color)]"
                                             : ""
                                     }
                                 />

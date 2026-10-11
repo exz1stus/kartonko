@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 const fallbackPicture =
     "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -36,11 +37,12 @@ function ProfileImageSource({
     className?: string;
 }) {
     const [currentSrc, setCurrentSrc] = useState(src);
+    const { t } = useTranslations();
 
     return (
         <Image
             src={currentSrc}
-            alt="User picture"
+            alt={t("profile.pictureAlt")}
             width={size}
             height={size}
             className={className}

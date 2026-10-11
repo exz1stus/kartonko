@@ -16,15 +16,16 @@ func (req ImagePostRequest) ToUploadRequest() image.UploadRequest {
 }
 
 type ImageResponse struct {
-	ID       uint     `json:"id"`
-	Hash     string   `json:"hash"`
-	Filename string   `json:"filename"`
-	Tags     []string `json:"tags"`
-	Format   string   `json:"format"`
-	Width    uint     `json:"width"`
-	Height   uint     `json:"height"`
-	UserID   uint     `json:"user_id"`
-	Uploaded string   `json:"uploaded_at"`
+	ID              uint     `json:"id"`
+	Hash            string   `json:"hash"`
+	Filename        string   `json:"filename"`
+	Tags            []string `json:"tags"`
+	Format          string   `json:"format"`
+	Width           uint     `json:"width"`
+	Height          uint     `json:"height"`
+	UserID          uint     `json:"user_id"`
+	Uploaded        string   `json:"uploaded_at"`
+	EmbeddingStatus string   `json:"embedding_status"`
 } // @name ImageMetadata
 
 type ImagePostBatchRequest struct {

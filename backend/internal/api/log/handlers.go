@@ -25,7 +25,75 @@ func NewLogHandler(
 
 func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterGroup) {
 	protected.GET("", h.GetAuditLogEntries)
+	protected.GET("/groups", h.GetAuditLogGroups)
+	protected.GET("/groups/:id", h.GetAuditLogGroupEntries)
 	protected.POST("/:id/revert", h.RevertAuditLogEntry)
+}
+
+type groupedLogService interface {
+	GetGroups(cursor, limit int) ([]logpkg.GroupResponse, error)
+	GetGroupEntries(groupID uint) ([]logpkg.EntryResponse, error)
+}
+
+// GetAuditLogGroups godoc
+// @Summary Gets grouped audit log summaries
+// @Tags log
+// @Produce json
+// @Param cursor query int false "Group offset"
+// @Param limit query int false "Number of groups" default(20)
+// @Success 200 {array} log.GroupResponse
+// @Router /log/groups [get]
+// @ID GetAuditLogGroups
+func (h *Handler) GetAuditLogGroups(c *gin.Context) {
+	helpers.WithUser(c, func(actor *user.User) error {
+		if !actor.IsModerator() {
+			return errors.ErrPermissionDenied
+		}
+		service, ok := h.logService.(groupedLogService)
+		if !ok {
+			return errors.ErrInternalServer
+		}
+		cursor, limit, err := helpers.GetCursorLimit(c)
+		if err != nil {
+			return err
+		}
+		groups, err := service.GetGroups(cursor, limit)
+		if err != nil {
+			return err
+		}
+		c.JSON(http.StatusOK, groups)
+		return nil
+	})
+}
+
+// GetAuditLogGroupEntries godoc
+// @Summary Gets actions in an audit log group
+// @Tags log
+// @Produce json
+// @Param id path uint true "Group ID"
+// @Success 200 {array} log.EntryResponse
+// @Router /log/groups/{id} [get]
+// @ID GetAuditLogGroupEntries
+func (h *Handler) GetAuditLogGroupEntries(c *gin.Context) {
+	helpers.WithUser(c, func(actor *user.User) error {
+		if !actor.IsModerator() {
+			return errors.ErrPermissionDenied
+		}
+		service, ok := h.logService.(groupedLogService)
+		if !ok {
+			return errors.ErrInternalServer
+		}
+		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil || id == 0 {
+			return errors.ErrBadRequest
+		}
+		entries, err := service.GetGroupEntries(uint(id))
+		if err != nil {
+			return err
+		}
+		c.JSON(http.StatusOK, entries)
+		return nil
+	})
 }
 
 // RevertAuditLogEntry godoc

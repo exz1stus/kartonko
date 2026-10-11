@@ -9,6 +9,8 @@ import { getUser } from "@/lib/api/generated/server";
 import { getLoggedUser } from "@/lib/user/user.server";
 import { ImageMetadata } from "@/lib/api/generated/model";
 import AddToBoard from "@/components/Boards/AddToBoard";
+import ImageMetadataLabels from "@/components/ImageMetadataLabels";
+import EmbeddingStatus from "@/components/EmbeddingStatus";
 
 interface Props {
     image: ImageMetadata;
@@ -22,7 +24,7 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
 
     const tags = image.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1">
-            <span className="text-2xl">Tags:</span>
+            <span className="text-2xl"><ImageMetadataLabels kind="tags" /></span>
             <TagSpan
                 tags={image.tags}
                 tagStyle={"bg-surface-20 rounded-3xl px-2"}
@@ -31,7 +33,7 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
     );
 
     return (
-        <div className="bg-surface-0 w-full h-full">
+        <div className="content-card w-full h-full">
             <div className="flex lg:flex-row flex-col items-stretch gap-6 mx-auto w-full h-full">
                 <div className="relative flex flex-1 justify-center items-center bg-black/5 rounded-2xl min-w-0 min-h-0">
                     <Image
@@ -51,19 +53,20 @@ const ImageContent: React.FC<Props> = async ({ image }) => {
                             {image.hash}
                         </span>
                         <span className="text-l">
-                            <span>Resolution: </span>
+                            <ImageMetadataLabels kind="resolution" />{" "}
                             <span>
                                 {image.width}x{image.height}
                             </span>
                         </span>
                         <div className="flex flex-row items-center gap-2">
-                            <span className="text-l">Uploaded by:</span>
+                            <span className="text-l"><ImageMetadataLabels kind="uploadedBy" /></span>
                             {imageOwner && <UserElement user={imageOwner} />}
                         </div>
                         <div className="flex flex-row items-center gap-2">
-                            <span className="text-l">Uploaded: </span>
+                            <span className="text-l"><ImageMetadataLabels kind="uploaded" /></span>
                             <TimeField time={image.uploaded_at} />
                         </div>
+                        <EmbeddingStatus imageId={image.id} initialStatus={image.embedding_status} />
                         {tags}
                         {user && <AddToBoard imageId={image.id} />}
                         {user && (

@@ -14,7 +14,7 @@ func TestImageQueriesLoadTagsWithoutCountColumn(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, statement := range []string{
-		"CREATE TABLE image_metadata (id integer primary key, created_at datetime, updated_at datetime, deleted_at datetime, filename text, hash text, format text, width integer, height integer, user_id integer)",
+		"CREATE TABLE image_metadata (id integer primary key, created_at datetime, updated_at datetime, deleted_at datetime, filename text, hash text, format text, width integer, height integer, embedding_status text, user_id integer)",
 		"CREATE TABLE tags (id integer primary key, created_at datetime, updated_at datetime, deleted_at datetime, name text, user_id integer)",
 		"CREATE TABLE image_tags (image_metadata_id integer, tag_id integer)",
 		"INSERT INTO image_metadata (id, filename, hash) VALUES (1, 'first', 'hash')",

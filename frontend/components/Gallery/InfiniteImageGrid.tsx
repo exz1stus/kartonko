@@ -6,6 +6,7 @@ import GalleryImageGrid from "./GalleryImageGrid";
 import DragDropZone from "@/components/UploadImage/DragDropZone";
 import usePreUpload from "@/hooks/usePreUpload";
 import { UploadIntent } from "@/lib/image/uploadIntent";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 interface Props {
     images: ImageMetadata[];
@@ -42,6 +43,7 @@ export default function InfiniteImageGrid({
     dragSourceBoardId,
     selectionScope,
 }: Props) {
+    const { t } = useTranslations();
     const queueFiles = usePreUpload();
     return (
         <DragDropZone
@@ -50,8 +52,8 @@ export default function InfiniteImageGrid({
             className="min-h-full"
             label={
                 dropIntent?.actions?.length
-                    ? "Upload and add to board"
-                    : "Drop files to upload"
+                    ? t("gallery.uploadAddBoard")
+                    : t("gallery.dropFiles")
             }
         >
             <GalleryImageGrid
@@ -64,7 +66,7 @@ export default function InfiniteImageGrid({
                 selectionScope={selectionScope}
             />
             {!loading && !error && images.length === 0 && (
-                <p className="p-6 text-primary-0/70 text-center">
+                <p className="p-6 text-muted-foreground text-center">
                     {emptyMessage}
                 </p>
             )}
@@ -72,13 +74,13 @@ export default function InfiniteImageGrid({
                 <p role="alert" className="p-3 text-red-500 text-center">
                     {error}{" "}
                     <button onClick={retry} className="underline">
-                        Retry
+                        {t("common.retry")}
                     </button>
                 </p>
             )}
             {loading && (
-                <p role="status" className="p-3 text-primary-0/70 text-center">
-                    Loading images…
+                <p role="status" className="p-3 text-muted-foreground text-center">
+                    {t("common.loading")}
                 </p>
             )}
             {!reachedEnd && !error && <div ref={sentinelRef} className="h-1" />}

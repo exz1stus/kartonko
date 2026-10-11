@@ -1,11 +1,13 @@
 "use client";
 import { Pencil, Save, Trash2, X } from "lucide-react";
-import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { deleteImagesByQuery, patchUser } from "@/lib/api/generated/client";
 import { UserDataResponse } from "@/lib/api/generated/model/userDataResponse";
 import { sanitizeName } from "@/lib/sanitizeName";
+import ImageSelector from "@/components/ImageSelector";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 interface Props {
     user: UserDataResponse;
@@ -13,10 +15,12 @@ interface Props {
 }
 
 const EditUser = ({ user, hasPermission }: Props) => {
+    const { t } = useTranslations();
     const router = useRouter();
     const [editing, setEditing] = useState(false);
     const [username, setUsername] = useState(user.username);
     const [pending, setPending] = useState(false);
+    const [pictureSource, setPictureSource] = useState<File | null>(null);
 
     useEffect(() => {
         if (editing) return;
@@ -28,7 +32,7 @@ const EditUser = ({ user, hasPermission }: Props) => {
         setPending(true);
         try {
             const nextUsername = sanitizeName(username.trim());
-            if (!nextUsername) throw new Error("Username cannot be empty");
+            if (!nextUsername) throw new Error(t("profile.usernameEmpty"));
 
             const updated = await patchUser(
                 user.id,
@@ -41,7 +45,7 @@ const EditUser = ({ user, hasPermission }: Props) => {
         } finally {
             setPending(false);
         }
-    }, [pending, router, user.id, username]);
+    }, [pending, router, t, user.id, username]);
 
     const uploadPicture = useCallback(
         async (file: File) => {
@@ -61,33 +65,29 @@ const EditUser = ({ user, hasPermission }: Props) => {
                 const result = await response.json().catch(() => null);
                 if (!response.ok)
                     throw new Error(
-                        result?.error ?? "Could not upload profile picture",
+                        result?.error ?? t("error.couldNotUploadProfilePicture"),
                     );
                 router.refresh();
             } finally {
                 setPending(false);
             }
         },
-        [pending, router, user.id],
+        [pending, router, t, user.id],
     );
 
-    const onPictureSelected = (event: ChangeEvent<HTMLInputElement>) => {
-        const input = event.currentTarget;
-        const file = input.files?.[0];
-        if (!file) return;
-        const upload = uploadPicture(file).finally(() => {
-            input.value = "";
-        });
-        void toast.promise(upload, {
-            loading: "Uploading profile picture…",
-            success: "Profile picture updated",
+    const onPictureSelected = async (file: File, _mode: "fit" | "crop", sourceFile: File) => {
+        const upload = uploadPicture(file);
+        await toast.promise(upload, {
+            loading: t("profile.pictureUploading"),
+            success: t("profile.pictureUpdated"),
             error: (error) => error.message,
         });
+        setPictureSource(sourceFile);
     };
 
     const deleteUsersImages = useCallback(async () => {
         if (pending) return;
-        if (!window.confirm(`Delete every image uploaded by ${user.username}?`))
+        if (!window.confirm(t("profile.deleteImagesConfirm", { name: user.username })))
             return;
         setPending(true);
         toast.promise(
@@ -96,15 +96,15 @@ const EditUser = ({ user, hasPermission }: Props) => {
                 { credentials: "include" },
             ).finally(() => setPending(false)),
             {
-                loading: "Loading...",
+                loading: t("common.loading"),
                 success: () => {
                     router.refresh();
-                    return `user images have been deleted`;
+                    return t("profile.deleteImages");
                 },
                 error: (error) => error.message,
             },
         );
-    }, [pending, router, user.id, user.username]);
+    }, [pending, router, t, user.id, user.username]);
 
     if (!hasPermission) return null;
 
@@ -118,30 +118,31 @@ const EditUser = ({ user, hasPermission }: Props) => {
                             onClick={() => setEditing(true)}
                             className="flex flex-row items-center gap-2 px-2 py-1 border hover:border-primary rounded-2xl"
                         >
-                            <Pencil size={16} /> Edit profile
+                            <Pencil size={16} /> {t("profile.edit")}
                         </button>
                     )}
                     {editing && (
                         <div className="flex flex-col gap-2 w-full max-w-sm">
-                            <label className="inline-flex items-center gap-2 px-2 py-1 border hover:border-primary rounded-md w-fit cursor-pointer">
-                                <Pencil size={16} /> Browse profile picture
-                                <input
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/gif"
-                                    disabled={pending}
-                                    onChange={onPictureSelected}
-                                    className="sr-only"
-                                />
-                            </label>
+                            <ImageSelector
+                                label={t("settings.background.browse")}
+                                editLabel={t("imageSelector.adjustSelected")}
+                                aspectRatio={1}
+                                currentFile={pictureSource}
+                                accept="image/png,image/jpeg,image/gif"
+                                outputType="image/jpeg"
+                                maxOutputDimension={1024}
+                                disabled={pending}
+                                onSelect={onPictureSelected}
+                            />
                             <input
-                                className="bg-transparent px-2 py-1 border rounded-md"
+                                className="field-fill px-2 py-1"
                                 value={username}
                                 onChange={(event) =>
                                     setUsername(
                                         sanitizeName(event.target.value),
                                     )
                                 }
-                                aria-label="Username"
+                                aria-label={t("profile.username")}
                             />
                             <div className="flex gap-2">
                                 <button
@@ -149,14 +150,14 @@ const EditUser = ({ user, hasPermission }: Props) => {
                                     disabled={pending}
                                     onClick={() =>
                                         void toast.promise(save(), {
-                                            loading: "Saving...",
-                                            success: "Profile updated",
+                                            loading: t("image.saving"),
+                                            success: t("profile.updated"),
                                             error: (error) => error.message,
                                         })
                                     }
                                     className="inline-flex items-center gap-1 px-2 py-1 border hover:border-primary rounded-md"
                                 >
-                                    <Save size={16} /> Save
+                                    <Save size={16} /> {t("common.save")}
                                 </button>
                                 <button
                                     type="button"
@@ -167,7 +168,7 @@ const EditUser = ({ user, hasPermission }: Props) => {
                                     }}
                                     className="inline-flex items-center gap-1 px-2 py-1 border rounded-md"
                                 >
-                                    <X size={16} /> Cancel
+                                    <X size={16} /> {t("common.cancel")}
                                 </button>
                             </div>
                             <button
@@ -177,7 +178,7 @@ const EditUser = ({ user, hasPermission }: Props) => {
                                 className="flex flex-row items-center gap-2 px-2 py-1 border hover:border-red-500 rounded-2xl hover:text-red-500"
                             >
                                 <Trash2 size={16} />
-                                <span>Delete all images</span>
+                                <span>{t("profile.deleteImages")}</span>
                             </button>
                         </div>
                     )}

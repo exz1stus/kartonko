@@ -20,6 +20,7 @@ var (
 	ErrDuplicateHash     = errors.New("hash already exists")
 	ErrAlreadyExists     = errors.New("image is already on this board")
 	ErrConflict          = errors.New("change can no longer be reverted")
+	ErrUploadRateLimited = errors.New("upload limit reached: 50 images per hour")
 )
 
 type ErrorResponse struct {
@@ -52,6 +53,9 @@ func RespondError(c *gin.Context, err error) {
 
 	case errors.Is(err, ErrAlreadyExists), errors.Is(err, ErrConflict):
 		status = http.StatusConflict
+
+	case errors.Is(err, ErrUploadRateLimited):
+		status = http.StatusTooManyRequests
 	}
 
 	c.JSON(status, ErrorResponse{Error: msg})

@@ -3,8 +3,10 @@
 import { useEffect } from "react";
 import { ListChecks } from "lucide-react";
 import { setActiveGalleryScope, useActiveGalleryScope, useGallerySelection } from "@/hooks/useGallerySelection";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 export default function GallerySelectionControls({ scope, images }: { scope: string; images: { id: number; user_id: number }[] }) {
+    const { t } = useTranslations();
     const imageIds = images.map((image) => image.id);
     const selectionMode = useGallerySelection(scope, (state) => state.selectionMode);
     const selectedCount = useGallerySelection(scope, (state) => state.selectedIds.length);
@@ -30,7 +32,7 @@ export default function GallerySelectionControls({ scope, images }: { scope: str
     }, [activeScope, endSelection, imageIds, scope, selectMany, selectionMode, setSelectionMode]);
     useEffect(() => () => resetSelection(), [resetSelection]);
 
-    return <button type="button" aria-pressed={selectionMode} onClick={() => { setActiveGalleryScope(scope); setSelectionMode(!selectionMode); }} className={`mr-4 inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${selectionMode ? "border-primary-0 bg-primary-0 text-surface-0" : "border-surface-30 hover:bg-surface-20"}`}>
-        <ListChecks size={18} />{selectionMode ? `Done${selectedCount ? ` · ${selectedCount}` : ""}` : "Select images"}
+    return <button type="button" aria-pressed={selectionMode} onClick={() => { setActiveGalleryScope(scope); setSelectionMode(!selectionMode); }} className={`mr-4 inline-flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${selectionMode ? "gallery-selection-toggle-selected" : "border-surface-30 hover:bg-surface-20"}`}>
+        <ListChecks size={18} />{selectionMode ? `${t("gallery.done")}${selectedCount ? ` · ${selectedCount}` : ""}` : t("gallery.selectImages")}
     </button>;
 }

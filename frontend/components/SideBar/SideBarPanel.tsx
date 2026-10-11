@@ -25,7 +25,7 @@ const SideBarPanel = ({ sidebar }: { sidebar: React.ReactNode }) => {
             maxSize={100}
             onCollapse={() => setOpen(false)}
             onExpand={() => setOpen(true)}
-            className="bg-surface-0/80 backdrop-filter backdrop-blur-md"
+            className="interface-chrome bg-surface-0/80 backdrop-filter backdrop-blur-md"
         >
             <Scrollbar>
                 <div className="flex justify-center h-full">{sidebar}</div>

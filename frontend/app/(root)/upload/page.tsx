@@ -16,15 +16,21 @@ import CaptchaButton from "@/components/UploadImage/CaptchaButton";
 import { useShallow } from "zustand/react/shallow";
 import ImageCarousel from "@/components/UploadImage/ImageCarousel";
 import { cn } from "@/lib/utils";
-import { ImageBatchUploadRequest, uploadImageBatch } from "@/lib/image/upload";
+import { ImageBatchUploadRequest, createUploadSession, uploadImageBatch } from "@/lib/image/upload";
+import ProgressBarToast from "@/components/ProgressBarToast";
+import { Progress } from "@/components/ui/progress";
 import { runUploadAction } from "@/lib/image/runUploadAction";
 import { uploadActionKey } from "@/lib/image/uploadIntent";
 import Loading from "@/components/Loading";
 import UploadBoardActions from "@/components/UploadImage/UploadBoardActions";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 const UploadPage = () => {
+    const { user } = useAuth();
+    const { t } = useTranslations();
     const {
-        removeFileAt,
+        removeItems,
         updateMetadata,
         items: storeImages,
         commonActions,
@@ -35,10 +41,12 @@ const UploadPage = () => {
 
     const [imageIndex, setImageIndex] = useState(0);
     const [imageUrl, setImageUrl] = useState("");
+    const selectedFile = storeImages[imageIndex]?.file;
 
     const prevLengthRef = useRef(storeImages.length);
 
     const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<{ value: number; label: string } | null>(null);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
     const [captchaToken, setCaptchaToken] = useState<string | null>();
@@ -70,70 +78,58 @@ const UploadPage = () => {
     const handleDroppedFiles = usePreUpload();
 
     const removeCurrentImage = useCallback(() => {
-        if (storeImages.length === 0) return;
-        if (imageIndex > 0 && storeImages.length - 1 === imageIndex) {
-            setImageIndex((prev) => prev - 1);
-        }
+        const item = storeImages[imageIndex];
+        if (!item) return;
+        setImageIndex(Math.max(0, Math.min(imageIndex, storeImages.length - 2)));
+        setSelectedIndices([]);
+        removeItems([item.id]);
+    }, [imageIndex, removeItems, storeImages]);
 
-        removeFileAt(imageIndex);
-    }, [imageIndex, removeFileAt, storeImages.length]);
+    const removeSelectedImages = useCallback(() => {
+        const ids = selectedIndices
+            .map((index) => storeImages[index]?.id)
+            .filter((id): id is string => Boolean(id));
+        if (ids.length === 0) return;
 
-    const removeImageAtIndex = useCallback(
-        (index: number) => {
-            if (storeImages.length === 0) return;
-            if (imageIndex === index) {
-                removeCurrentImage();
-                return;
-            }
-            removeFileAt(index);
-        },
-        [storeImages.length, imageIndex, removeFileAt, removeCurrentImage],
-    );
-
-    const selectImageAtIndex = useCallback(
-        (index: number) => {
-            const image = storeImages?.[index];
-
-            if (!image) {
-                setImageUrl("");
-                return;
-            }
-
-            if (objectUrlCache.current.has(image.file)) {
-                setImageUrl(objectUrlCache.current.get(image.file)!);
-                return;
-            }
-
-            const url = URL.createObjectURL(image.file);
-            objectUrlCache.current.set(image.file, url);
-            setImageUrl(url);
-        },
-        [storeImages],
-    );
+        const removed = new Set(ids);
+        const remaining = storeImages.filter((item) => !removed.has(item.id));
+        const currentId = storeImages[imageIndex]?.id;
+        const retainedIndex = remaining.findIndex((item) => item.id === currentId);
+        setImageIndex(retainedIndex >= 0 ? retainedIndex : Math.max(0, Math.min(imageIndex, remaining.length - 1)));
+        setSelectedIndices([]);
+        removeItems(ids);
+    }, [imageIndex, removeItems, selectedIndices, storeImages]);
 
     useEffect(() => {
+        const urls = objectUrlCache.current;
         return () => {
-            objectUrlCache.current.forEach((url) => URL.revokeObjectURL(url));
-            objectUrlCache.current.clear();
+            urls.forEach((url) => URL.revokeObjectURL(url));
+            urls.clear();
         };
     }, []);
 
     useEffect(() => {
         const prevLength = prevLengthRef.current;
-        prevLengthRef.current = storeImages.length;
-
-        if (storeImages.length === 0) return;
-
-        if (storeImages.length > prevLength) {
-            setImageIndex(storeImages.length - 1);
-        } else {
-            setImageIndex((prev) => Math.min(prev, storeImages.length - 1));
-        }
-    }, [storeImages]);
+        const nextLength = storeImages.length;
+        if (nextLength === prevLength) return;
+        prevLengthRef.current = nextLength;
+        setImageIndex((prev) =>
+            nextLength === 0 ? 0 : nextLength > prevLength ? nextLength - 1 : Math.min(prev, nextLength - 1),
+        );
+    }, [storeImages.length]);
 
     useEffect(() => {
-        selectImageAtIndex(imageIndex);
-    }, [storeImages, imageIndex, selectImageAtIndex]);
+        if (!selectedFile) {
+            setImageUrl("");
+            return;
+        }
+        let url = objectUrlCache.current.get(selectedFile);
+        if (!url) {
+            url = URL.createObjectURL(selectedFile);
+            objectUrlCache.current.set(selectedFile, url);
+        }
+        setImageUrl(url);
+    }, [selectedFile]);
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
@@ -143,18 +139,9 @@ const UploadPage = () => {
             ) {
                 return;
             }
-            if (e.key === "Delete") {
-                if (selectedIndices.length === 0) return;
-
-                const sortedIndices = [...selectedIndices].sort(
-                    (a, b) => b - a,
-                );
-
-                sortedIndices.forEach((index) => {
-                    removeImageAtIndex(index);
-                });
-
-                setSelectedIndices([]);
+            if (e.key === "Delete" && !e.repeat && selectedIndices.length > 0) {
+                e.preventDefault();
+                removeSelectedImages();
             }
         };
 
@@ -162,7 +149,7 @@ const UploadPage = () => {
         return () => {
             document.removeEventListener("keydown", onKeyDown);
         };
-    }, [selectedIndices, removeImageAtIndex]);
+    }, [selectedIndices.length, removeSelectedImages]);
 
     const browseImages = (
         <label className="inline-flex items-center gap-2 px-2 py-1 border border-surface-20 hover:border-surface-30 rounded-3xl cursor-pointer glass">
@@ -190,49 +177,91 @@ const UploadPage = () => {
     const onUpload = async () => {
         if (loading || storeImages.length === 0) return;
         setLoading(true);
-        const toastId = toast.loading("Processing images…");
+        const toastId = toast.loading(t("upload.prepare"));
         try {
-            const pending = useUploadStore
+            const allPending = useUploadStore
                 .getState()
                 .items.filter((item) => !item.uploadedImageId);
+            const pending = user?.privilege === "Moderator" ? allPending : allPending.slice(0, 50);
+            for (const item of allPending.slice(pending.length))
+                useUploadStore.getState().setItemError(item.id, t("upload.standardLimit"));
             if (pending.length > 0) {
-                const request: ImageBatchUploadRequest = {
-                    data: pending.map((item) => ({
-                        client_id: item.id,
-                        name: item.name,
-                        tags: item.tags,
-                        newTags: item.newTags,
-                    })),
-                    common_tags: [],
+                const session = await createUploadSession(captchaToken ?? "");
+                const totalBytes = pending.reduce((sum, item) => sum + item.file.size, 0);
+                let sentBytes = 0;
+                let processed = 0;
+                let lastPercent = -1;
+                let lastLabel = "";
+                const showProgress = (value: number, label: string) => {
+                    const percent = Math.min(100, Math.round(value));
+                    if (percent !== lastPercent || label !== lastLabel) {
+                        setUploadProgress({ value: percent, label });
+                        toast.loading(label, {
+                            id: toastId,
+                            description: <ProgressBarToast value={percent} currentName={t("upload.processed", { done: processed, total: pending.length })} />,
+                        });
+                        lastPercent = percent;
+                        lastLabel = label;
+                    }
                 };
-                const response = await uploadImageBatch(
-                    request,
-                    pending.map((item) => item.file),
-                    captchaToken ?? "",
-                );
-                if (
-                    !response.results ||
-                    response.results.length !== pending.length
-                ) {
-                    throw new Error(
-                        "Upload server did not return per-image results",
-                    );
+                const maxChunkBytes = 32 * 1024 * 1024;
+                const maxChunkFiles = 12;
+                let quotaReached = false;
+                for (let start = 0; start < pending.length && !quotaReached;) {
+                    const chunk: UploadItem[] = [];
+                    let chunkBytes = 0;
+                    while (start < pending.length && chunk.length < maxChunkFiles &&
+                        (chunk.length === 0 || chunkBytes + pending[start].file.size <= maxChunkBytes)) {
+                        const item = pending[start++];
+                        chunk.push(item);
+                        chunkBytes += item.file.size;
+                    }
+                    const request: ImageBatchUploadRequest = {
+                        data: chunk.map((item) => ({
+                            client_id: item.id,
+                            name: item.name,
+                            tags: item.tags,
+                            newTags: item.newTags,
+                        })),
+                        common_tags: [],
+                    };
+                    showProgress(totalBytes ? sentBytes / totalBytes * 100 : 0, t("upload.uploading", { done: processed, total: pending.length }));
+                    try {
+                        const response = await uploadImageBatch(
+                            request,
+                            chunk.map((item) => item.file),
+                            session,
+                            (loaded, total) => showProgress(
+                                totalBytes ? (sentBytes + chunkBytes * loaded / total) / totalBytes * 100 : 100,
+                                loaded === total ? t("upload.processing", { count: chunk.length }) : t("upload.uploading", { done: processed, total: pending.length }),
+                            ),
+                        );
+                        if (!response.results || response.results.length !== chunk.length)
+                            throw new Error("Upload server did not return per-image results");
+                        response.results.forEach((result) => {
+                            if (result.image)
+                                useUploadStore.getState().markUploaded(result.client_id, result.image.id);
+                            else
+                                useUploadStore.getState().setItemError(result.client_id, result.error || t("upload.failed"));
+                        });
+                        quotaReached = response.results.some((result) => result.error?.includes("upload limit reached"));
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : t("upload.failed");
+                        chunk.forEach((item) => useUploadStore.getState().setItemError(item.id, message));
+                    }
+                    sentBytes += chunkBytes;
+                    processed += chunk.length;
+                    showProgress(totalBytes ? sentBytes / totalBytes * 100 : 100, t("upload.processed", { done: processed, total: pending.length }));
+                    if (quotaReached)
+                        for (const item of pending.slice(start))
+                            useUploadStore.getState().setItemError(item.id, t("upload.limitReached"));
                 }
-                response.results.forEach((result) => {
-                    if (result.image)
-                        useUploadStore
-                            .getState()
-                            .markUploaded(result.client_id, result.image.id);
-                    else
-                        useUploadStore
-                            .getState()
-                            .setItemError(
-                                result.client_id,
-                                result.error || "Upload failed",
-                            );
-                });
             }
 
+            setUploadProgress({ value: 100, label: t("upload.finishing") });
+            toast.loading(t("upload.finishing"), { id: toastId });
+
+            const completedIds: string[] = [];
             for (const item of useUploadStore.getState().items) {
                 if (!item.uploadedImageId) continue;
                 for (const action of item.actions) {
@@ -271,25 +300,30 @@ const UploadPage = () => {
                         ),
                     )
                 ) {
-                    useUploadStore.getState().removeItem(item.id);
+                    completedIds.push(item.id);
                 }
+            }
+            if (completedIds.length) {
+                useUploadStore.getState().removeItems(completedIds);
+                setSelectedIndices([]);
             }
             const remaining = useUploadStore.getState().items.length;
             if (remaining)
-                toast.warning(`${remaining} images need attention`, {
+                toast.warning(t("upload.attention", { count: remaining }), {
                     id: toastId,
                 });
             else
-                toast.success("Images and follow-up actions complete", {
+                toast.success(pending.length > 0 ? t("upload.success") : t("upload.boardActionsComplete"), {
                     id: toastId,
                 });
         } catch (error) {
             toast.error(
-                error instanceof Error ? error.message : "Upload failed",
+                error instanceof Error ? error.message : t("upload.failed"),
                 { id: toastId },
             );
         } finally {
             setLoading(false);
+            setUploadProgress(null);
             setCaptchaToken(null);
             setCaptchaResetKey((x) => x + 1);
         }
@@ -308,16 +342,10 @@ const UploadPage = () => {
         />
     );
 
-    const multipleImagesText =
-        storeImages.length > 1 ? ` ${storeImages.length} images` : "";
-    const addNewTagsText =
-        globalNewTags && globalNewTags.length > 0
-            ? ` and create ${globalNewTags.length} new tags`
-            : "";
-    const uploadBtnText =
-        multipleImagesText || addNewTagsText
-            ? `${multipleImagesText}${addNewTagsText}`
-            : " Image";
+    const uploadBtnText = [
+        storeImages.length > 1 ? t("upload.imagesCount", { count: storeImages.length }) : t("upload.image"),
+        globalNewTags?.length ? t("upload.newTagsCount", { count: globalNewTags.length }) : "",
+    ].filter(Boolean).join("");
 
     const formButtons =
         imageIndex === storeImages.length - 1 ? (
@@ -333,7 +361,7 @@ const UploadPage = () => {
                         onVerifySuccess={setCaptchaToken}
                         resetKey={captchaResetKey}
                     >
-                        {loading ? "Uploading..." : `Upload ${uploadBtnText}`}
+                        {loading ? t("upload.uploadingButton") : t("upload.button", { details: uploadBtnText })}
                     </CaptchaButton>
                 ) : (
                     <button
@@ -377,7 +405,7 @@ const UploadPage = () => {
                                     <Image
                                         src={imageUrl}
                                         alt={storeImages[imageIndex]?.name}
-                                        className="rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none w-full h-full object-contain"
+                                        className="loaded-content rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none w-full h-full object-contain"
                                         draggable={false}
                                         width={1000}
                                         height={1000}
@@ -428,7 +456,7 @@ const UploadPage = () => {
                                     </section>
 
                                     <UploadImageForm
-                                        key={imageIndex}
+                                        key={storeImages[imageIndex]?.id}
                                         item={storeImages[imageIndex]}
                                         onChange={onFormChange}
                                     />
@@ -452,6 +480,8 @@ const UploadPage = () => {
                                     <div className="flex justify-center items-center gap-4 mt-auto pt-6 border-surface-20 border-t w-full">
                                         {formButtons}
                                     </div>
+                                    {user?.privilege !== "Moderator" && <p className="text-center text-xs text-muted-foreground">Standard accounts can upload 50 images per hour.</p>}
+                                    {uploadProgress && <div role="status" className="space-y-2 text-sm"><span>{uploadProgress.label} {uploadProgress.value}%</span><Progress value={uploadProgress.value} /></div>}
                                 </div>
                                 {storeImages.length > 1 && (
                                     <ImageCarousel
@@ -460,6 +490,7 @@ const UploadPage = () => {
                                         onIndexChange={setImageIndex}
                                         selectedIndices={selectedIndices}
                                         setSelectedIndices={setSelectedIndices}
+                                        onRemoveSelected={removeSelectedImages}
                                         getFileUrl={getFileUrl}
                                     />
                                 )}

@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 	apperrors "server/internal/errors"
 	"server/internal/log"
+	"server/internal/processing"
 	"server/internal/tag"
 	"server/internal/user"
 )
@@ -24,7 +25,7 @@ func TestRevertTagChanges(t *testing.T) {
 		t.Run(action, func(t *testing.T) {
 			db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 			require.NoError(t, err)
-			require.NoError(t, db.AutoMigrate(&user.User{}, &tag.Tag{}, &log.AuditEntry{}))
+			require.NoError(t, db.AutoMigrate(&user.User{}, &tag.Tag{}, &log.AuditEntry{}, &log.AuditGroup{}))
 			actor := user.User{Username: "moderator", Privilege: user.Moderator}
 			require.NoError(t, db.Create(&actor).Error)
 			entryTag := tag.Tag{Name: "original", UserID: actor.ID}
@@ -73,7 +74,7 @@ func TestRevertTagChanges(t *testing.T) {
 func TestRevertRejectsChangedTag(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&user.User{}, &tag.Tag{}, &log.AuditEntry{}))
+	require.NoError(t, db.AutoMigrate(&user.User{}, &tag.Tag{}, &log.AuditEntry{}, &log.AuditGroup{}))
 	actor := user.User{Username: "moderator"}
 	require.NoError(t, db.Create(&actor).Error)
 	entryTag := tag.Tag{Name: "newer", UserID: actor.ID}
@@ -94,7 +95,7 @@ func TestRevertBoardMembership(t *testing.T) {
 		t.Run(action, func(t *testing.T) {
 			db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 			require.NoError(t, err)
-			require.NoError(t, db.AutoMigrate(&user.User{}, &log.AuditEntry{}))
+			require.NoError(t, db.AutoMigrate(&user.User{}, &log.AuditEntry{}, &log.AuditGroup{}))
 			for _, statement := range []string{
 				"CREATE TABLE boards (id integer primary key, deleted_at datetime)",
 				"CREATE TABLE image_metadata (id integer primary key, deleted_at datetime)",
@@ -147,7 +148,7 @@ func (c *imageEmbeddingCleaner) Delete(_ context.Context, id uint) error {
 func TestRevertImageUpload(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&user.User{}, &log.AuditEntry{}))
+	require.NoError(t, db.AutoMigrate(&user.User{}, &log.AuditEntry{}, &log.AuditGroup{}, &processing.Job{}))
 	require.NoError(t, db.Exec("CREATE TABLE image_metadata (id integer primary key, filename text, hash text, format text, deleted_at datetime)").Error)
 	require.NoError(t, db.Exec("INSERT INTO image_metadata (id, filename, hash, format) VALUES (7, 'photo.jpg', 'hash-value', 'jpeg')").Error)
 	actor := user.User{Username: "moderator", Privilege: user.Moderator}
@@ -174,7 +175,7 @@ func TestRevertImageUpload(t *testing.T) {
 func TestRevertImageUploadAfterRename(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&user.User{}, &log.AuditEntry{}))
+	require.NoError(t, db.AutoMigrate(&user.User{}, &log.AuditEntry{}, &log.AuditGroup{}, &processing.Job{}))
 	require.NoError(t, db.Exec("CREATE TABLE image_metadata (id integer primary key, filename text, hash text, format text, deleted_at datetime)").Error)
 	require.NoError(t, db.Exec("INSERT INTO image_metadata (id, filename, hash, format) VALUES (7, 'renamed.jpg', 'hash-value', 'jpeg')").Error)
 	actor := user.User{Username: "moderator"}

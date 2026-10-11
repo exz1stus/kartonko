@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 import type {
+  AuditGroup,
   AuthRequestBody,
   BoardItemPostRequest,
   BoardItemResponse,
@@ -15,6 +16,7 @@ import type {
   DeleteImagesByQueryParams,
   EntryResponse,
   GetAuditLogEntriesParams,
+  GetAuditLogGroupsParams,
   GetGoogleCallbackParams,
   GetGoogleLoginParams,
   GetHealthCheck200,
@@ -973,6 +975,61 @@ export const getGetAuditLogEntriesUrl = (params?: GetAuditLogEntriesParams,) => 
 export const getAuditLogEntries = async (params?: GetAuditLogEntriesParams, options?: Parameters<typeof clientMutator>[1]): Promise<EntryResponse[]> => {
 
   return clientMutator<EntryResponse[]>(getGetAuditLogEntriesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetAuditLogGroupsUrl = (params?: GetAuditLogGroupsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/log/groups?${stringifiedParams}` : `/log/groups`
+}
+
+/**
+ * @summary Gets grouped audit log summaries
+ */
+export const getAuditLogGroups = async (params?: GetAuditLogGroupsParams, options?: Parameters<typeof clientMutator>[1]): Promise<AuditGroup[]> => {
+
+  return clientMutator<AuditGroup[]>(getGetAuditLogGroupsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getGetAuditLogGroupEntriesUrl = (id: number,) => {
+
+
+
+
+  return `/log/groups/${id}`
+}
+
+/**
+ * @summary Gets actions in an audit log group
+ */
+export const getAuditLogGroupEntries = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<EntryResponse[]> => {
+
+  return clientMutator<EntryResponse[]>(getGetAuditLogGroupEntriesUrl(id),
   {
     ...options,
     method: 'GET'

@@ -7,6 +7,7 @@ import (
 	"server/internal/board"
 	"server/internal/image"
 	"server/internal/log"
+	"server/internal/processing"
 	"server/internal/tag"
 	"server/internal/user"
 
@@ -26,14 +27,19 @@ func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 
 	err = db.AutoMigrate(
 		&image.ImageMetadata{},
+		&processing.Job{},
 		&tag.Tag{},
 		&user.User{},
 		&log.AuditEntry{},
+		&log.AuditGroup{},
 		&board.Board{},
 		&board.BoardItem{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
+	}
+	if err := log.BackfillGroups(db); err != nil {
+		return nil, fmt.Errorf("failed to group existing audit entries: %w", err)
 	}
 	return db, nil
 }

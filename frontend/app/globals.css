@@ -12,6 +12,13 @@
 /* 1. INITIALIZE SYSTEM TOKENS */
 :root {
     font-family: Arial, Helvetica, sans-serif;
+    --app-accent-color: #c49be9;
+    --app-accent-foreground: #241d2b;
+    --control-surface: #171717;
+    --control-foreground: #f5f1fa;
+    --control-placeholder: #bdb5c7;
+    --control-border: #ffffff38;
+    --app-content-opacity: 78%;
 
     /* Map your default UI structure to your surface tokens */
     --background: var(--clr-surface-a0);
@@ -72,12 +79,12 @@
         --clr-dark-a0: #000000;
         --clr-light-a0: #ffffff;
 
-        --clr-primary-a0: #4b0082;
-        --clr-primary-a10: #5a1a93;
-        --clr-primary-a20: #6a2fbf;
-        --clr-primary-a30: #7b45d1;
-        --clr-primary-a40: #8c5ce3;
-        --clr-primary-a50: #9d73f5;
+        --clr-primary-a0: #7650a7;
+        --clr-primary-a10: #875fb6;
+        --clr-primary-a20: #986fc5;
+        --clr-primary-a30: #aa83d2;
+        --clr-primary-a40: #bea0df;
+        --clr-primary-a50: #d2bdea;
 
         --clr-surface-a0: #ffffff;
         --clr-surface-a10: #f5f5f5;
@@ -147,9 +154,179 @@
 
 /* 4. UTILITIES AND CORE OVERRIDES */
 @utility glass {
+    background-color: color-mix(in srgb, var(--background) var(--app-surface-opacity, 88%), transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
     backdrop-filter: blur(
         12px
     );
+}
+
+.content-card {
+    background-color: var(--content-card-color, var(--clr-surface-a0));
+    opacity: var(--app-content-opacity);
+}
+
+.content-card-muted {
+    --content-card-color: var(--clr-surface-a10);
+}
+
+.content-card-strong {
+    --content-card-color: var(--clr-surface-a20);
+}
+
+.loaded-content {
+    opacity: var(--app-content-opacity);
+}
+
+.field-fill {
+    background-color: var(--control-surface);
+    color: var(--control-foreground);
+    opacity: var(--app-surface-opacity, 88%);
+    border: 1px solid var(--control-border);
+    border-radius: 0.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.field-fill::placeholder,
+.control-shell :is(input, textarea, select)::placeholder {
+    color: var(--control-placeholder);
+    opacity: 0.8;
+}
+
+.field-fill:focus-visible,
+.control-shell:focus-within {
+    outline: 1px solid var(--clr-primary-a0);
+    outline-offset: 0;
+    border-color: var(--clr-primary-a0);
+}
+
+.control-shell {
+    background-color: var(--control-surface);
+    border: 1px solid var(--control-border);
+    border-radius: 0.5rem;
+    color: var(--control-foreground);
+    opacity: var(--app-surface-opacity, 88%);
+    backdrop-filter: blur(10px);
+    transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.control-shell:focus-within {
+    border-color: var(--clr-primary-a0);
+}
+
+.control-shell :is(input, textarea, select) {
+    background: transparent;
+    color: inherit;
+    opacity: 1;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+}
+
+.control-shell :is(input, textarea, select):focus-visible {
+    outline: none;
+}
+
+.control-shell input[type="search"]::-webkit-search-cancel-button {
+    display: none;
+}
+
+.control-shell .field-fill {
+    background: transparent;
+    color: inherit;
+    opacity: 1;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.control-suggestions {
+    background-color: var(--control-surface);
+    color: var(--control-foreground);
+    border: 1px solid var(--control-border);
+    opacity: var(--app-surface-opacity, 88%);
+    backdrop-filter: blur(10px);
+}
+
+.control-suggestions li:hover {
+    background-color: color-mix(in srgb, var(--control-foreground) 12%, transparent);
+}
+
+.control-tag {
+    background-color: color-mix(in srgb, var(--clr-primary-a0) 18%, var(--control-surface));
+    color: var(--control-foreground);
+}
+
+.control-clear:hover {
+    background-color: color-mix(in srgb, var(--control-foreground) 12%, transparent);
+    color: var(--control-foreground);
+}
+
+.control-shell button {
+    opacity: 1;
+}
+
+.gallery-selection-outline {
+    outline: 2px solid color-mix(in srgb, var(--app-accent-color) 78%, transparent);
+    outline-offset: 1px;
+}
+
+.gallery-selection-outline-mode {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent-color) 20%, transparent);
+}
+
+.gallery-selection-toggle-selected {
+    border-color: var(--app-accent-color);
+    background-color: var(--app-accent-color);
+    color: var(--app-accent-foreground);
+}
+
+.gallery-selection-marquee {
+    border-color: var(--app-accent-color);
+    background-color: color-mix(in srgb, var(--app-accent-color) 15%, transparent);
+}
+
+.filter-chip {
+    background-color: var(--control-surface);
+    border: 1px solid var(--control-border);
+    border-radius: 9999px;
+    color: var(--control-foreground);
+    opacity: var(--app-surface-opacity, 88%);
+    backdrop-filter: blur(8px);
+}
+
+.filter-chip-active {
+    background-color: color-mix(in srgb, var(--clr-primary-a0) 18%, var(--control-surface));
+    border-color: var(--clr-primary-a0);
+    color: var(--control-foreground);
+}
+
+[class~="bg-surface-0/70"],
+[class~="bg-surface-0/80"],
+[class~="bg-surface-0/90"],
+[class~="bg-surface-0/95"] {
+    background-color: color-mix(in srgb, var(--clr-surface-a0) var(--app-surface-opacity, 88%), transparent);
+}
+
+.interface-chrome {
+    background-color: var(--background);
+    opacity: var(--app-surface-opacity, 88%);
+}
+
+.interface-opacity-group {
+    position: relative;
+    z-index: 20;
+    opacity: var(--app-surface-opacity, 88%);
+}
+
+.interface-chrome :is(a, button, input, select, textarea, .control-shell, .field-fill, .control-suggestions, .filter-chip),
+.interface-opacity-group :is(a, button, input, select, textarea, .control-shell, .field-fill, .control-suggestions, .filter-chip) {
+    opacity: 1;
+}
+
+.content-card a {
+    opacity: 1;
 }
 
 @keyframes shake {
@@ -172,27 +349,34 @@
 }
 
 .bg-image {
-    --bg-image-opacity: 0.5;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-    background-size: 100% 100%;
-    position: relative; /* Added because ::after requires parent context positioning */
+    position: relative;
+    isolation: isolate;
 }
 
-.bg-image::after {
+.bg-image::before {
     content: "";
-    position: absolute;
+    position: fixed;
     z-index: -1;
     inset: 0;
-    opacity: var(--bg-image-opacity);
-    background-color: var(--color-surface-10);
+    background-image: var(--app-background-image, none);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: var(--app-background-size, cover);
+    opacity: var(--app-background-opacity, 0.25);
+    pointer-events: none;
 }
 
 /* Global Elements styling safely wrapped */
 @layer base {
     button {
         cursor: pointer;
+    }
+    a,
+    button,
+    select,
+    textarea,
+    input {
+        opacity: var(--app-surface-opacity, 88%);
     }
     * {
         border-color: var(--border);
@@ -202,3 +386,83 @@
         color: var(--foreground);
     }
 }
+
+/* Explicit theme palettes keep the appearance setting independent of the OS preference. */
+:root:not(.dark) {
+    color-scheme: light;
+    --control-surface: color-mix(in srgb, color-mix(in srgb, var(--clr-surface-a10) 40%, var(--clr-surface-tonal-a10)) 92%, var(--clr-primary-a0));
+    --control-foreground: var(--foreground);
+    --control-placeholder: color-mix(in srgb, var(--foreground) 58%, var(--control-surface));
+    --control-border: color-mix(in srgb, var(--clr-primary-a0) 30%, var(--control-surface));
+    --foreground: #241d2b;
+    --card-foreground: #241d2b;
+    --popover-foreground: #241d2b;
+    --muted-foreground: #5b5561;
+    --accent-foreground: #241d2b;
+    --clr-dark-a0: #000000;
+    --clr-light-a0: #ffffff;
+    --clr-primary-a0: #7650a7;
+    --clr-primary-a10: #875fb6;
+    --clr-primary-a20: #986fc5;
+    --clr-primary-a30: #aa83d2;
+    --clr-primary-a40: #bea0df;
+    --clr-primary-a50: #d2bdea;
+    --clr-surface-a0: #ffffff;
+    --clr-surface-a10: #f5f5f5;
+    --clr-surface-a20: #ebebeb;
+    --clr-surface-a30: #e0e0e0;
+    --clr-surface-a40: #d6d6d6;
+    --clr-surface-a50: #cccccc;
+    --clr-surface-tonal-a0: #f0f0f0;
+    --clr-surface-tonal-a10: #e0e0e0;
+    --clr-surface-tonal-a20: #d0d0d0;
+    --clr-surface-tonal-a30: #c0c0c0;
+    --clr-surface-tonal-a40: #b0b0b0;
+    --clr-surface-tonal-a50: #a0a0a0;
+}
+
+:root.dark {
+    color-scheme: dark;
+    --control-surface: color-mix(in srgb, color-mix(in srgb, var(--clr-surface-a10) 28%, var(--clr-surface-a0)) 92%, var(--clr-primary-a0));
+    --control-foreground: var(--foreground);
+    --control-placeholder: color-mix(in srgb, var(--foreground) 58%, var(--control-surface));
+    --control-border: color-mix(in srgb, var(--clr-primary-a0) 30%, var(--control-surface));
+    --foreground: #f4eff7;
+    --card-foreground: #f4eff7;
+    --popover-foreground: #f4eff7;
+    --muted-foreground: #c0bac6;
+    --accent-foreground: #f4eff7;
+    --clr-dark-a0: #000000;
+    --clr-light-a0: #ffffff;
+    --clr-primary-a0: #f0e3fc;
+    --clr-primary-a10: #f2e6fc;
+    --clr-primary-a20: #f3e9fd;
+    --clr-primary-a30: #f5ecfd;
+    --clr-primary-a40: #f7effd;
+    --clr-primary-a50: #f8f3fe;
+    --clr-surface-a0: #141217;
+    --clr-surface-a10: #29282c;
+    --clr-surface-a20: #403f43;
+    --clr-surface-a30: #58575b;
+    --clr-surface-a40: #727174;
+    --clr-surface-a50: #8c8b8e;
+    --clr-surface-tonal-a0: #26232a;
+    --clr-surface-tonal-a10: #3a383e;
+    --clr-surface-tonal-a20: #504d53;
+    --clr-surface-tonal-a30: #67646a;
+    --clr-surface-tonal-a40: #7e7c81;
+    --clr-surface-tonal-a50: #979599;
+}
+
+:root[data-accent="blue"] { --clr-primary-a0: #17559c; --clr-primary-a10: #2468b6; --clr-primary-a20: #2878d0; --clr-primary-a30: #438fe0; --clr-primary-a40: #6ba8e8; --clr-primary-a50: #9ac5f1; }
+:root[data-accent="green"] { --clr-primary-a0: #116342; --clr-primary-a10: #14764e; --clr-primary-a20: #16845b; --clr-primary-a30: #2c9a70; --clr-primary-a40: #5eb38e; --clr-primary-a50: #95d0b3; }
+:root[data-accent="rose"] { --clr-primary-a0: #9e244d; --clr-primary-a10: #bd315f; --clr-primary-a20: #d44772; --clr-primary-a30: #e26088; --clr-primary-a40: #ed8aa7; --clr-primary-a50: #f5b5c7; }
+:root[data-accent="amber"] { --clr-primary-a0: #80500c; --clr-primary-a10: #9b5c09; --clr-primary-a20: #b66a0a; --clr-primary-a30: #cc8119; --clr-primary-a40: #dfa044; --clr-primary-a50: #edc17c; }
+:root.dark[data-accent="purple"] { --clr-primary-a0: #f0e3fc; --clr-primary-a10: #f2e6fc; --clr-primary-a20: #f3e9fd; --clr-primary-a30: #c49be9; --clr-primary-a40: #d7b8f0; --clr-primary-a50: #e9d8f7; }
+:root.dark[data-accent="blue"] { --clr-primary-a0: #d8eaff; --clr-primary-a10: #c5e0ff; --clr-primary-a20: #a9d0ff; --clr-primary-a30: #72b1f4; --clr-primary-a40: #9bc8f7; --clr-primary-a50: #c2defa; }
+:root.dark[data-accent="green"] { --clr-primary-a0: #d4f4e5; --clr-primary-a10: #c0edd8; --clr-primary-a20: #a1e0c2; --clr-primary-a30: #6dc99d; --clr-primary-a40: #98d9b8; --clr-primary-a50: #c1ead4; }
+:root.dark[data-accent="rose"] { --clr-primary-a0: #ffe0e9; --clr-primary-a10: #ffd1de; --clr-primary-a20: #ffb9cd; --clr-primary-a30: #f18aaa; --clr-primary-a40: #f5adc1; --clr-primary-a50: #fad0dd; }
+:root.dark[data-accent="amber"] { --clr-primary-a0: #fff0d1; --clr-primary-a10: #ffe5b4; --clr-primary-a20: #ffd88f; --clr-primary-a30: #edb74f; --clr-primary-a40: #f3cb7c; --clr-primary-a50: #f8dfa9; }
+:root[data-accent="custom"] { --clr-primary-a0: var(--app-accent-color); --clr-primary-a10: color-mix(in srgb, var(--app-accent-color) 85%, white); --clr-primary-a20: color-mix(in srgb, var(--app-accent-color) 70%, white); --clr-primary-a30: color-mix(in srgb, var(--app-accent-color) 55%, white); --clr-primary-a40: color-mix(in srgb, var(--app-accent-color) 40%, white); --clr-primary-a50: color-mix(in srgb, var(--app-accent-color) 25%, white); }
+:root:not(.dark)[data-accent="custom"] { --primary-foreground: var(--app-accent-foreground); }
+:root.dark[data-accent="custom"] { --clr-primary-a0: color-mix(in srgb, var(--app-accent-color) 55%, white); --clr-primary-a10: color-mix(in srgb, var(--app-accent-color) 45%, white); --clr-primary-a20: color-mix(in srgb, var(--app-accent-color) 35%, white); --clr-primary-a30: color-mix(in srgb, var(--app-accent-color) 70%, white); --clr-primary-a40: color-mix(in srgb, var(--app-accent-color) 55%, white); --clr-primary-a50: color-mix(in srgb, var(--app-accent-color) 40%, white); }

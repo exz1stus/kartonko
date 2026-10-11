@@ -12,7 +12,7 @@ export async function assertCaptchaFromRequest(
 
     const ip = headers.get("x-forwarded-for") ?? headers.get("x-real-ip") ?? "";
 
-    if (!verifyTurnstile(token, ip))
+    if (!(await verifyTurnstile(token, ip)))
         throw new ApiError(400, "Invalid captcha token");
 }
 

@@ -1,32 +1,12 @@
-import Dropdown from "@/components/template/Dropdown";
 import { getLoggedUser } from "@/lib/user/user.server";
-import Link from "next/link";
+import SidebarLinks from "@/components/SideBar/SidebarLinks";
 
 const SideBar: React.FC = async () => {
     const user = await getLoggedUser();
 
-    const authed =
-        user !== null ? (
-            <>
-                <Link href={`/user/${user?.username}`}>Profile</Link>
-                <Link href="/upload">Upload</Link>
-            </>
-        ) : null;
-
-    const moderator =
-        user?.privilege === "Moderator" ? (
-            <Dropdown open={true}>
-                <Link href="/log">Log</Link>
-            </Dropdown>
-        ) : null;
-
     return (
         <aside className="flex portrait:flex-row landscape:flex-col portrait:flex-wrap portrait:justify-center items-center portrait:gap-2 portrait:px-2 landscape:py-2 w-full h-full">
-            <Link href="/">Gallery</Link>
-            <Link href="/boards">Boards</Link>
-            <Link href="/tags">Tags</Link>
-            {authed}
-            {moderator}
+            <SidebarLinks username={user?.username} authenticated={user !== null} moderator={user?.privilege === "Moderator"} />
         </aside>
     );
 };

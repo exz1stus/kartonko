@@ -220,10 +220,18 @@ func (h *httpEmbeddingClient) EmbedText(ctx context.Context, text string) (*Embe
 }
 
 func NewHTTPEmbeddingClient() EmbeddingsClient {
+	return NewHTTPEmbeddingClientWithTimeout(30 * time.Second)
+}
+
+func NewHTTPEmbeddingClientWithTimeout(timeout time.Duration) EmbeddingsClient {
+	baseURL := os.Getenv("EMBEDDINGS_URL")
+	if baseURL == "" {
+		baseURL = fmt.Sprintf("http://embeddings:%s/api/v1", os.Getenv("EMBEDDINGS_PORT"))
+	}
 	return &httpEmbeddingClient{
-		baseURL: fmt.Sprintf("http://embeddings:%s/api/v1", os.Getenv("EMBEDDINGS_PORT")),
+		baseURL: baseURL,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: timeout,
 		},
 	}
 }

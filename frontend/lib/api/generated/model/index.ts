@@ -6,7 +6,9 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './auditActionSummary';
 export * from './auditActor';
+export * from './auditGroup';
 export * from './authRequest';
 export * from './authRequestBody';
 export * from './boardItemPostRequest';
@@ -20,6 +22,7 @@ export * from './entryResponse';
 export * from './entryResponseData';
 export * from './errorResponse';
 export * from './getAuditLogEntriesParams';
+export * from './getAuditLogGroupsParams';
 export * from './getBoardIdImageParams';
 export * from './getBoardParams';
 export * from './getGoogleCallbackParams';

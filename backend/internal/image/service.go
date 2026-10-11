@@ -8,12 +8,15 @@ import (
 	embeddingspkg "server/internal/embedding"
 	"server/internal/errors"
 	"server/internal/log"
+	"server/internal/processing"
 	"server/internal/tag"
 	userpkg "server/internal/user"
 	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ImageService interface {
@@ -42,6 +45,7 @@ type imageService struct {
 	logs       log.LogService
 	objects    ObjectService
 	embeddings embeddingspkg.EmbeddingsService
+	jobs       processing.Queue
 
 	transactions transaction.Runner
 }
@@ -53,6 +57,7 @@ func NewImageService(
 	objects ObjectService,
 	embeddings embeddingspkg.EmbeddingsService,
 	transactions transaction.Runner,
+	jobs processing.Queue,
 ) ImageService {
 	return &imageService{
 		images,
@@ -60,6 +65,7 @@ func NewImageService(
 		logs,
 		objects,
 		embeddings,
+		jobs,
 		transactions,
 	}
 }
@@ -267,6 +273,9 @@ func (s *imageService) Delete(ctx context.Context, userID, id uint) error {
 	}
 
 	if err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		if err := s.jobs.Cancel(tx, []uint{id}); err != nil {
+			return err
+		}
 		imagesRepoTx := s.images.WithTx(tx)
 		if err := imagesRepoTx.Delete(ctx, id); err != nil {
 			return err
@@ -332,6 +341,9 @@ func (s *imageService) DeleteByQuery(ctx context.Context, userID uint, query *Qu
 	}
 
 	if err = s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		if err := s.jobs.Cancel(tx, ids); err != nil {
+			return err
+		}
 		imagesRepoTx := s.images.WithTx(tx)
 		if err := imagesRepoTx.DeleteByIDs(ctx, ids); err != nil {
 			return fmt.Errorf("failed deleting images by query %w", err)
@@ -358,7 +370,9 @@ func (s *imageService) DeleteByQuery(ctx context.Context, userID uint, query *Qu
 		if err := s.objects.DeleteImageObjects(ctx, img.Hash, format.String()); err != nil {
 			errs = append(errs, fmt.Errorf("failed deleting image: %w", err))
 		}
-		// TODO: delete embeddings
+		if err := s.embeddings.Delete(ctx, img.ID); err != nil {
+			errs = append(errs, fmt.Errorf("failed deleting embedding for image %d: %w", img.ID, err))
+		}
 	}
 
 	if len(errs) > 0 {
@@ -414,6 +428,11 @@ func (s *imageService) Upload(ctx context.Context, userID uint, req UploadReques
 	}
 
 	if err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		if tx != nil {
+			if err := enforceUploadRate(tx, userID); err != nil {
+				return err
+			}
+		}
 		imgRepoTx := s.images.WithTx(tx)
 
 		// Save tags from upload metadata before clearing
@@ -433,7 +452,7 @@ func (s *imageService) Upload(ctx context.Context, userID uint, req UploadReques
 			return err
 		}
 
-		if err := s.embeddings.Upsert(ctx, img.ID, data); err != nil {
+		if err := s.jobs.Enqueue(tx, img.ID); err != nil {
 			return err
 		}
 
@@ -445,4 +464,24 @@ func (s *imageService) Upload(ctx context.Context, userID uint, req UploadReques
 	}
 
 	return img, nil
+}
+
+func enforceUploadRate(tx *gorm.DB, userID uint) error {
+	var uploader userpkg.User
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&uploader, userID).Error; err != nil {
+		return err
+	}
+	if uploader.IsModerator() {
+		return nil
+	}
+	var count int64
+	if err := tx.Unscoped().Model(&ImageMetadata{}).
+		Where("user_id = ? AND created_at >= ?", userID, time.Now().Add(-time.Hour)).
+		Count(&count).Error; err != nil {
+		return err
+	}
+	if count >= 50 {
+		return errors.ErrUploadRateLimited
+	}
+	return nil
 }

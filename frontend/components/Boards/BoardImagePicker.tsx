@@ -10,6 +10,7 @@ import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import Scrollbar from "@/components/template/Scrollbar";
 import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
 import { imagesDeletedEvent } from "@/lib/image/deletedImages";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 const emptySearch: SearchQuery = { prefix: "", tags: [] };
 
@@ -21,6 +22,7 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
     onAdded: (item: BoardItemResponse) => void;
     onImagesDropped: (imageIds: number[], sourceBoardId?: number, sourceScope?: string) => void;
 }) {
+    const { t } = useTranslations();
     const [query, setQuery] = useState(JSON.stringify(emptySearch));
     const [hideAdded, setHideAdded] = useState(false);
     const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
@@ -65,9 +67,9 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
             setAddedIds((current) => new Set([...ids, ...current]));
             setMembershipLoaded(true);
         } catch (cause) {
-            setMembershipError(cause instanceof Error ? cause.message : "Could not check board images");
+            setMembershipError(cause instanceof Error ? cause.message : t("error.couldNotCheckBoardImages"));
         }
-    }, [boardId]);
+    }, [boardId, t]);
 
     useEffect(() => { if (initialImageIds === undefined) void loadMembership(); }, [initialImageIds, loadMembership]);
     useEffect(() => { if (initialImageIds !== undefined) setAddedIds(new Set(initialImageIds)); }, [initialImageIds]);
@@ -82,7 +84,7 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
             setAddedIds((current) => new Set(current).add(image.id));
             onAdded(item);
         } catch (cause) {
-            setError(cause instanceof Error ? cause.message : "Could not add image");
+            setError(cause instanceof Error ? cause.message : t("error.couldNotAddImage"));
             if (cause instanceof Error && cause.message.includes("already on this board")) {
                 setAddedIds((current) => new Set(current).add(image.id));
             }
@@ -92,12 +94,12 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
         }
     }
 
-    return <div className="flex h-full min-h-0 flex-col rounded-2xl border border-surface-20 bg-surface-0/70 p-3 sm:p-4">
+    return <div className="glass flex h-full min-h-0 flex-col rounded-2xl border border-surface-20 p-3 sm:p-4">
         <div className="shrink-0 border-b border-surface-20 pb-3">
             <div className="mb-3 flex items-center gap-2">
-                <h2 className="flex-1 text-lg font-medium">Find images for this board</h2>
-                <button type="button" aria-pressed={hideAdded} onClick={() => setHideAdded((value) => !value)} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${hideAdded ? "border-primary-0 bg-primary-0 text-surface-0" : "border-surface-30 hover:bg-surface-20"}`}>
-                    <EyeOff size={16} /> Hide added
+                <h2 className="flex-1 text-lg font-medium">{t("boardPicker.findImages")}</h2>
+                <button type="button" aria-pressed={hideAdded} onClick={() => setHideAdded((value) => !value)} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${hideAdded ? "border-primary-0 bg-primary-0 text-primary-foreground" : "border-surface-30 hover:bg-surface-20"}`}>
+                    <EyeOff size={16} /> {t("boardPicker.hideAdded")}
                 </button>
             </div>
             <div className="flex items-center">
@@ -105,7 +107,7 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
                 <GallerySelectionControls scope={selectionScope} images={visibleItems} />
             </div>
             {error && <p role="alert" className="text-red-500">{error}</p>}
-            {membershipError && <p role="alert" className="text-red-500">{membershipError} <button onClick={() => void loadMembership()} className="underline">Retry</button></p>}
+        {membershipError && <p role="alert" className="text-red-500">{membershipError} <button onClick={() => void loadMembership()} className="underline">{t("common.retry")}</button></p>}
         </div>
         <div className="min-h-0 flex-1">
           <Scrollbar className="min-h-0 overflow-x-hidden lg:overscroll-contain">
@@ -113,10 +115,10 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
                 const alreadyAdded = addedIds.has(image.id);
                 const pending = pendingIds.has(image.id);
                 return <span className={`inline-flex items-center gap-1 rounded-full bg-surface-0/90 px-2 py-1 text-sm ${alreadyAdded ? "text-green-600" : ""}`} aria-label={alreadyAdded ? `${image.filename} is on this board` : undefined}>
-                    {alreadyAdded ? <><Check size={16} /> Added</> : pending ? "Adding…" : <><Plus size={16} /> Add</>}
+                    {alreadyAdded ? <><Check size={16} /> {t("boards.addedOne")}</> : pending ? t("boards.adding") : <><Plus size={16} /> {t("boards.add")}</>}
                 </span>;
             }} />
-            {!membershipLoaded && !membershipError && <p role="status" className="p-3 text-center">Checking board images…</p>}
+            {!membershipLoaded && !membershipError && <p role="status" className="p-3 text-center">{t("boardPicker.checkingImages")}</p>}
           </Scrollbar>
         </div>
     </div>;

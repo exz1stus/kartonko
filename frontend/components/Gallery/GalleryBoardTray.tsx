@@ -12,6 +12,7 @@ import ImageDropTarget from "./ImageDropTarget";
 import { addImagesToBoard } from "@/lib/image/addImagesToBoard";
 import { toast } from "sonner";
 import BoardSearchList from "@/components/Boards/BoardSearchList";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 export default function GalleryBoardTray() {
     const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function GalleryBoardTray() {
 }
 
 function GalleryBoardTrayContent({ scope, selectedIds, draggingIds }: { scope: string; selectedIds: number[]; draggingIds: number[] }) {
+    const { t } = useTranslations();
     const { user } = useAuth();
     const clear = useGallerySelection(scope, (state) => state.clear);
     const selectMany = useGallerySelection(scope, (state) => state.selectMany);
@@ -39,13 +41,13 @@ function GalleryBoardTrayContent({ scope, selectedIds, draggingIds }: { scope: s
         deletePending.current = true;
         try {
             const confirmed = await confirm(
-                `Delete ${selectedIds.length} selected image${selectedIds.length === 1 ? "" : "s"}?`,
-                { title: "Delete selected images", confirmText: "Delete" },
+                t("gallery.deleteConfirm", { count: selectedIds.length }),
+                { title: t("gallery.deleteSelected"), confirmText: t("common.delete") },
             );
             if (!confirmed) return;
             setDeleting(true);
             setProgress({ completed: 0, total: selectedIds.length });
-            const toastId = toast.loading(`Deleting images 0/${selectedIds.length}`);
+            const toastId = toast.loading(t("gallery.deleting", { done: 0, total: selectedIds.length }));
             const deleted: number[] = [];
             const failed: number[] = [];
             for (const id of selectedIds) {
@@ -68,19 +70,19 @@ function GalleryBoardTrayContent({ scope, selectedIds, draggingIds }: { scope: s
                 }
                 const completed = deleted.length + failed.length;
                 setProgress({ completed, total: selectedIds.length });
-                toast.loading(`Deleting images ${completed}/${selectedIds.length}`, { id: toastId });
+                toast.loading(t("gallery.deleting", { done: completed, total: selectedIds.length }), { id: toastId });
             }
             if (failed.length) selectMany(failed);
             else clear();
             if (failed.length)
-                toast.error(`Deleted ${deleted.length} of ${selectedIds.length} images. ${failed.length} failed.`, { id: toastId });
+                toast.error(t("gallery.deletedPartial", { done: deleted.length, total: selectedIds.length, failed: failed.length }), { id: toastId });
             else
-                toast.success(`Deleted ${deleted.length} image${deleted.length === 1 ? "" : "s"}`, { id: toastId });
+                toast.success(t("gallery.deleted", { count: deleted.length }), { id: toastId });
         } finally {
             setDeleting(false);
             deletePending.current = false;
         }
-    }, [busyBoard, canDelete, clear, confirm, selectMany, selectedIds]);
+    }, [busyBoard, canDelete, clear, confirm, selectMany, selectedIds, t]);
 
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
@@ -99,18 +101,18 @@ function GalleryBoardTrayContent({ scope, selectedIds, draggingIds }: { scope: s
         if (busyBoard !== null || deletePending.current) return;
         setBusyBoard(boardId);
         const { added, already, failed } = await addImagesToBoard(boardId, ids);
-        if (failed) toast.error(`Could not add ${failed} images to ${boardName}`);
-        if (added.length) toast.success(`Added ${added.length} images to ${boardName}`);
-        if (already) toast.message(`${already} images were already on ${boardName}`);
+        if (failed) toast.error(t("boards.addFailed", { count: failed, name: boardName }));
+        if (added.length) toast.success(t("boards.added", { count: added.length, name: boardName }));
+        if (already) toast.message(t("boards.alreadyAdded", { count: already, name: boardName }));
         if (!failed) clear();
         setBusyBoard(null);
     };
 
-    return <aside aria-label="Selected image actions" className="fixed bottom-4 right-4 z-50 flex h-[min(28rem,70vh)] w-[min(22rem,calc(100vw-2rem))] flex-col rounded-2xl border border-surface-30 bg-surface-0 p-3 shadow-xl">
-        <div className="mb-2 flex items-center gap-2"><ListChecks size={18} /><strong className="flex-1">{(draggingIds.length || selectedIds.length)} selected</strong><button disabled={deleting} onClick={clear} aria-label="Clear image selection"><X size={18} /></button></div>
-        {selectedIds.length > 0 && <button type="button" disabled={!canDelete || deleting || busyBoard !== null} onClick={() => void deleteSelected()} className="mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-50"><Trash2 size={17} />{deleting ? "Deleting…" : "Delete selected"}<kbd className="ml-auto text-xs font-normal">Del</kbd></button>}
-        {selectedIds.length > 0 && !canDelete && <p className="mb-2 text-xs text-muted-foreground">You can only delete images you own.</p>}
-        {deleting && <div className="mb-2" role="status"><div className="mb-1 text-xs">Deleting {progress.completed} of {progress.total} images…</div><progress className="w-full accent-primary-0" value={progress.completed} max={progress.total} /></div>}
+    return <aside aria-label={t("gallery.selectedActions")} className="interface-chrome fixed bottom-4 right-4 z-50 flex h-[min(28rem,70vh)] w-[min(22rem,calc(100vw-2rem))] flex-col rounded-2xl border border-surface-30 bg-surface-0 p-3 shadow-xl">
+        <div className="mb-2 flex items-center gap-2"><ListChecks size={18} /><strong className="flex-1">{t("gallery.selected", { count: draggingIds.length || selectedIds.length })}</strong><button disabled={deleting} onClick={clear} aria-label={t("gallery.clearSelection")}><X size={18} /></button></div>
+        {selectedIds.length > 0 && <button type="button" disabled={!canDelete || deleting || busyBoard !== null} onClick={() => void deleteSelected()} className="mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-50"><Trash2 size={17} />{deleting ? t("gallery.deleting", { done: progress.completed, total: progress.total }) : t("gallery.deleteSelected")}<kbd className="ml-auto text-xs font-normal">Del</kbd></button>}
+        {selectedIds.length > 0 && !canDelete && <p className="mb-2 text-xs text-muted-foreground">{t("gallery.youCanOnlyDeleteOwn")}</p>}
+        {deleting && <div className="mb-2" role="status"><div className="mb-1 text-xs">{t("gallery.deletingProgress", { done: progress.completed, total: progress.total })}</div><progress className="w-full accent-primary-0" value={progress.completed} max={progress.total} /></div>}
         <BoardSearchList renderBoard={(board) => <ImageDropTarget onDropImages={(ids) => void addToBoard(board.id, board.name, ids)} className="rounded-lg">
                 <button disabled={busyBoard !== null || deleting} onClick={() => void addToBoard(board.id, board.name, selectedIds)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-surface-20 disabled:opacity-50"><span className="truncate">{board.name}</span>{busyBoard === board.id && <Check size={16} />}</button>
             </ImageDropTarget>} />

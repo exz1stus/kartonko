@@ -3,9 +3,11 @@ import Loading from "@/components/Loading";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 export default function LoginPage() {
     const { user, login, loading } = useAuth();
+    const { t } = useTranslations();
 
     const searchParams = useSearchParams();
 
@@ -22,8 +24,8 @@ export default function LoginPage() {
     }
 
     if (user) {
-        return <div>You are already logged in as {user.username}</div>;
+        return <div>{t("login.already", { name: user.username })}</div>;
     }
 
-    return <div>Redirecting to login...</div>;
+    return <div>{t("login.redirecting")}</div>;
 }

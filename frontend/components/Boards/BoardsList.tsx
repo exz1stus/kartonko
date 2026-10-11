@@ -17,6 +17,7 @@ import ImageDropTarget from "@/components/Gallery/ImageDropTarget";
 import { addImagesToBoard } from "@/lib/image/addImagesToBoard";
 import { toast } from "sonner";
 import BoardPreview from "@/components/Boards/BoardPreview";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 export default function BoardsList({
     initialBoards,
@@ -25,6 +26,7 @@ export default function BoardsList({
 }) {
     const router = useRouter();
     const { user } = useAuth();
+    const { t } = useTranslations();
     const [search, setSearch] = useState("");
     const [query] = useDebounce(search.trim(), 250);
     const [creating, setCreating] = useState(false);
@@ -72,7 +74,7 @@ export default function BoardsList({
             setCreateError(
                 cause instanceof Error
                     ? cause.message
-                    : "Could not create board",
+                    : t("error.couldNotCreateBoard"),
             );
         } finally {
             setSaving(false);
@@ -81,9 +83,9 @@ export default function BoardsList({
 
     async function addDraggedImages(board: BoardResponse, ids: number[]) {
         const { added, already, failed } = await addImagesToBoard(board.id, ids);
-        if (failed) toast.error(`Could not add ${failed} images to ${board.name}`);
-        if (added.length) toast.success(`Added ${added.length} images to ${board.name}`);
-        if (already) toast.message(`${already} images were already on ${board.name}`);
+        if (failed) toast.error(t("boards.addFailed", { count: failed, name: board.name }));
+        if (added.length) toast.success(t("boards.added", { count: added.length, name: board.name }));
+        if (already) toast.message(t("boards.alreadyAdded", { count: already, name: board.name }));
     }
 
     return (
@@ -93,18 +95,18 @@ export default function BoardsList({
                 <div className="space-y-4 mx-auto px-4 sm:px-8 py-4 max-w-6xl">
                     <header className="flex flex-wrap justify-between items-start gap-4">
                         <div>
-                            <h1 className="font-semibold text-3xl">Boards</h1>
-                            <p className="mt-1 text-primary-0/70 text-sm">
-                                Collections of images, sorted by image count.
+                            <h1 className="font-semibold text-3xl">{t("nav.boards")}</h1>
+                            <p className="mt-1 text-muted-foreground text-sm">
+                                {t("boards.description")}
                             </p>
                         </div>
                         {user && (
                             <button
                                 type="button"
                                 onClick={() => setCreating(!creating)}
-                                className="inline-flex items-center gap-2 bg-primary-0 hover:opacity-90 px-4 py-2 rounded-xl font-medium text-surface-0"
+                                className="inline-flex items-center gap-2 bg-primary-0 hover:opacity-90 px-4 py-2 rounded-xl font-medium text-primary-foreground"
                             >
-                                <FolderPlus size={18} /> New board
+                                <FolderPlus size={18} /> {t("boards.new")}
                             </button>
                         )}
                     </header>
@@ -112,10 +114,10 @@ export default function BoardsList({
                     {creating && (
                         <form
                             onSubmit={createBoard}
-                            className="gap-3 grid sm:grid-cols-2 bg-surface-0/80 p-4 border border-surface-20 rounded-2xl"
+                            className="glass gap-3 grid sm:grid-cols-2 p-4 border border-surface-20 rounded-2xl"
                         >
                             <label className="gap-1 grid text-sm">
-                                Name
+                                {t("boards.name")}
                                 <input
                                     name="name"
                                     required
@@ -125,7 +127,7 @@ export default function BoardsList({
                                 />
                             </label>
                             <label className="gap-1 grid text-sm">
-                                Description
+                                {t("boards.descriptionField")}
                                 <input
                                     name="description"
                                     maxLength={500}
@@ -143,30 +145,30 @@ export default function BoardsList({
                             <div className="flex gap-2 sm:col-span-2">
                                 <button
                                     disabled={saving}
-                                    className="bg-primary-0 disabled:opacity-50 px-4 py-2 rounded-lg text-surface-0"
+                                    className="bg-primary-0 disabled:opacity-50 px-4 py-2 rounded-lg text-primary-foreground"
                                 >
-                                    {saving ? "Creating…" : "Create board"}
+                                    {saving ? t("boards.creating") : t("boards.create")}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setCreating(false)}
                                     className="px-4 py-2 border border-surface-30 rounded-lg"
                                 >
-                                    Cancel
+                                    {t("common.cancel")}
                                 </button>
                             </div>
                         </form>
                     )}
 
-                    <label className="flex items-center gap-2 bg-surface-0/70 px-3 border border-surface-30 focus-within:border-primary-0 rounded-xl">
+                    <label className="control-shell flex items-center gap-2 px-3 rounded-xl">
                         <Search size={18} aria-hidden="true" />
                         <input
                             type="search"
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
-                            placeholder="Search boards by name"
-                            aria-label="Search boards by name"
-                            className="bg-transparent py-3 outline-none w-full"
+                            placeholder={t("search.boards")}
+                            aria-label={t("search.boards")}
+                            className="py-3 outline-none w-full"
                         />
                     </label>
                     {user && (
@@ -178,7 +180,7 @@ export default function BoardsList({
                                     setMine(event.target.checked)
                                 }
                             />{" "}
-                            My boards
+                            {t("boards.my")}
                         </label>
                     )}
                 </div>
@@ -191,7 +193,7 @@ export default function BoardsList({
                         <ImageDropTarget key={board.id} onDropImages={user && (user.id === board.user_id || user.privilege === "Moderator") ? (ids) => void addDraggedImages(board, ids) : undefined} className="rounded-2xl">
                             <Link
                                 href={`/board/${encodeURIComponent(board.slug)}`}
-                                className={`group grid gap-4 rounded-2xl border border-surface-20 p-3 transition hover:border-primary-0/60 focus-visible:outline-2 focus-visible:outline-primary-0 ${board.image_count === 0 ? "bg-surface-10/60 text-primary-0/55" : "bg-surface-0/70 sm:grid-cols-[minmax(0,1fr)_minmax(320px,55%)] sm:items-center"}`}
+                                className={`content-card group grid gap-4 rounded-2xl border border-surface-20 p-3 transition hover:border-primary-0/60 focus-visible:outline-2 focus-visible:outline-primary-0 ${board.image_count === 0 ? "content-card-muted" : "sm:grid-cols-[minmax(0,1fr)_minmax(320px,55%)] sm:items-center"}`}
                             >
                                 {board.image_count > 0 && (
                                     <div className="sm:order-2">
@@ -204,18 +206,16 @@ export default function BoardsList({
                                     </h2>
                                     {board.description && (
                                         <p
-                                            className={`mt-2 line-clamp-2 text-sm ${board.image_count === 0 ? "text-primary-0/50" : "text-primary-0/70"}`}
+                                            className="mt-2 line-clamp-2 text-sm text-muted-foreground"
                                         >
                                             {board.description}
                                         </p>
                                     )}
                                     <p
-                                        className={`mt-3 flex items-center gap-2 text-sm ${board.image_count === 0 ? "text-primary-0/50" : "text-primary-0/70"}`}
+                                        className="mt-3 flex items-center gap-2 text-sm text-muted-foreground"
                                     >
                                         <Images size={16} /> {board.image_count}{" "}
-                                        {board.image_count === 1
-                                            ? "image"
-                                            : "images"}
+                                        {board.image_count === 1 ? t("common.image") : t("common.images")}
                                     </p>
                                 </div>
                             </Link>
@@ -225,8 +225,8 @@ export default function BoardsList({
                     {!loading && !error && items.length === 0 && (
                         <p className="p-8 border border-surface-20 rounded-2xl text-center">
                             {query
-                                ? "No boards match your search."
-                                : "No boards yet. Create the first one."}
+                                ? t("boards.noResults")
+                                : t("boards.empty")}
                         </p>
                     )}
                     {error && (
@@ -236,14 +236,14 @@ export default function BoardsList({
                         >
                             {error}
                             <button onClick={retry} className="underline">
-                                Retry
+                                {t("common.retry")}
                             </button>
                         </div>
                     )}
                     {loading && (
                         <p
                             role="status"
-                            className="text-primary-0/70 text-center"
+                            className="text-muted-foreground text-center"
                         >
                             Loading boards…
                         </p>

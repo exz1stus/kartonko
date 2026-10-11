@@ -28,7 +28,7 @@ const NameField = ({
 
     return (
         <input
-            className={cn(className, "transition-colors", {
+            className={cn("field-fill", className, "transition-colors", {
                 "text-red-500": !sanitized,
             })}
             {...props}

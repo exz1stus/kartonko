@@ -7,6 +7,7 @@ import (
 	"time"
 
 	apperrors "server/internal/errors"
+	"server/internal/processing"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -92,6 +93,34 @@ func (s *logService) GetEntries(cursor int, limit int) ([]EntryResponse, error) 
 	return resp, nil
 }
 
+func (s *logService) GetGroups(cursor int, limit int) ([]GroupResponse, error) {
+	groups, err := s.logs.GetGroups(cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+	responses := make([]GroupResponse, 0, len(groups))
+	for i := range groups {
+		response, err := newGroupResponse(&groups[i])
+		if err != nil {
+			return nil, fmt.Errorf("decode audit group summary: %w", err)
+		}
+		responses = append(responses, response)
+	}
+	return responses, nil
+}
+
+func (s *logService) GetGroupEntries(groupID uint) ([]EntryResponse, error) {
+	entries, err := s.logs.GetGroupEntries(groupID)
+	if err != nil {
+		return nil, err
+	}
+	responses := make([]EntryResponse, 0, len(entries))
+	for i := range entries {
+		responses = append(responses, NewEntryResponse(&entries[i]))
+	}
+	return responses, nil
+}
+
 // Revert applies the inverse only while the affected object still has the state
 // recorded by the entry. The row lock and marker prevent concurrent reverts.
 func (s *logService) Revert(entryID, actorID uint) (EntryResponse, error) {
@@ -115,6 +144,9 @@ func (s *logService) Revert(entryID, actorID uint) (EntryResponse, error) {
 			return apperrors.ErrBadRequest
 		}
 		if imageAction {
+			if err := (processing.GormQueue{}).Cancel(tx, []uint{entry.AffectedObjID}); err != nil {
+				return err
+			}
 			var err error
 			deletedImage, err = revertImageCreate(tx, &entry)
 			if err != nil {
@@ -129,10 +161,17 @@ func (s *logService) Revert(entryID, actorID uint) (EntryResponse, error) {
 				return err
 			}
 		}
+		wasRevertable := reversible(&entry)
 		now := time.Now()
 		entry.RevertedAt, entry.RevertedByID = &now, &actorID
 		if err := tx.Model(&entry).Updates(map[string]any{"reverted_at": now, "reverted_by_id": actorID}).Error; err != nil {
 			return err
+		}
+		if wasRevertable {
+			if err := tx.Model(&AuditGroup{}).Where("id = ? AND revertable_count > 0", entry.GroupID).
+				UpdateColumn("revertable_count", gorm.Expr("revertable_count - 1")).Error; err != nil {
+				return err
+			}
 		}
 		var original map[string]any
 		_ = json.Unmarshal(entry.Data, &original)

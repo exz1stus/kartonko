@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { addImagesToBoard } from "@/lib/image/addImagesToBoard";
 import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
 import { imagesDeletedEvent } from "@/lib/image/deletedImages";
+import { useTranslations } from "@/contexts/LocaleContext";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -47,6 +48,7 @@ export default function BoardDetail({
 }) {
     const router = useRouter();
     const { user } = useAuth();
+    const { t } = useTranslations();
     const confirm = useDialog();
     const [board, setBoard] = useState(initialBoard);
     const [editing, setEditing] = useState(false);
@@ -171,7 +173,7 @@ export default function BoardDetail({
             }
         } catch (cause) {
             setError(
-                cause instanceof Error ? cause.message : "Could not save board",
+                cause instanceof Error ? cause.message : t("error.couldNotSaveBoard"),
             );
         } finally {
             setBusy(false);
@@ -181,8 +183,8 @@ export default function BoardDetail({
     async function removeBoard() {
         if (
             !(await confirm(
-                `Delete “${board.name}”? The board will be removed, but its images will remain.`,
-                { title: "Delete board", confirmText: "Delete" },
+                t("boards.deleteConfirm", { name: board.name }),
+                { title: t("common.delete"), confirmText: t("common.delete") },
             ))
         )
             return;
@@ -196,7 +198,7 @@ export default function BoardDetail({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "Could not delete board",
+                    : t("error.couldNotDeleteBoard"),
             );
             setBusy(false);
         }
@@ -205,8 +207,8 @@ export default function BoardDetail({
     async function removeImage(imageId: number) {
         if (
             !(await confirm(
-                "Remove this image from the board? The image itself will remain.",
-                { title: "Remove image", confirmText: "Remove" },
+                t("boards.removeImageConfirm"),
+                { title: t("common.remove"), confirmText: t("common.remove") },
             ))
         )
             return;
@@ -229,7 +231,7 @@ export default function BoardDetail({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "Could not remove image",
+                    : t("error.couldNotRemoveImage"),
             );
         } finally {
             setBusy(false);
@@ -246,9 +248,9 @@ export default function BoardDetail({
         const missing = [...new Set(imageIds)].filter((id) => !membershipIds.has(id));
         const { added, failed } = await addImagesToBoard(board.id, missing);
         added.forEach(recordAdded);
-        if (added.length > 0) toast.success(`Added ${added.length} ${added.length === 1 ? "image" : "images"} to ${board.name}`);
-        if (failed > 0) toast.error(`Could not add ${failed} ${failed === 1 ? "image" : "images"}`);
-        if (missing.length === 0) toast.message("Images are already on this board");
+        if (added.length > 0) toast.success(t("boards.added", { count: added.length, name: board.name }));
+        if (failed > 0) toast.error(t("boards.addFailed", { count: failed, name: board.name }));
+        if (missing.length === 0) toast.message(t("boards.allAlready"));
     };
 
     const handlePickerImageDrop = async (imageIds: number[], sourceBoardId?: number) => {
@@ -271,9 +273,9 @@ export default function BoardDetail({
             setAddedItems((current) => current.filter((item) => !removed.includes(item.image_metadata.id)));
             const removedIds = new Set(removed);
             images.removeItems((item) => removedIds.has(item.image_metadata.id));
-            toast.success(`Removed ${removed.length} ${removed.length === 1 ? "image" : "images"} from ${board.name}`);
+            toast.success(t("boards.removed", { count: removed.length, name: board.name }));
         }
-        if (failed) toast.error(`Could not remove ${failed} ${failed === 1 ? "image" : "images"}`);
+        if (failed) toast.error(t("boards.removeFailed", { count: failed }));
     };
 
     const handleBoardGalleryImageDrop = (imageIds: number[], sourceBoardId?: number) => {
@@ -298,21 +300,21 @@ export default function BoardDetail({
             <title>{board.name} | kartonko</title>
             <Link
                 href="/boards"
-                className="inline-flex items-center gap-2 text-primary-0/70 text-sm hover:underline"
+                className="inline-flex items-center gap-2 text-muted-foreground text-sm hover:underline"
             >
                 <ArrowLeft size={16} /> All boards
             </Link>
             <header className="flex flex-wrap justify-between items-start gap-4">
-                <div className="min-w-0">
+                <div className="loaded-content min-w-0">
                     <h1 className="font-semibold text-3xl break-words">
                         {board.name}
                     </h1>
                     {board.description && (
-                        <p className="mt-2 max-w-2xl text-primary-0/70 whitespace-pre-wrap">
+                        <p className="mt-2 max-w-2xl text-muted-foreground whitespace-pre-wrap">
                             {board.description}
                         </p>
                     )}
-                    <p className="flex items-center gap-2 mt-3 text-primary-0/70 text-sm">
+                    <p className="flex items-center gap-2 mt-3 text-muted-foreground text-sm">
                         <Images size={16} /> {board.image_count}{" "}
                         {board.image_count === 1 ? "image" : "images"}
                     </p>
@@ -341,7 +343,7 @@ export default function BoardDetail({
             {editing && canEdit && (
                 <form
                     onSubmit={save}
-                    className="gap-3 grid bg-surface-0/70 p-4 border border-surface-20 rounded-2xl"
+                    className="glass gap-3 grid p-4 border border-surface-20 rounded-2xl"
                 >
                     <label className="gap-1 grid">
                         Name
@@ -366,7 +368,7 @@ export default function BoardDetail({
                     <div className="flex gap-2">
                         <button
                             disabled={busy}
-                            className="bg-primary-0 disabled:opacity-50 px-4 py-2 rounded-lg text-surface-0"
+                            className="bg-primary-0 disabled:opacity-50 px-4 py-2 rounded-lg text-primary-foreground"
                         >
                             Save changes
                         </button>
@@ -385,7 +387,7 @@ export default function BoardDetail({
                     <button
                         onClick={() => setAdding(!adding)}
                         aria-expanded={adding}
-                        className="inline-flex items-center gap-2 bg-primary-0 hover:opacity-90 px-4 py-2 rounded-lg text-surface-0"
+                        className="inline-flex items-center gap-2 bg-primary-0 hover:opacity-90 px-4 py-2 rounded-lg text-primary-foreground"
                     >
                         <Plus size={16} /> Add images
                     </button>
@@ -422,8 +424,8 @@ export default function BoardDetail({
             sentinelRef={images.sentinelRef}
             emptyMessage={
                 search === JSON.stringify(emptySearch)
-                    ? "This board has no images yet."
-                    : "No images match this search."
+                    ? t("boards.emptyDetail")
+                    : t("gallery.noResults")
             }
             renderAction={
                 showDeleteActions

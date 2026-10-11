@@ -2,7 +2,7 @@
 import { isModerator } from "@/lib/user/user";
 import ProfileImage from "@/components/ProfileImage";
 import GalleryServer from "@/components/Gallery/GalleryServer";
-import TimeField from "@/components/TimeField";
+import ProfileMetadata from "@/components/ProfileMetadata";
 import EditUser from "@/components/EditUser";
 import { getUserByName } from "@/lib/api/generated/server";
 import { getLoggedUser } from "@/lib/user/user.server";
@@ -26,7 +26,7 @@ const UserPage = async ({
     return (
         <div className="flex flex-row justify-center w-full h-full">
             <div className="flex flex-row border-r w-full xl:w-2/3 h-full">
-                <div className="flex flex-col flex-1 bg-surface-0/80 border-x min-w-0 h-full glass">
+                <div className="content-card flex flex-col flex-1 border-x min-w-0 h-full">
                     <ProfileImage
                         src={pictureURL}
                         className="w-full"
@@ -34,18 +34,7 @@ const UserPage = async ({
                     />
                     <div className="flex flex-col px-1 py-2">
                         <span className="text-xl">{user.username}</span>
-                        <div className="flex justify-between">
-                            <span>Privilege: </span>
-                            <span>{user.privilege}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>Joined at: </span>
-                            <span>{user.joined_at}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>Last seen: </span>
-                            <TimeField time={user.last_seen} />
-                        </div>
+                        <ProfileMetadata privilege={user.privilege} joinedAt={user.joined_at} lastSeen={user.last_seen} />
                         <EditUser
                             user={user}
                             hasPermission={hasEditPermission}

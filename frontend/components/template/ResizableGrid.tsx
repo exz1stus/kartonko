@@ -1,5 +1,5 @@
 "use client";
-import React, { ReactNode, useEffect, useState } from "react";
+import React, { useSyncExternalStore } from "react";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -17,11 +17,7 @@ const ResizableGrid = ({
 }) => {
     const orientation = useOrientation();
     const direction = orientation === "landscape" ? "horizontal" : "vertical";
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
     if (!mounted) return null;
 

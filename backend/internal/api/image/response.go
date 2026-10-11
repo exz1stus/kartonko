@@ -27,14 +27,15 @@ func RespondImages(c *gin.Context, images []image.ImageMetadata) {
 
 func NewImageResponse(img *image.ImageMetadata) ImageResponse {
 	return ImageResponse{
-		ID:       img.ID,
-		Hash:     img.Hash,
-		Filename: img.Filename,
-		Tags:     tag.TagsToStrings(img.Tags),
-		Format:   img.Format,
-		Width:    img.Width,
-		Height:   img.Height,
-		UserID:   img.UserID,
-		Uploaded: img.CreatedAt.Format(time.RFC3339),
+		ID:              img.ID,
+		Hash:            img.Hash,
+		Filename:        img.Filename,
+		Tags:            tag.TagsToStrings(img.Tags),
+		Format:          img.Format,
+		Width:           img.Width,
+		Height:          img.Height,
+		UserID:          img.UserID,
+		Uploaded:        img.CreatedAt.Format(time.RFC3339),
+		EmbeddingStatus: img.EmbeddingStatus,
 	}
 }

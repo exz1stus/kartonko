@@ -7,6 +7,7 @@ import { ImageMetadata } from "@/lib/api/generated/model";
 import { getGallerySelectionState, setActiveGalleryScope, useGallerySelection } from "@/hooks/useGallerySelection";
 import { GALLERY_IMAGES_MIME, GALLERY_SOURCE_BOARD_MIME, GALLERY_SOURCE_SCOPE_MIME } from "@/lib/image/galleryDrag";
 import { Check } from "lucide-react";
+import { useTranslations } from "@/contexts/LocaleContext";
 import { getPointerSelectionBounds, getPointerSelectionIds, getSpatialSelectionBounds, getSpatialSelectionIds, trackGalleryMarquee } from "@/lib/image/rangeSelection";
 interface Props {
     image: ImageMetadata;
@@ -22,6 +23,7 @@ interface Props {
 
 const ImageCard: React.FC<Props> = ({ image, selectionOrder, className, style, action, onClick, actionClickThrough = false, dragSourceBoardId, selectionScope = "home" }) => {
     const { filename, hash, width, height } = image;
+    const { t } = useTranslations();
     const selfRef = useRef<HTMLDivElement>(null);
     const dragPreviewRef = useRef<HTMLElement | null>(null);
     const router = useRouter();
@@ -85,7 +87,7 @@ const ImageCard: React.FC<Props> = ({ image, selectionOrder, className, style, a
         selfRef.current?.clientHeight;
     };
     const cardContent = (
-        <div className="flex flex-col items-center bg-surface-20 rounded-xl hover:cursor-pointer">
+        <div className="content-card content-card-strong flex flex-col items-center rounded-xl hover:cursor-pointer">
             <Image
                 src={`/apilocal/image/hash/${encodeURIComponent(hash)}/thumb`}
                 alt={filename}
@@ -104,7 +106,7 @@ const ImageCard: React.FC<Props> = ({ image, selectionOrder, className, style, a
             ref={selfRef}
             data-gallery-image-id={image.id}
             data-gallery-selection-scope={selectionScope}
-            className={`relative rounded-xl ${selected ? (selectionMode ? "z-10 ring-4 ring-primary-0 ring-offset-2 ring-offset-surface-0 shadow-xl" : "ring-2 ring-primary-0") : ""} ${className ?? ""}`}
+            className={`relative rounded-xl ${selected ? `gallery-selection-outline ${selectionMode ? "gallery-selection-outline-mode z-10" : ""}` : ""} ${className ?? ""}`}
             draggable={!selectionMode}
             onMouseDown={(event) => {
                 if (!selectionMode || event.button !== 0) return;
@@ -171,9 +173,9 @@ const ImageCard: React.FC<Props> = ({ image, selectionOrder, className, style, a
             {selectionMode ? cardContent : <PerspectiveCard>{cardContent}</PerspectiveCard>}
             {selectionMode && <button
                 type="button"
-                aria-label={`${selected ? "Deselect" : "Select"} ${filename}`}
+                aria-label={t(selected ? "gallery.deselectImage" : "gallery.selectImage", { name: filename })}
                 aria-pressed={selected}
-                className={`absolute left-2 top-2 z-20 flex size-8 items-center justify-center rounded-full border-2 shadow-md ${selected ? "border-primary-0 bg-primary-0 text-surface-0" : "border-surface-0 bg-surface-0/95 text-surface-600"}`}
+                className={`absolute left-2 top-2 z-20 flex size-8 items-center justify-center rounded-full border-2 shadow-md ${selected ? "gallery-selection-toggle-selected" : "border-surface-0 bg-surface-0/95 text-surface-600"}`}
                 onPointerDown={(event) => {
                     event.preventDefault();
                     event.stopPropagation();

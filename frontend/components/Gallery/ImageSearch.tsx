@@ -2,8 +2,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import TagSelector, { TagSelectorRef } from "@/components/Tags/TagSelector";
 import { SearchQuery } from "@/lib/query";
-import NameField from "../NameField";
+import { sanitizeName } from "@/lib/sanitizeName";
 import { useDebouncedCallback } from "use-debounce";
+import { useTranslations } from "@/contexts/LocaleContext";
+import { Search, X } from "lucide-react";
 
 export function isQueryEmpty(query: SearchQuery) {
     return query.prefix === "" && query.tags?.length === 0;
@@ -37,7 +39,9 @@ const ImageSearch: React.FC<Props> = ({
         InsertingMode.NONE,
     );
     const ref = useRef<HTMLDivElement>(null);
+    const nameInputRef = useRef<HTMLInputElement>(null);
     const tagSelectorRef = React.useRef<TagSelectorRef>(null);
+    const { t } = useTranslations();
 
     const [tags, setTags] = useState<string[]>(initialQuery?.tags || []);
     const [name, setName] = useState(initialQuery?.prefix ?? "");
@@ -70,44 +74,62 @@ const ImageSearch: React.FC<Props> = ({
     };
 
     return (
-        <div ref={ref} className={className}>
-            <div className="items-center gap-x-4 gap-y-1 grid grid-cols-[auto_1fr]">
+        <div ref={ref} className={`interface-opacity-group ${className ?? ""}`}>
+            <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
                 <span
-                    className={`px-3 py-1 text-sm font-medium border rounded-full transition-colors select-none text-center
+                    className={`filter-chip px-3 py-1 text-sm font-medium transition-colors select-none text-center
                 ${
                     insertingMode === InsertingMode.NAME
-                        ? "bg-surface-0/50 border-primary-0 text-primary-0"
-                        : "border-surface-200 text-surface-600"
+                        ? "filter-chip-active"
+                        : ""
                 }`}
                 >
-                    name
+                    {t("gallery.name")}
                 </span>
-                <div className="flex items-center gap-2">
-                    <NameField
-                        className="z-1 relative bg-transparent px-3 py-1 border-none outline-none w-full text-lg"
+                <div className="control-shell flex min-h-11 min-w-0 items-center gap-2 px-3">
+                    <Search aria-hidden="true" size={18} className="shrink-0 text-[var(--control-placeholder)]" />
+                    <input
+                        ref={nameInputRef}
+                        type="search"
+                        className="min-w-0 flex-1 py-2 text-base"
                         value={name}
-                        onChangeSanitized={(value: string) => setName(value)}
+                        onChange={(event) => setName(sanitizeName(event.target.value))}
                         onKeyDown={(e) => onNameKeyDown(e)}
                         onFocus={() => setInsertingMode(InsertingMode.NAME)}
                         onBlur={() => setInsertingMode(InsertingMode.NONE)}
-                        placeholder={name.length === 0 ? "Search name" : ""}
+                        placeholder={t("gallery.searchName")}
+                        aria-label={t("gallery.searchName")}
+                        autoComplete="off"
+                        spellCheck={false}
                     />
-                    <span className="inline-block h-10" />
+                    <button
+                        type="button"
+                        disabled={!name}
+                        onClick={() => {
+                            setName("");
+                            nameInputRef.current?.focus();
+                        }}
+                        aria-label={t("gallery.clearName")}
+                        className="control-clear flex size-7 shrink-0 items-center justify-center rounded-md text-[var(--control-placeholder)] transition-colors disabled:pointer-events-none disabled:opacity-0"
+                    >
+                        <X aria-hidden="true" size={16} />
+                    </button>
                 </div>
                 <span
-                    className={`px-3 py-1 text-sm font-medium border rounded-full transition-colors select-none text-center
+                    className={`filter-chip px-3 py-1 text-sm font-medium transition-colors select-none text-center
                             ${
                                 insertingMode === InsertingMode.TAG
-                                    ? "bg-surface-0/50 border-primary-0"
-                                    : "border-surface-200 text-surface-600"
+                                    ? "filter-chip-active"
+                                    : ""
                             }`}
                 >
                     #
                 </span>
-                <div className="flex">
+                <div className="min-w-0">
                     <TagSelector
                         ref={tagSelectorRef}
-                        placeholder={"Start typing tags"}
+                        inputStyle="min-h-11 px-3 py-2"
+                        placeholder={t("gallery.searchTags")}
                         tags={tags}
                         onTagsUpdate={(t: string[]) => setTags(t)}
                         removeTag={removeTag}

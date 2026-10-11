@@ -1,4 +1,19 @@
 definitions:
+  AuditActionSummary:
+    properties:
+      action:
+        type: string
+      board_name:
+        type: string
+      count:
+        type: integer
+      object_type:
+        type: string
+    required:
+    - action
+    - count
+    - object_type
+    type: object
   AuditActor:
     properties:
       id:
@@ -14,6 +29,33 @@ definitions:
     - picture_url
     - privilege
     - username
+    type: object
+  AuditGroup:
+    properties:
+      actor:
+        $ref: '#/definitions/AuditActor'
+      entry_count:
+        type: integer
+      id:
+        type: integer
+      last_at:
+        type: string
+      revertable_count:
+        type: integer
+      summaries:
+        items:
+          $ref: '#/definitions/AuditActionSummary'
+        type: array
+      user_id:
+        type: integer
+    required:
+    - actor
+    - entry_count
+    - id
+    - last_at
+    - revertable_count
+    - summaries
+    - user_id
     type: object
   AuthRequest:
     properties:
@@ -137,6 +179,8 @@ definitions:
     type: object
   ImageMetadata:
     properties:
+      embedding_status:
+        type: string
       filename:
         type: string
       format:
@@ -158,6 +202,7 @@ definitions:
       width:
         type: integer
     required:
+    - embedding_status
     - filename
     - format
     - hash
@@ -966,6 +1011,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/ErrorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1148,6 +1197,10 @@ paths:
       responses:
         "201":
           description: Created
+          schema:
+            $ref: '#/definitions/ImagePostBatchResponse'
+        "207":
+          description: Multi-Status
           schema:
             $ref: '#/definitions/ImagePostBatchResponse'
         "400":
@@ -1397,6 +1450,52 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Reverts a reversible audit entry
+      tags:
+      - log
+  /log/groups:
+    get:
+      operationId: GetAuditLogGroups
+      parameters:
+      - description: Group offset
+        in: query
+        name: cursor
+        type: integer
+      - default: 20
+        description: Number of groups
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/AuditGroup'
+            type: array
+      summary: Gets grouped audit log summaries
+      tags:
+      - log
+  /log/groups/{id}:
+    get:
+      operationId: GetAuditLogGroupEntries
+      parameters:
+      - description: Group ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/EntryResponse'
+            type: array
+      summary: Gets actions in an audit log group
       tags:
       - log
   /tags:

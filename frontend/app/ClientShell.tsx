@@ -10,20 +10,15 @@ import Footer from "@/components/Footer";
 import GalleryBoardTray from "@/components/Gallery/GalleryBoardTray";
 import UploadQueuePersistence from "@/components/UploadImage/UploadQueuePersistence";
 import SelectionMarquee from "@/components/Gallery/SelectionMarquee";
+import { ThemeProvider } from "next-themes";
 
 const ClientShell = ({ children }: { children: React.ReactNode }) => {
     return (
-        <AuthProvider>
-            <HoverProvider>
-                <SideBarProvider>
-                    <AlertDialogProvider>
-                        <body
-                            className="grid grid-rows-[auto_1fr] bg-image bg-surface-10 h-screen overflow-hidden"
-                            // TODO: Add bg image
-                            // style={{
-                            //     backgroundImage: `url(${process.env.NEXT_PUBLIC_API_ORIGIN}/image/raw/bg)`,
-                            // }}
-                        >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthProvider>
+                <HoverProvider>
+                    <SideBarProvider>
+                        <AlertDialogProvider>
                             <NavBar />
                             <ResizableGrid sidebar={<SideBar />}>
                                 {children}
@@ -33,11 +28,11 @@ const ClientShell = ({ children }: { children: React.ReactNode }) => {
                             <GalleryBoardTray />
                             <SelectionMarquee />
                             <UploadQueuePersistence />
-                        </body>
-                    </AlertDialogProvider>
-                </SideBarProvider>
-            </HoverProvider>
-        </AuthProvider>
+                        </AlertDialogProvider>
+                    </SideBarProvider>
+                </HoverProvider>
+            </AuthProvider>
+        </ThemeProvider>
     );
 };
 

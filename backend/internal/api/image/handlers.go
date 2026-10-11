@@ -537,6 +537,7 @@ func (h *Handler) PatchImage(c *gin.Context) {
 // @Success 201 {object} ImageResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
+// @Failure 429 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse
 // @Router /image [post]
 // @ID PostImage
@@ -568,6 +569,7 @@ func (h *Handler) PostImage(c *gin.Context) {
 // @Param metadata formData string true "Batch metadata (JSON)" Example({"data": [{"name": "img1", "tags": ["tag1"]}, {"name": "img2", "tags": ["tag2"]}], "common_tags": ["common"]})
 // @Param files formData file true "Files to upload"
 // @Success 201 {object} ImagePostBatchResponse
+// @Success 207 {object} ImagePostBatchResponse
 // @Failure 400 {object} errors.ErrorResponse
 // @Failure 401 {object} errors.ErrorResponse
 // @Failure 500 {object} errors.ErrorResponse

@@ -1,16 +1,22 @@
-import { assertCaptchaFromRequest } from "@/lib/captcha.server";
+import { assertUploadSession } from "@/lib/uploadSession.server";
 import { NextRequest, NextResponse } from "next/server";
 import { postTagsBatch } from "@/lib/api/generated/server";
 import { serverFetch } from "@/lib/api/serverFetch";
 import ApiError from "@/lib/api/error";
 
 export async function POST(req: NextRequest) {
-    const formData = await req.formData();
     try {
-        await assertCaptchaFromRequest(req.headers, formData);
+        await assertUploadSession(req.headers);
     } catch (err) {
-        if (err instanceof ApiError) return NextResponse.json({ error: err.data }, { status: err.status });
-        return NextResponse.json({ error: "Captcha verification failed" }, { status: 400 });
+        if (err instanceof ApiError) return NextResponse.json({ error: err.message }, { status: err.status });
+        return NextResponse.json({ error: "Upload session verification failed" }, { status: 500 });
+    }
+
+    let formData: FormData;
+    try {
+        formData = await req.formData();
+    } catch {
+        return NextResponse.json({ error: "Could not read upload data" }, { status: 400 });
     }
 
     const metadataString = formData.get("metadata")?.toString();
@@ -61,9 +67,11 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ error: "Invalid batch metadata" }, { status: 400 });
     } catch (err) {
+        if (err instanceof ApiError)
+            return NextResponse.json({ error: err.message }, { status: err.status });
         return NextResponse.json(
-            { error: "Invalid metadata or failed to process batch tags" },
-            { status: 400 },
+            { error: "Could not process upload batch" },
+            { status: 500 },
         );
     }
 }

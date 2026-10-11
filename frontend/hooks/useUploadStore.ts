@@ -28,8 +28,7 @@ interface UploadStore {
         index: number,
         updates: Partial<Omit<UploadItem, "file">>,
     ) => void;
-    removeFileAt: (index: number) => void;
-    removeItem: (id: string) => void;
+    removeItems: (ids: string[]) => void;
     markUploaded: (id: string, imageId: number) => void;
     markActionComplete: (id: string, actionKey: string) => void;
     setItemError: (id: string, error?: string) => void;
@@ -42,9 +41,6 @@ export const selectGlobalNewTags = (state: {
     const allTags = state.items.flatMap((item) => item.newTags);
     return Array.from(new Set(allTags));
 };
-
-export const getUploadSize = (state: { items: UploadItem[] }): number =>
-    state.items.reduce((total, item) => total + (item.uploadedImageId ? 0 : item.file.size), 0);
 
 const isSameFile = (first: File, second: File) =>
     first.name === second.name && first.size === second.size && first.lastModified === second.lastModified;
@@ -103,11 +99,10 @@ const useUploadStore = create<UploadStore>((set, get) => ({
                 i === index ? { ...item, ...updates } : item,
             ),
         })),
-    removeFileAt: (index) =>
-        set((state) => ({
-            items: state.items.filter((_, i) => i !== index),
-        })),
-    removeItem: (id) => set((state) => ({ items: state.items.filter((item) => item.id !== id) })),
+    removeItems: (ids) => set((state) => {
+        const removed = new Set(ids);
+        return { items: state.items.filter((item) => !removed.has(item.id)) };
+    }),
     markUploaded: (id, imageId) => set((state) => ({ items: state.items.map((item) => item.id === id ? { ...item, uploadedImageId: imageId, error: undefined } : item) })),
     markActionComplete: (id, actionKey) => set((state) => ({ items: state.items.map((item) => item.id === id ? { ...item, completedActions: [...new Set([...item.completedActions, actionKey])], error: undefined } : item) })),
     setItemError: (id, error) => set((state) => ({ items: state.items.map((item) => item.id === id ? { ...item, error } : item) })),

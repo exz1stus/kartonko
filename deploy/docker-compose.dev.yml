@@ -17,6 +17,7 @@ services:
             DB_PORT: ${DB_PORT}
 
             EMBEDDINGS_PORT: ${EMBEDDINGS_PORT}
+            EMBEDDINGS_URL: ${EMBEDDINGS_URL:-}
 
             BACKEND_PORT: ${BACKEND_PORT}
             API_ORIGIN: ${API_ORIGIN}
@@ -49,6 +50,34 @@ services:
         networks:
             - app-network
             - ai-network
+
+    worker:
+        build:
+            context: ../backend
+            dockerfile: Dockerfile.dev
+        container_name: worker
+        environment:
+            GARAGE_ENDPOINT: ${GARAGE_ENDPOINT}
+            GARAGE_ACCESS_KEY: ${GARAGE_ACCESS_KEY}
+            GARAGE_SECRET_KEY: ${GARAGE_SECRET_KEY}
+            GARAGE_BUCKET_NAME: ${GARAGE_BUCKET_NAME}
+            DB_HOST: ${DB_HOST}
+            DB_USER: ${DB_USER}
+            DB_PASSWORD: ${DB_PASSWORD}
+            DB_NAME: ${DB_NAME}
+            DB_PORT: ${DB_PORT}
+            EMBEDDINGS_PORT: ${EMBEDDINGS_PORT}
+            EMBEDDINGS_URL: ${EMBEDDINGS_URL:-}
+        volumes:
+            - ../backend:/app
+        command: go run ./cmd/worker
+        depends_on:
+            backend:
+                condition: service_healthy
+        networks:
+            - app-network
+            - ai-network
+        restart: unless-stopped
 
     frontend:
         build:

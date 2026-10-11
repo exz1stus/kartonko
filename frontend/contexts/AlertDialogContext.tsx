@@ -11,6 +11,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslations } from "@/contexts/LocaleContext";
 
 type DialogOptions = {
     title?: string;
@@ -29,6 +30,7 @@ const DialogContext = React.createContext<DialogContextType | undefined>(
 export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
+    const { t } = useTranslations();
     const [state, setState] = React.useState<{
         open: boolean;
         message: string;
@@ -57,7 +59,7 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            {state.options.title || "Confirm"}
+                            {state.options.title || t("confirm.title")}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                             {state.message}
@@ -65,10 +67,10 @@ export const AlertDialogProvider: React.FC<{ children: React.ReactNode }> = ({
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex gap-2">
                         <AlertDialogCancel onClick={() => handleClose(false)}>
-                            {state.options.cancelText || "Cancel"}
+                            {state.options.cancelText || t("confirm.cancel")}
                         </AlertDialogCancel>
                         <AlertDialogAction onClick={() => handleClose(true)}>
-                            {state.options.confirmText || "OK"}
+                            {state.options.confirmText || t("confirm.ok")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

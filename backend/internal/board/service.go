@@ -224,7 +224,7 @@ func (s *boardService) AddImage(ctx context.Context, boardID uint, imageID uint,
 		if err != nil {
 			return err
 		}
-		return s.logs.Log(tx, "add_image", "board", userID, boardID, map[string]any{"board_name": board.Name, "image_id": imageID, "image_name": added.Image.Filename})
+		return s.logs.Log(tx, "add_image", "board", userID, boardID, map[string]any{"board_name": board.Name, "board_slug": board.Slug, "image_id": imageID, "image_name": added.Image.Filename})
 	})
 	if err != nil {
 		return nil, err
@@ -251,6 +251,6 @@ func (s *boardService) RemoveImage(ctx context.Context, boardID uint, imageID ui
 		if err := repo.DeleteItem(ctx, boardID, imageID); err != nil {
 			return err
 		}
-		return s.logs.Log(tx, "remove_image", "board", userID, boardID, map[string]any{"board_name": board.Name, "image_id": imageID, "image_name": item.Image.Filename})
+		return s.logs.Log(tx, "remove_image", "board", userID, boardID, map[string]any{"board_name": board.Name, "board_slug": board.Slug, "image_id": imageID, "image_name": item.Image.Filename})
 	})
 }

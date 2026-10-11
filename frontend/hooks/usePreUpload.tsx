@@ -1,10 +1,8 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
 import useUploadStore from "./useUploadStore";
-import { getUploadSize } from "./useUploadStore";
 import { toast } from "sonner";
 import ProgressBarToast from "@/components/ProgressBarToast";
-import { isUploadSizeValid } from "@/lib/image/upload";
 import {
     checkForHashes,
     sanitizeFormats,
@@ -49,11 +47,6 @@ const usePreUpload = () => {
                 toast.success("Updated queued images");
                 if (!pathname.startsWith("/upload")) router.push("/upload");
             }
-            return;
-        }
-        const batchSize = unique.reduce((total, file) => total + file.size, 0);
-        if (!isUploadSizeValid(batchSize + getUploadSize(useUploadStore.getState()))) {
-            toast.error("The upload batch size maximum is 50MB");
             return;
         }
         const toastId = toast("Checking files...", {

@@ -7,6 +7,7 @@ import (
 	embeddings "server/internal/embedding"
 	"server/internal/image"
 	"server/internal/log"
+	"server/internal/processing"
 	"server/internal/storage"
 	"server/internal/tag"
 	"server/internal/user"
@@ -54,6 +55,7 @@ func NewApp(
 		objectService,
 		embeddingsService,
 		runner,
+		processing.GormQueue{},
 	)
 
 	boardService := board.NewBoardService(boardRepo, userRepo, logService, runner)

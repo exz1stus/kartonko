@@ -904,6 +904,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/ErrorResponse"
                         }
                     },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1017,6 +1023,12 @@ const docTemplate = `{
                 "responses": {
                     "201": {
                         "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ImagePostBatchResponse"
+                        }
+                    },
+                    "207": {
+                        "description": "Multi-Status",
                         "schema": {
                             "$ref": "#/definitions/ImagePostBatchResponse"
                         }
@@ -1571,6 +1583,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/log/groups": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "log"
+                ],
+                "summary": "Gets grouped audit log summaries",
+                "operationId": "GetAuditLogGroups",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Group offset",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Number of groups",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/AuditGroup"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/log/groups/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "log"
+                ],
+                "summary": "Gets actions in an audit log group",
+                "operationId": "GetAuditLogGroupEntries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Group ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/EntryResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/log/{id}/revert": {
             "post": {
                 "produces": [
@@ -2088,6 +2170,28 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "AuditActionSummary": {
+            "type": "object",
+            "required": [
+                "action",
+                "count",
+                "object_type"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "board_name": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "object_type": {
+                    "type": "string"
+                }
+            }
+        },
         "AuditActor": {
             "type": "object",
             "required": [
@@ -2108,6 +2212,44 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "AuditGroup": {
+            "type": "object",
+            "required": [
+                "actor",
+                "entry_count",
+                "id",
+                "last_at",
+                "revertable_count",
+                "summaries",
+                "user_id"
+            ],
+            "properties": {
+                "actor": {
+                    "$ref": "#/definitions/AuditActor"
+                },
+                "entry_count": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_at": {
+                    "type": "string"
+                },
+                "revertable_count": {
+                    "type": "integer"
+                },
+                "summaries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AuditActionSummary"
+                    }
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2289,6 +2431,7 @@ const docTemplate = `{
         "ImageMetadata": {
             "type": "object",
             "required": [
+                "embedding_status",
                 "filename",
                 "format",
                 "hash",
@@ -2300,6 +2443,9 @@ const docTemplate = `{
                 "width"
             ],
             "properties": {
+                "embedding_status": {
+                    "type": "string"
+                },
                 "filename": {
                     "type": "string"
                 },
