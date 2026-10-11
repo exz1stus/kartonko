@@ -1,6 +1,6 @@
 "use client";
 import { Pencil, Save, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -46,6 +46,36 @@ const EditUser = ({ user, hasPermission }: Props) => {
         }
     }, [pending, router, user.id, username]);
 
+    const uploadPicture = useCallback(async (file: File) => {
+        if (pending) return;
+        setPending(true);
+        try {
+            const form = new FormData();
+            form.append("picture", file);
+            const response = await fetch(`/apilocal/user/${user.id}/picture`, {
+                method: "POST",
+                credentials: "include",
+                body: form,
+            });
+            const result = await response.json().catch(() => null);
+            if (!response.ok) throw new Error(result?.error ?? "Could not upload profile picture");
+            router.refresh();
+        } finally {
+            setPending(false);
+        }
+    }, [pending, router, user.id]);
+
+    const onPictureSelected = (event: ChangeEvent<HTMLInputElement>) => {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        if (!file) return;
+        void toast.promise(uploadPicture(file), {
+            loading: "Uploading profile picture…",
+            success: "Profile picture updated",
+            error: (error) => error.message,
+        }).finally(() => { input.value = ""; });
+    };
+
     const deleteUsersImages = useCallback(async () => {
         if (pending) return;
         if (!window.confirm(`Delete every image uploaded by ${user.username}?`)) return;
@@ -81,6 +111,10 @@ const EditUser = ({ user, hasPermission }: Props) => {
                     )}
                     {editing && (
                         <div className="flex flex-col gap-2 w-full max-w-sm">
+                            <label className="inline-flex w-fit cursor-pointer items-center gap-2 border rounded-md px-2 py-1 hover:border-primary">
+                                <Pencil size={16} /> Browse profile picture
+                                <input type="file" accept="image/png,image/jpeg,image/gif" disabled={pending} onChange={onPictureSelected} className="sr-only" />
+                            </label>
                             <input
                                 className="border rounded-md px-2 py-1 bg-transparent"
                                 value={username}

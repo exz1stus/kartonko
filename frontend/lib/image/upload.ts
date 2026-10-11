@@ -3,6 +3,7 @@ import { clientMutator } from "../api/clientMutator";
 import { ImageMetadata, ImagePostBatchResponse } from "../api/generated/model";
 
 interface ImageUploadRequest {
+    client_id?: string;
     name: string;
     tags: string[];
     newTags?: string[];

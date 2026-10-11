@@ -22,6 +22,7 @@ type App struct {
 	ObjectService     image.ObjectService
 	EmbeddingsService embeddings.EmbeddingsService
 	BoardService      board.BoardService
+	Storage           storage.Storage
 }
 
 func NewApp(
@@ -76,5 +77,6 @@ func NewApp(
 		ObjectService:     objectService,
 		EmbeddingsService: embeddingsService,
 		BoardService:      boardService,
+		Storage:           storage,
 	}
 }

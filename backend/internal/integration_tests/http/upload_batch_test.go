@@ -2,6 +2,7 @@ package http_integration_tests
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -166,6 +167,20 @@ func TestPostImagesBatch_MixedSuccessAndFailure(t *testing.T) {
 
 	if len(res.Successes) != successCount {
 		t.Errorf("expected %d successes , got %d", successCount, len(res.Successes))
+	}
+	if len(res.Results) != len(fileDatas) {
+		t.Fatalf("expected %d correlated results, got %d", len(fileDatas), len(res.Results))
+	}
+	for index, result := range res.Results {
+		if result.ClientID != fmt.Sprintf("item-%d", index) {
+			t.Fatalf("unexpected client ID for result %d: %q", index, result.ClientID)
+		}
+		if index < successCount && result.Image == nil {
+			t.Fatalf("successful item %d has no image", index)
+		}
+		if index == successCount && result.Error == "" {
+			t.Fatalf("failed item %d has no error", index)
+		}
 	}
 
 	ctx.AssertStorageCount(successCount * 2)

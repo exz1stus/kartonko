@@ -3,7 +3,9 @@ import { toast } from "sonner";
 import { sanitizeName } from "../sanitizeName";
 import isAllowed from "./allowedFormats";
 import { hashFile } from "./image";
-import { existsOnServer } from "./image.client";
+import { getImageByHash } from "@/lib/api/generated/client";
+import ApiError from "@/lib/api/error";
+import { ImageMetadata } from "@/lib/api/generated/model";
 import pLimit from "p-limit";
 
 export function sanitizeNames(files: File[]): File[] {
@@ -37,15 +39,19 @@ export function sanitizeFormats(files: File[]): File[] {
 export async function checkForHashes(
     files: File[],
     onProgress: (completed: number) => void,
-): Promise<File[]> {
+): Promise<{ ready: File[]; existing: ImageMetadata[] }> {
     let completed = 0;
 
     const tasks = files.map((file) =>
         limit(async () => {
             try {
                 const hash = await hashFile(file);
-                const exists = await existsOnServer(hash);
-                return exists ? null : file;
+                try {
+                    return { file, hash, existing: await getImageByHash(hash) };
+                } catch (error) {
+                    if (error instanceof ApiError && error.status === 404) return { file, hash, existing: null };
+                    throw error;
+                }
             } finally {
                 completed++;
                 onProgress(completed);
@@ -54,7 +60,16 @@ export async function checkForHashes(
     );
 
     const results = await Promise.all(tasks);
-    return results.filter((f): f is File => f !== null);
+    const seenHashes = new Set<string>();
+    const ready = results.filter((result) => {
+        if (result.existing || seenHashes.has(result.hash)) return false;
+        seenHashes.add(result.hash);
+        return true;
+    }).map((result) => result.file);
+    return {
+        ready,
+        existing: results.map((result) => result.existing).filter((image): image is ImageMetadata => image !== null),
+    };
 }
 
 const limit = pLimit(10);

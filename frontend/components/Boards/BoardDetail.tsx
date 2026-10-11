@@ -22,6 +22,9 @@ import InfiniteImageGrid from "@/components/Gallery/InfiniteImageGrid";
 import { ImageSearch, SearchQuery } from "@/components/Gallery/ImageSearch";
 import Scrollbar from "@/components/template/Scrollbar";
 import BoardImagePicker from "./BoardImagePicker";
+import { toast } from "sonner";
+import { addImagesToBoard } from "@/lib/image/addImagesToBoard";
+import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -196,15 +199,8 @@ export default function BoardDetail({
                 next.delete(imageId);
                 return next;
             });
-            if (addedItems.some((item) => item.image_metadata.id === imageId)) {
-                setAddedItems((current) =>
-                    current.filter(
-                        (item) => item.image_metadata.id !== imageId,
-                    ),
-                );
-            } else {
-                images.refresh();
-            }
+            setAddedItems((current) => current.filter((item) => item.image_metadata.id !== imageId));
+            images.removeItems((item) => item.image_metadata.id === imageId);
         } catch (cause) {
             setError(
                 cause instanceof Error
@@ -216,22 +212,60 @@ export default function BoardDetail({
         }
     }
 
+    const recordAdded = (item: BoardItemResponse) => {
+        setBoard((current) => ({ ...current, image_count: current.image_count + 1 }));
+        setAddedItems((current) => [item, ...current]);
+        setMembershipIds((current) => new Set(current).add(item.image_metadata.id));
+    };
+
+    const addDraggedImages = async (imageIds: number[]) => {
+        const missing = [...new Set(imageIds)].filter((id) => !membershipIds.has(id));
+        const { added, failed } = await addImagesToBoard(board.id, missing);
+        added.forEach(recordAdded);
+        if (added.length > 0) toast.success(`Added ${added.length} ${added.length === 1 ? "image" : "images"} to ${board.name}`);
+        if (failed > 0) toast.error(`Could not add ${failed} ${failed === 1 ? "image" : "images"}`);
+        if (missing.length === 0) toast.message("Images are already on this board");
+    };
+
+    const handlePickerImageDrop = async (imageIds: number[], sourceBoardId?: number) => {
+        if (sourceBoardId !== board.id) {
+            await addDraggedImages(imageIds);
+            return;
+        }
+        const existing = [...new Set(imageIds)].filter((id) => membershipIds.has(id));
+        if (existing.length === 0) return;
+        const results = await Promise.allSettled(existing.map((id) => deleteBoardImage(board.id, id)));
+        const removed = existing.filter((_, index) => results[index].status === "fulfilled");
+        const failed = existing.length - removed.length;
+        if (removed.length) {
+            setBoard((current) => ({ ...current, image_count: Math.max(0, current.image_count - removed.length) }));
+            setMembershipIds((current) => {
+                const next = new Set(current);
+                removed.forEach((id) => next.delete(id));
+                return next;
+            });
+            setAddedItems((current) => current.filter((item) => !removed.includes(item.image_metadata.id)));
+            const removedIds = new Set(removed);
+            images.removeItems((item) => removedIds.has(item.image_metadata.id));
+            toast.success(`Removed ${removed.length} ${removed.length === 1 ? "image" : "images"} from ${board.name}`);
+        }
+        if (failed) toast.error(`Could not remove ${failed} ${failed === 1 ? "image" : "images"}`);
+    };
+
+    const handleBoardGalleryImageDrop = (imageIds: number[], sourceBoardId?: number) => {
+        if (sourceBoardId === board.id) return;
+        void addDraggedImages(imageIds);
+    };
+
     const picker =
         canEdit && adding ? (
             <BoardImagePicker
                 boardId={board.id}
                 initialImageIds={membershipList}
                 initialImages={initialPickerImages}
-                onAdded={(item) => {
-                    setBoard((current) => ({
-                        ...current,
-                        image_count: current.image_count + 1,
-                    }));
-                    setAddedItems((current) => [item, ...current]);
-                    setMembershipIds((current) =>
-                        new Set(current).add(item.image_metadata.id),
-                    );
-                }}
+                onAdded={recordAdded}
+                onImagesDropped={handlePickerImageDrop}
+                boardName={board.name}
             />
         ) : null;
 
@@ -338,17 +372,25 @@ export default function BoardDetail({
                     {error}
                 </p>
             )}
-            <ImageSearch
-                initialQuery={emptySearch}
-                onQueryChange={(next) => setSearch(JSON.stringify(next))}
-            />
+            <div className="flex items-center">
+                <ImageSearch
+                    initialQuery={emptySearch}
+                    onQueryChange={(next) => setSearch(JSON.stringify(next))}
+                    className="min-w-0 flex-1"
+                />
+                <GallerySelectionControls scope={`board:${board.id}:gallery`} imageIds={displayedItems.map((item) => item.image_metadata.id)} />
+            </div>
         </>
     );
 
     const gallery = (
         <InfiniteImageGrid
             edgeToEdge
+            onImagesDropped={canEdit ? handleBoardGalleryImageDrop : undefined}
+            dropIntent={{ tags: (JSON.parse(search) as SearchQuery).tags, actions: canEdit ? [{ kind: "add_to_board", boardId: board.id, boardName: board.name }] : [] }}
             images={displayedItems.map((item) => item.image_metadata)}
+            dragSourceBoardId={board.id}
+            selectionScope={`board:${board.id}:gallery`}
             loading={images.loading}
             reachedEnd={images.reachedEnd}
             error={images.error}

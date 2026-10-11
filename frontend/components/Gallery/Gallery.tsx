@@ -3,13 +3,12 @@ import React, { useCallback, useState } from "react";
 import { SearchQuery, ImageSearch } from "./ImageSearch";
 import { useDebounce } from "use-debounce";
 import Scrollbar from "@/components/template/Scrollbar";
-import DragDropZone from "@/components/UploadImage/DragDropZone";
 import InfiniteImageGrid from "@/components/Gallery/InfiniteImageGrid";
 import { ImageMetadata } from "@/lib/api/generated/model";
-import usePreUpload from "@/hooks/usePreUpload";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import { ImageIcon } from "lucide-react";
 import { getImagesByQuery } from "@/lib/api/generated/client";
+import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -24,8 +23,6 @@ const Gallery: React.FC<Props> = ({
 }) => {
     const [searchQuery, setSearchQuery] = useState<SearchQuery>(initialQuery);
     const [debouncedQuery] = useDebounce(searchQuery, 200);
-
-    const handleDroppedFiles = usePreUpload();
 
     const fetchImages = useCallback(
         async (
@@ -62,20 +59,21 @@ const Gallery: React.FC<Props> = ({
 
     return (
         <div className="flex flex-col h-full">
-            <ImageSearch
-                initialQuery={initialQuery}
-                onQueryChange={(query: SearchQuery) => setSearchQuery(query)}
-                className="shrink-0 border-b border-surface-20 p-4"
-            />
+            <div className="flex shrink-0 items-center border-b border-surface-20">
+                <ImageSearch
+                    initialQuery={initialQuery}
+                    onQueryChange={(query: SearchQuery) => setSearchQuery(query)}
+                    className="min-w-0 flex-1 p-4"
+                />
+                <GallerySelectionControls scope="home" imageIds={items.map((image) => image.id)} />
+            </div>
             <div className="min-h-0 flex-1 overflow-hidden">
-                <DragDropZone onFilesDropped={handleDroppedFiles}>
                     <div className="flex flex-col h-full">
                         <Scrollbar className="min-h-0 overflow-x-hidden overscroll-contain">
-                            <InfiniteImageGrid images={items} loading={loading} reachedEnd={reachedEnd} error={error} retry={retry} sentinelRef={sentinelRef} />
+                            <InfiniteImageGrid images={items} loading={loading} reachedEnd={reachedEnd} error={error} retry={retry} sentinelRef={sentinelRef} dropIntent={{ tags: searchQuery.tags }} />
                             {reachedEnd && footer}
                         </Scrollbar>
                     </div>
-                </DragDropZone>
             </div>
         </div>
     );

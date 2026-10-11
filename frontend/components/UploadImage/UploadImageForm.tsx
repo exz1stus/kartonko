@@ -17,16 +17,16 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({
     const intialFilename = item.name;
     const format = item.file.name.split(".").pop();
     return (
-        <form className="items-center gap-y-6 grid grid-cols-[1fr_2fr] grid-rows-[1fr_minmax(auto, 1fr)]">
+        <div className="items-center gap-y-6 grid grid-cols-[1fr_2fr] grid-rows-[1fr_minmax(auto, 1fr)]">
             <label className="font-medium text-gray-700 text-sm">Name</label>
             <div className="flex items-center bg-neutral-900 px-3 py-2 border rounded w-full">
-                <NameField
+                {item.uploadedImageId ? <span className="min-w-0 flex-1 truncate">{item.name}</span> : <NameField
                     onChangeSanitized={(value: string) =>
                         onChange?.({ name: value })
                     }
                     placeholder={intialFilename}
                     className="flex-1 bg-transparent border-none outline-none min-w-0 h-full"
-                />
+                />}
                 <span className="pl-2 text-primary-0/50 text-sm">
                     .{format}
                 </span>
@@ -34,7 +34,7 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({
             <label className="font-medium text-gray-700 text-sm">
                 Add tags
             </label>
-            <TagSelector
+            {item.uploadedImageId ? <div className="text-sm">{[...item.tags, ...item.newTags].join(", ") || "No tags"}</div> : <TagSelector
                 inputStyle={
                     "flex flex-wrap gap-1 border rounded-t-md w-full h-full bg-neutral-900 px-3 py-2"
                 }
@@ -54,8 +54,8 @@ const UploadImageForm: React.FC<UploadImageFormProps> = ({
                 onNewTagsUpdate={(tags: string[]) => {
                     onChange?.({ newTags: tags });
                 }}
-            />
-        </form>
+            />}
+        </div>
     );
 };
 

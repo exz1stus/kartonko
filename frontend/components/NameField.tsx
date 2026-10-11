@@ -14,11 +14,12 @@ interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
 const NameField = ({
     onChangeSanitized,
     placeholder,
+    defaultValue,
     ref,
     className,
     ...props
 }: Props) => {
-    const [name, setName] = useState("");
+    const [name, setName] = useState(String(defaultValue ?? ""));
     const { sanitized, onSanitize } = useSanitizedField(
         sanitizeName,
         setName,

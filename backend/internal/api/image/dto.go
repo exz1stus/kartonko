@@ -3,8 +3,9 @@ package image
 import "server/internal/image"
 
 type ImagePostRequest struct {
-	Name string   `json:"name"`
-	Tags []string `json:"tags"`
+	Name     string   `json:"name"`
+	Tags     []string `json:"tags"`
+	ClientID string   `json:"client_id,omitempty"`
 } // @name ImagePostRequest
 
 func (req ImagePostRequest) ToUploadRequest() image.UploadRequest {
@@ -37,6 +38,13 @@ type ImageError struct {
 } // @name ImageError
 
 type ImagePostBatchResponse struct {
-	Successes []ImageResponse `json:"successes"`
-	Failures  []ImageError    `json:"failures"`
+	Successes []ImageResponse        `json:"successes"`
+	Failures  []ImageError           `json:"failures"`
+	Results   []ImagePostBatchResult `json:"results"`
 } // @name ImagePostBatchResponse
+
+type ImagePostBatchResult struct {
+	ClientID string         `json:"client_id"`
+	Image    *ImageResponse `json:"image,omitempty"`
+	Error    string         `json:"error,omitempty"`
+} // @name ImagePostBatchResult

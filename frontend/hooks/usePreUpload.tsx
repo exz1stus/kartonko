@@ -5,51 +5,63 @@ import { getUploadSize } from "./useUploadStore";
 import { toast } from "sonner";
 import ProgressBarToast from "@/components/ProgressBarToast";
 import { isUploadSizeValid } from "@/lib/image/upload";
-import { useShallow } from "zustand/react/shallow";
 import {
     checkForHashes,
     sanitizeFormats,
     sanitizeNames,
 } from "@/lib/image/uploadPreprocessing";
+import { UploadIntent } from "@/lib/image/uploadIntent";
+import { runUploadAction } from "@/lib/image/runUploadAction";
+import { mergeUploadActions } from "@/lib/image/uploadIntent";
 
 const usePreUpload = () => {
-    const { hasFile, addFiles } = useUploadStore((state) => state);
-    const storeUploadSize = useUploadStore(useShallow(getUploadSize));
+    const hasFile = useUploadStore((state) => state.hasFile);
+    const addFiles = useUploadStore((state) => state.addFiles);
     const router = useRouter();
     const pathname = usePathname();
 
-    const filterDuplicates = (files: File[]) => {
-        return files.filter((incomingFile) => {
-            const isAlreadyInStore = hasFile(incomingFile);
-            return !isAlreadyInStore;
-        });
-    };
-
-    const handleDroppedFiles = async (files: File[]) => {
+    const handleDroppedFiles = async (files: File[], intent: UploadIntent = {}) => {
+        const effectiveIntent = {
+            ...intent,
+            actions: mergeUploadActions(useUploadStore.getState().commonActions, intent.actions ?? []),
+        };
         const sanitized = sanitizeNames(sanitizeFormats(files));
-        const unique = filterDuplicates(sanitized);
-        const batchSize = files.reduce((total, file) => total + file.size, 0);
+        if (sanitized.length === 0) {
+            toast.error("No supported image files found");
+            return;
+        }
+        const seen = new Set<string>();
+        const unique = sanitized.filter((file) => {
+            const key = `${file.name}:${file.size}:${file.lastModified}`;
+            if (hasFile(file) || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+        const queued = sanitized.filter((file) => hasFile(file));
+        if (queued.some((file) => useUploadStore.getState().items.some((item) =>
+            item.uploadedImageId && item.file.name === file.name && item.file.size === file.size &&
+            (effectiveIntent.tags ?? []).some((tag) => !item.tags.includes(tag))))) {
+            toast.warning("Already uploaded images cannot receive new upload tags");
+        }
+        if (queued.length > 0) addFiles(queued, effectiveIntent);
+        if (unique.length === 0) {
+            if (queued.length > 0) {
+                toast.success("Updated queued images");
+                if (!pathname.startsWith("/upload")) router.push("/upload");
+            }
+            return;
+        }
+        const batchSize = unique.reduce((total, file) => total + file.size, 0);
+        if (!isUploadSizeValid(batchSize + getUploadSize(useUploadStore.getState()))) {
+            toast.error("The upload batch size maximum is 50MB");
+            return;
+        }
         const toastId = toast("Checking files...", {
             description: (
                 <ProgressBarToast value={0} currentName={unique[0].name} />
             ),
             duration: Infinity,
         });
-
-        if (unique.length === 0) {
-            toast.error("All files already added to upload", {
-                id: toastId,
-                duration: 3000,
-            });
-            return;
-        }
-        if (!isUploadSizeValid(batchSize + storeUploadSize)) {
-            toast.error("The upload batch size maximum is 50MB", {
-                id: toastId,
-                duration: 3000,
-            });
-            return;
-        }
 
         const updateProgressBar = (completed: number) => {
             const percentage = Math.round((completed / unique.length) * 100);
@@ -65,24 +77,38 @@ const usePreUpload = () => {
             });
         };
 
-        const readyFiles = await checkForHashes(unique, updateProgressBar);
+        try {
+            const { ready: readyFiles, existing } = await checkForHashes(unique, updateProgressBar);
 
-        if (readyFiles.length === 0) {
-            toast.error("All files already uploaded", {
+            for (const image of existing) {
+                for (const action of effectiveIntent.actions ?? []) {
+                    try {
+                        await runUploadAction(action, image.id);
+                    } catch (error) {
+                        toast.error(`Could not apply ${action.kind} to ${image.filename}: ${error instanceof Error ? error.message : "Unknown error"}`);
+                    }
+                }
+            }
+
+            if (readyFiles.length === 0) {
+                toast.message(existing.length > 0 ? `${existing.length} existing images processed` : "All files already uploaded", {
+                    id: toastId,
+                    duration: 3000,
+                });
+                return;
+            }
+
+            toast.success(`Added ${readyFiles.length} files`, {
                 id: toastId,
                 duration: 3000,
             });
-            return;
-        }
 
-        toast.success(`Added ${readyFiles.length} files`, {
-            id: toastId,
-            duration: 3000,
-        });
-
-        addFiles(readyFiles);
-        if (!pathname.startsWith("/upload")) {
-            router.push("/upload");
+            addFiles(readyFiles, effectiveIntent);
+            if (!pathname.startsWith("/upload")) {
+                router.push("/upload");
+            }
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Could not check files", { id: toastId, duration: 4000 });
         }
     };
 

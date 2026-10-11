@@ -1,23 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Plus } from "lucide-react";
+import { Check, EyeOff, Plus } from "lucide-react";
 import { getImagesByQuery, listBoardImageIDs, postBoardImage } from "@/lib/api/generated/client";
 import { BoardItemResponse, ImageMetadata } from "@/lib/api/generated/model";
 import { ImageSearch, SearchQuery } from "@/components/Gallery/ImageSearch";
 import InfiniteImageGrid from "@/components/Gallery/InfiniteImageGrid";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import Scrollbar from "@/components/template/Scrollbar";
+import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
 
 const emptySearch: SearchQuery = { prefix: "", tags: [] };
 
-export default function BoardImagePicker({ boardId, initialImageIds, initialImages, onAdded }: {
+export default function BoardImagePicker({ boardId, boardName, initialImageIds, initialImages, onAdded, onImagesDropped }: {
     boardId: number;
+    boardName: string;
     initialImageIds?: number[];
     initialImages?: ImageMetadata[];
     onAdded: (item: BoardItemResponse) => void;
+    onImagesDropped: (imageIds: number[], sourceBoardId?: number, sourceScope?: string) => void;
 }) {
     const [query, setQuery] = useState(JSON.stringify(emptySearch));
+    const [hideAdded, setHideAdded] = useState(false);
     const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
     const pendingRef = useRef(new Set<number>());
     const [error, setError] = useState<string | null>(null);
@@ -34,6 +38,12 @@ export default function BoardImagePicker({ boardId, initialImageIds, initialImag
         initialItems: initialImages,
         initialReachedEnd: initialImages !== undefined && initialImages.length < 30,
     });
+    const visibleItems = hideAdded ? results.items.filter((image) => !addedIds.has(image.id)) : results.items;
+    const selectionScope = `board:${boardId}:picker`;
+    const handleImagesDropped = (imageIds: number[], sourceBoardId?: number, sourceScope?: string) => {
+        if (sourceScope === selectionScope) return;
+        onImagesDropped(imageIds, sourceBoardId, sourceScope);
+    };
 
     const loadMembership = useCallback(async () => {
         setMembershipLoaded(false);
@@ -72,14 +82,22 @@ export default function BoardImagePicker({ boardId, initialImageIds, initialImag
 
     return <div className="flex h-full min-h-0 flex-col rounded-2xl border border-surface-20 bg-surface-0/70 p-3 sm:p-4">
         <div className="shrink-0 border-b border-surface-20 pb-3">
-            <h2 className="mb-3 text-lg font-medium">Find images for this board</h2>
-            <ImageSearch initialQuery={emptySearch} onQueryChange={(next) => setQuery(JSON.stringify(next))} />
+            <div className="mb-3 flex items-center gap-2">
+                <h2 className="flex-1 text-lg font-medium">Find images for this board</h2>
+                <button type="button" aria-pressed={hideAdded} onClick={() => setHideAdded((value) => !value)} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${hideAdded ? "border-primary-0 bg-primary-0 text-surface-0" : "border-surface-30 hover:bg-surface-20"}`}>
+                    <EyeOff size={16} /> Hide added
+                </button>
+            </div>
+            <div className="flex items-center">
+                <ImageSearch initialQuery={emptySearch} onQueryChange={(next) => setQuery(JSON.stringify(next))} className="min-w-0 flex-1" />
+                <GallerySelectionControls scope={selectionScope} imageIds={visibleItems.map((image) => image.id)} />
+            </div>
             {error && <p role="alert" className="text-red-500">{error}</p>}
             {membershipError && <p role="alert" className="text-red-500">{membershipError} <button onClick={() => void loadMembership()} className="underline">Retry</button></p>}
         </div>
         <div className="min-h-0 flex-1">
           <Scrollbar className="min-h-0 overflow-x-hidden lg:overscroll-contain">
-            <InfiniteImageGrid images={results.items} loading={results.loading} reachedEnd={results.reachedEnd} error={results.error} retry={results.retry} sentinelRef={results.sentinelRef} onImageClick={(image) => void add(image)} actionClickThrough renderAction={(image) => {
+            <InfiniteImageGrid selectionScope={selectionScope} images={visibleItems} loading={results.loading} reachedEnd={results.reachedEnd} error={results.error} retry={results.retry} sentinelRef={results.sentinelRef} dropIntent={{ tags: (JSON.parse(query) as SearchQuery).tags, actions: [{ kind: "add_to_board", boardId, boardName }] }} onImagesDropped={handleImagesDropped} onImageClick={(image) => void add(image)} actionClickThrough renderAction={(image) => {
                 const alreadyAdded = addedIds.has(image.id);
                 const pending = pendingIds.has(image.id);
                 return <span className={`inline-flex items-center gap-1 rounded-full bg-surface-0/90 px-2 py-1 text-sm ${alreadyAdded ? "text-green-600" : ""}`} aria-label={alreadyAdded ? `${image.filename} is on this board` : undefined}>

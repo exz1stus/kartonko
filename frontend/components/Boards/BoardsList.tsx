@@ -1,73 +1,22 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FolderPlus, Images, Search } from "lucide-react";
 import { useDebounce } from "use-debounce";
 import {
-    listBoardImages,
     listBoards,
     postBoard,
 } from "@/lib/api/generated/client";
-import { BoardResponse, BoardItemResponse } from "@/lib/api/generated/model";
+import { BoardResponse } from "@/lib/api/generated/model";
 import { useAuth } from "@/contexts/AuthContext";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import Scrollbar from "@/components/template/Scrollbar";
-
-function BoardPreview({ board }: { board: BoardResponse }) {
-    const [previews, setPreviews] = useState<BoardItemResponse[]>([]);
-    const [previewError, setPreviewError] = useState(false);
-
-    useEffect(() => {
-        let active = true;
-        if (board.image_count > 0)
-            listBoardImages(board.id, { limit: 4 })
-                .then((images) => {
-                    if (active) setPreviews(images);
-                })
-                .catch(() => {
-                    if (active) setPreviewError(true);
-                });
-        return () => {
-            active = false;
-        };
-    }, [board.id, board.image_count]);
-
-    return (
-        <div
-            className="gap-1 grid grid-cols-2 sm:grid-cols-4 bg-surface-20 rounded-xl sm:h-52 aspect-square sm:aspect-auto overflow-hidden"
-            aria-label={previewError ? "Preview unavailable" : undefined}
-        >
-            {Array.from({ length: 4 }, (_, index) => {
-                const image = previews[index]?.image_metadata;
-                return (
-                    <div
-                        key={index}
-                        className="relative flex justify-center items-center bg-surface-10 min-w-0 min-h-0"
-                    >
-                        {image ? (
-                            <Image
-                                src={`/apilocal/image/hash/${encodeURIComponent(image.hash)}/thumb`}
-                                alt=""
-                                fill
-                                sizes="(max-width: 640px) 45vw, 160px"
-                                className="object-cover"
-                            />
-                        ) : (
-                            <Images
-                                size={24}
-                                aria-hidden="true"
-                                className="opacity-20"
-                            />
-                        )}
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
+import ImageDropTarget from "@/components/Gallery/ImageDropTarget";
+import { addImagesToBoard } from "@/lib/image/addImagesToBoard";
+import { toast } from "sonner";
+import BoardPreview from "@/components/Boards/BoardPreview";
 
 export default function BoardsList({
     initialBoards,
@@ -128,6 +77,13 @@ export default function BoardsList({
         } finally {
             setSaving(false);
         }
+    }
+
+    async function addDraggedImages(board: BoardResponse, ids: number[]) {
+        const { added, already, failed } = await addImagesToBoard(board.id, ids);
+        if (failed) toast.error(`Could not add ${failed} images to ${board.name}`);
+        if (added.length) toast.success(`Added ${added.length} images to ${board.name}`);
+        if (already) toast.message(`${already} images were already on ${board.name}`);
     }
 
     return (
@@ -231,9 +187,9 @@ export default function BoardsList({
             <Scrollbar className="flex-1 min-h-0 overflow-x-hidden overscroll-contain">
                 <div className="space-y-6 mx-auto px-4 sm:px-8 py-6 max-w-6xl">
                     <div className="gap-4 grid">
-                        {items.map((board) => (
+                    {items.map((board) => (
+                        <ImageDropTarget key={board.id} onDropImages={user && (user.id === board.user_id || user.privilege === "Moderator") ? (ids) => void addDraggedImages(board, ids) : undefined} className="rounded-2xl">
                             <Link
-                                key={board.id}
                                 href={`/board/${encodeURIComponent(board.slug)}`}
                                 className={`group grid gap-4 rounded-2xl border border-surface-20 p-3 transition hover:border-primary-0/60 focus-visible:outline-2 focus-visible:outline-primary-0 ${board.image_count === 0 ? "bg-surface-10/60 text-primary-0/55" : "bg-surface-0/70 sm:grid-cols-[minmax(0,1fr)_minmax(320px,55%)] sm:items-center"}`}
                             >
@@ -263,6 +219,7 @@ export default function BoardsList({
                                     </p>
                                 </div>
                             </Link>
+                        </ImageDropTarget>
                         ))}
                     </div>
                     {!loading && !error && items.length === 0 && (

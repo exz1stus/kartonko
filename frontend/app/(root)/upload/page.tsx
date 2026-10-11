@@ -11,24 +11,24 @@ import { ArrowLeft, ArrowRight, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import usePreUpload from "@/hooks/usePreUpload";
-import { useUploadImage } from "@/hooks/useUploadImage";
 import { toast } from "sonner";
 import CaptchaButton from "@/components/UploadImage/CaptchaButton";
 import { useShallow } from "zustand/react/shallow";
 import ImageCarousel from "@/components/UploadImage/ImageCarousel";
 import { cn } from "@/lib/utils";
-import ApiError from "@/lib/api/error";
-import {
-    ImageBatchUploadRequest,
-    ImageUploadRequest,
-} from "@/lib/image/upload";
+import { ImageBatchUploadRequest, uploadImageBatch } from "@/lib/image/upload";
+import { runUploadAction } from "@/lib/image/runUploadAction";
+import { uploadActionKey } from "@/lib/image/uploadIntent";
+import Loading from "@/components/Loading";
+import UploadBoardActions from "@/components/UploadImage/UploadBoardActions";
 
 const UploadPage = () => {
     const {
         removeFileAt,
-        clearStore,
         updateMetadata,
         items: storeImages,
+        commonActions,
+        hydrated: queueHydrated,
     } = useUploadStore((state) => state);
 
     const objectUrlCache = useRef<Map<File, string>>(new Map());
@@ -38,7 +38,7 @@ const UploadPage = () => {
 
     const prevLengthRef = useRef(storeImages.length);
 
-    const { uploadImage, uploadImageBatch, loading } = useUploadImage();
+    const [loading, setLoading] = useState(false);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
     const [captchaToken, setCaptchaToken] = useState<string | null>();
@@ -68,9 +68,6 @@ const UploadPage = () => {
     };
 
     const handleDroppedFiles = usePreUpload();
-    const onSubmitCurrentImage = () => {
-        removeCurrentImage();
-    };
 
     const removeCurrentImage = useCallback(() => {
         if (storeImages.length === 0) return;
@@ -190,99 +187,112 @@ const UploadPage = () => {
         [updateMetadata, imageIndex],
     );
 
-    const submitBatch = async (
-        data: ImageBatchUploadRequest,
-        files: File[],
-    ) => {
-        if (loading) return;
-
-        toast.promise(uploadImageBatch(data, files, captchaToken ?? ""), {
-            loading: `Uploading batch of ${files.length} images...`,
-            success: (res) => {
-                clearStore();
-                if (res?.failures) {
-                    res.failures.forEach((err) =>
-                        toast.error(err.name + ": " + err.error),
+    const onUpload = async () => {
+        if (loading || storeImages.length === 0) return;
+        setLoading(true);
+        const toastId = toast.loading("Processing images…");
+        try {
+            const pending = useUploadStore
+                .getState()
+                .items.filter((item) => !item.uploadedImageId);
+            if (pending.length > 0) {
+                const request: ImageBatchUploadRequest = {
+                    data: pending.map((item) => ({
+                        client_id: item.id,
+                        name: item.name,
+                        tags: item.tags,
+                        newTags: item.newTags,
+                    })),
+                    common_tags: [],
+                };
+                const response = await uploadImageBatch(
+                    request,
+                    pending.map((item) => item.file),
+                    captchaToken ?? "",
+                );
+                if (
+                    !response.results ||
+                    response.results.length !== pending.length
+                ) {
+                    throw new Error(
+                        "Upload server did not return per-image results",
                     );
                 }
-                if (res?.successes) {
-                    return `${res?.successes.length} files uploaded successfully!`;
-                } else {
-                    toast.error(`upload failed`);
+                response.results.forEach((result) => {
+                    if (result.image)
+                        useUploadStore
+                            .getState()
+                            .markUploaded(result.client_id, result.image.id);
+                    else
+                        useUploadStore
+                            .getState()
+                            .setItemError(
+                                result.client_id,
+                                result.error || "Upload failed",
+                            );
+                });
+            }
+
+            for (const item of useUploadStore.getState().items) {
+                if (!item.uploadedImageId) continue;
+                for (const action of item.actions) {
+                    const key = uploadActionKey(action);
+                    if (
+                        useUploadStore
+                            .getState()
+                            .items.find((current) => current.id === item.id)
+                            ?.completedActions.includes(key)
+                    )
+                        continue;
+                    try {
+                        await runUploadAction(action, item.uploadedImageId);
+                        useUploadStore
+                            .getState()
+                            .markActionComplete(item.id, key);
+                    } catch (error) {
+                        useUploadStore
+                            .getState()
+                            .setItemError(
+                                item.id,
+                                error instanceof Error
+                                    ? error.message
+                                    : "Board action failed",
+                            );
+                    }
                 }
-                return "";
-            },
-            error: (error: ApiError) => {
-                const message =
-                    typeof error.data === "object" &&
-                    error.data !== null &&
-                    "error" in error.data
-                        ? JSON.stringify(error.data.error)
-                        : error.message;
-
-                return message;
-            },
-            finally: () => {
-                setCaptchaToken(null);
-                setCaptchaResetKey((x) => x + 1);
-            },
-        });
-    };
-
-    const submitImage = async (data: ImageUploadRequest, file: File) => {
-        if (loading) return;
-
-        toast.promise(uploadImage(data, file, captchaToken ?? ""), {
-            loading: "Loading...",
-            success: (res) => {
-                onSubmitCurrentImage();
-                return `${res.filename} has been uploaded`;
-            },
-            error: (error: ApiError) => {
-                const message =
-                    typeof error.data === "object" &&
-                    error.data !== null &&
-                    "error" in error.data
-                        ? JSON.stringify(error.data.error)
-                        : error.message;
-
-                return message;
-            },
-            finally: () => {
-                setCaptchaToken(null);
-                setCaptchaResetKey((x) => x + 1);
-            },
-        });
-    };
-
-    const onUpload = async () => {
-        if (storeImages.length === 0) return;
-
-        if (storeImages.length === 1) {
-            const currentImage = storeImages[imageIndex];
-            const data = {
-                name: currentImage.name,
-                tags: currentImage.tags,
-                newTags: currentImage.newTags,
-            };
-
-            await submitImage(data, currentImage.file);
-            return;
+                const current = useUploadStore
+                    .getState()
+                    .items.find((entry) => entry.id === item.id);
+                if (
+                    current &&
+                    current.actions.every((action) =>
+                        current.completedActions.includes(
+                            uploadActionKey(action),
+                        ),
+                    )
+                ) {
+                    useUploadStore.getState().removeItem(item.id);
+                }
+            }
+            const remaining = useUploadStore.getState().items.length;
+            if (remaining)
+                toast.warning(`${remaining} images need attention`, {
+                    id: toastId,
+                });
+            else
+                toast.success("Images and follow-up actions complete", {
+                    id: toastId,
+                });
+        } catch (error) {
+            toast.error(
+                error instanceof Error ? error.message : "Upload failed",
+                { id: toastId },
+            );
+        } finally {
+            setLoading(false);
+            setCaptchaToken(null);
+            setCaptchaResetKey((x) => x + 1);
         }
-
-        const batchMetadata: ImageUploadRequest[] = storeImages.map((item) => ({
-            name: item.name,
-            tags: item.tags,
-            newTags: item.newTags,
-        }));
-
-        const request: ImageBatchUploadRequest = {
-            data: batchMetadata,
-            common_tags: [],
-        };
-        const files = storeImages.map((item) => item.file);
-
-        await submitBatch(request, files);
     };
 
     const nextButton = (
@@ -313,17 +323,27 @@ const UploadPage = () => {
         imageIndex === storeImages.length - 1 ? (
             <>
                 {storeImages.length > 1 && backButton}
-                <CaptchaButton
-                    className={`max-w-[70%]
+                {storeImages.some((item) => !item.uploadedImageId) ? (
+                    <CaptchaButton
+                        className={`max-w-[70%]
                         ${loading ? "animate-pulse bg-surface-20" : "bg-none"}
                     `}
-                    onClick={onUpload}
-                    disabled={loading}
-                    onVerifySuccess={setCaptchaToken}
-                    resetKey={captchaResetKey}
-                >
-                    {loading ? "Uploading..." : `Upload ${uploadBtnText}`}
-                </CaptchaButton>
+                        onClick={onUpload}
+                        disabled={loading}
+                        onVerifySuccess={setCaptchaToken}
+                        resetKey={captchaResetKey}
+                    >
+                        {loading ? "Uploading..." : `Upload ${uploadBtnText}`}
+                    </CaptchaButton>
+                ) : (
+                    <button
+                        onClick={onUpload}
+                        disabled={loading}
+                        className="disabled:opacity-50 px-4 py-2 border border-surface-30 rounded-xl"
+                    >
+                        Retry board actions
+                    </button>
+                )}
             </>
         ) : (
             <>
@@ -344,79 +364,112 @@ const UploadPage = () => {
     const content =
         storeImages.length > 0 ? (
             <div className="flex justify-center items-start p-4 lg:p-10 w-full h-full overflow-hidden">
-                <div className="flex lg:flex-row flex-col bg-surface-0/95 border border-surface-20 rounded-2xl w-full h-full max-h-full overflow-hidden glass">
-                    {imageUrl ? (
-                        <>
-                            <div
-                                className={cn(
-                                    "relative flex flex-1 justify-center items-center bg-black/20 w-full min-w-0 h-[20vh] min-h-0 overflow-hidden shrink-0",
-                                    "lg:w-[60%] lg:h-full",
-                                )}
-                            >
-                                <Image
-                                    src={imageUrl}
-                                    alt={storeImages[imageIndex]?.name}
-                                    className="rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none w-full h-full object-contain"
-                                    draggable={false}
-                                    width={1000}
-                                    height={1000}
-                                    onWheel={handleWheel}
-                                    unoptimized
-                                />
-                            </div>
+                <div className="flex flex-col bg-surface-0/95 border border-surface-20 rounded-2xl w-full h-full max-h-full overflow-hidden glass">
+                    <div className="flex lg:flex-row flex-col flex-1 min-h-0 overflow-hidden">
+                        {imageUrl ? (
+                            <>
+                                <div
+                                    className={cn(
+                                        "relative flex flex-1 justify-center items-center bg-black/20 w-full min-w-0 h-[20vh] min-h-0 overflow-hidden shrink-0",
+                                        "lg:w-[60%] lg:h-full",
+                                    )}
+                                >
+                                    <Image
+                                        src={imageUrl}
+                                        alt={storeImages[imageIndex]?.name}
+                                        className="rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none w-full h-full object-contain"
+                                        draggable={false}
+                                        width={1000}
+                                        height={1000}
+                                        onWheel={handleWheel}
+                                        unoptimized
+                                    />
+                                </div>
 
-                            <div className="flex flex-col gap-6 p-5 lg:p-8 border-l w-full lg:w-[40%] min-h-0 overflow-y-auto">
-                                <div className="flex flex-wrap justify-between items-center gap-2">
-                                    <div className="inline-flex items-center gap-2">
-                                        {browseImages}
-                                        {storeImages.length > 1 && (
-                                            <span className="text-gray-500 text-sm shrink-0">
-                                                {imageIndex + 1}/
-                                                {storeImages.length}
-                                            </span>
-                                        )}
+                                <div className="flex flex-col gap-6 p-5 lg:p-8 border-l w-full lg:w-[40%] min-h-0 overflow-y-auto">
+                                    <div className="flex flex-wrap justify-between items-center gap-2">
+                                        <div className="inline-flex items-center gap-2">
+                                            {browseImages}
+                                            {storeImages.length > 1 && (
+                                                <span className="text-gray-500 text-sm shrink-0">
+                                                    {imageIndex + 1}/
+                                                    {storeImages.length}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
+                                            <FancySpan
+                                                word={
+                                                    storeImages[imageIndex]
+                                                        ?.name
+                                                }
+                                            />
+                                        </div>
+
+                                        <button
+                                            className="flex justify-center items-center hover:border hover:border-red-400 rounded-full w-8 h-8 text-gray-500 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                                            onClick={removeCurrentImage}
+                                            aria-label="Remove image"
+                                        >
+                                            ✕
+                                        </button>
                                     </div>
 
-                                    <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
-                                        <FancySpan
-                                            word={storeImages[imageIndex]?.name}
+                                    <section className="space-y-2 rounded-xl border border-primary-0/20 bg-primary-0/5 p-3">
+                                        <div>
+                                            <h2 className="text-sm font-medium">Add to board</h2>
+                                            <p className="text-xs text-primary-0/60">Applied to every image in this upload queue.</p>
+                                        </div>
+                                        <UploadBoardActions
+                                            actions={commonActions}
+                                            onChange={(actions) => useUploadStore.getState().setCommonActions(actions)}
                                         />
+                                    </section>
+
+                                    <UploadImageForm
+                                        key={imageIndex}
+                                        item={storeImages[imageIndex]}
+                                        onChange={onFormChange}
+                                    />
+                                    {storeImages[imageIndex]
+                                        ?.uploadedImageId && (
+                                        <p
+                                            role="status"
+                                            className="text-green-600 text-sm"
+                                        >
+                                            Uploaded; finishing board actions
+                                        </p>
+                                    )}
+                                    {storeImages[imageIndex]?.error && (
+                                        <p
+                                            role="alert"
+                                            className="text-red-500 text-sm"
+                                        >
+                                            {storeImages[imageIndex].error}
+                                        </p>
+                                    )}
+                                    <div className="flex justify-center items-center gap-4 mt-auto pt-6 border-surface-20 border-t w-full">
+                                        {formButtons}
                                     </div>
-
-                                    <button
-                                        className="flex justify-center items-center hover:border hover:border-red-400 rounded-full w-8 h-8 text-gray-500 hover:text-red-500 transition-colors cursor-pointer shrink-0"
-                                        onClick={removeCurrentImage}
-                                        aria-label="Remove image"
-                                    >
-                                        ✕
-                                    </button>
                                 </div>
-
-                                <UploadImageForm
-                                    key={imageIndex}
-                                    item={storeImages[imageIndex]}
-                                    onChange={onFormChange}
-                                />
-                                <div className="flex justify-center items-center gap-4 mt-auto pt-6 border-surface-20 border-t w-full">
-                                    {formButtons}
-                                </div>
+                                {storeImages.length > 1 && (
+                                    <ImageCarousel
+                                        images={storeImages}
+                                        currentIndex={imageIndex}
+                                        onIndexChange={setImageIndex}
+                                        selectedIndices={selectedIndices}
+                                        setSelectedIndices={setSelectedIndices}
+                                        getFileUrl={getFileUrl}
+                                    />
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex justify-center items-center w-full h-full text-gray-400 text-3xl text-center">
+                                No image selected
                             </div>
-                            {storeImages.length > 1 && (
-                                <ImageCarousel
-                                    images={storeImages}
-                                    currentIndex={imageIndex}
-                                    onIndexChange={setImageIndex}
-                                    selectedIndices={selectedIndices}
-                                    setSelectedIndices={setSelectedIndices}
-                                    getFileUrl={getFileUrl}
-                                />
-                            )}
-                        </>
-                    ) : (
-                        <div className="flex justify-center items-center w-full h-full text-gray-400 text-3xl text-center">
-                            No image selected
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         ) : (
@@ -429,9 +482,15 @@ const UploadPage = () => {
     return (
         <AuthGuard>
             <title>upload</title>
-            <DragDropZone onFilesDropped={(files) => handleDroppedFiles(files)}>
-                {content}
-            </DragDropZone>
+            {!queueHydrated ? (
+                <Loading />
+            ) : (
+                <DragDropZone
+                    onFilesDropped={(files) => handleDroppedFiles(files)}
+                >
+                    {content}
+                </DragDropZone>
+            )}
         </AuthGuard>
     );
 };

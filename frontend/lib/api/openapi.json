@@ -2780,6 +2780,7 @@
                 "type": "object",
                 "required": [
                     "failures",
+                    "results",
                     "successes"
                 ],
                 "properties": {
@@ -2789,11 +2790,34 @@
                             "$ref": "#/components/schemas/ImageError"
                         }
                     },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ImagePostBatchResult"
+                        }
+                    },
                     "successes": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/ImageMetadata"
                         }
+                    }
+                }
+            },
+            "ImagePostBatchResult": {
+                "type": "object",
+                "required": [
+                    "client_id"
+                ],
+                "properties": {
+                    "client_id": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "$ref": "#/components/schemas/ImageMetadata"
                     }
                 }
             },

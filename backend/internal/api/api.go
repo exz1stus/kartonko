@@ -33,7 +33,7 @@ type Api struct {
 
 func NewAPI(app *App, jwtSecret string) *Api {
 	authHandler := authapi.NewAuthHandler(jwtSecret, app.UserService)
-	userHandler := userapi.NewUserHandler(app.UserService)
+	userHandler := userapi.NewUserHandler(app.UserService, app.Storage)
 	logHandler := logapi.NewLogHandler(app.LogService)
 	imageHandler := imageapi.NewImageHandler(
 		app.ImageService,

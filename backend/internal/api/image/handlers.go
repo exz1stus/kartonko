@@ -130,6 +130,7 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 
 	for i, meta := range batch.Data {
 		if i >= len(files) {
+			response.Results = append(response.Results, ImagePostBatchResult{ClientID: meta.ClientID, Error: "No file provided for this metadata"})
 			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
 				Error: "No file provided for this metadata",
@@ -138,6 +139,7 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 		}
 
 		if err := isImageRequestValid(&meta, files[i]); err != nil {
+			response.Results = append(response.Results, ImagePostBatchResult{ClientID: meta.ClientID, Error: err.Error()})
 			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
 				Error: err.Error(),
@@ -147,15 +149,20 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 
 		format, err := getFormatFromHeader(files[i])
 		if err != nil {
-			return nil, err
+			response.Results = append(response.Results, ImagePostBatchResult{ClientID: meta.ClientID, Error: err.Error()})
+			response.Failures = append(response.Failures, ImageError{Name: meta.Name, Error: err.Error()})
+			continue
 		}
 		data, err := getImageBytesFromHeader(files[i])
 		if err != nil {
-			return nil, err
+			response.Results = append(response.Results, ImagePostBatchResult{ClientID: meta.ClientID, Error: err.Error()})
+			response.Failures = append(response.Failures, ImageError{Name: meta.Name, Error: err.Error()})
+			continue
 		}
 
 		img, err := images.Upload(c, user.ID, meta.ToUploadRequest(), format, data)
 		if err != nil {
+			response.Results = append(response.Results, ImagePostBatchResult{ClientID: meta.ClientID, Error: err.Error()})
 			response.Failures = append(response.Failures, ImageError{
 				Name:  meta.Name,
 				Error: err.Error(),
@@ -163,7 +170,9 @@ func HandleBatchUpload(c *gin.Context, images image.ImageService, metadata strin
 			continue
 		}
 
-		response.Successes = append(response.Successes, NewImageResponse(img))
+		imageResponse := NewImageResponse(img)
+		response.Successes = append(response.Successes, imageResponse)
+		response.Results = append(response.Results, ImagePostBatchResult{ClientID: meta.ClientID, Image: &imageResponse})
 	}
 
 	return response, nil
@@ -540,7 +549,7 @@ func (h *Handler) PostImage(c *gin.Context) {
 		return
 	}
 
-	img, err := HandleUpload(c, h.imageService, ImagePostRequest{name, tags}, fileHeader)
+	img, err := HandleUpload(c, h.imageService, ImagePostRequest{Name: name, Tags: tags}, fileHeader)
 	if err != nil {
 		errors.RespondError(c, err)
 		return

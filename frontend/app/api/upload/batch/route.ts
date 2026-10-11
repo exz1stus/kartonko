@@ -6,10 +6,12 @@ import ApiError from "@/lib/api/error";
 
 export async function POST(req: NextRequest) {
     const formData = await req.formData();
-    await assertCaptchaFromRequest(req.headers, formData).catch(
-        (err: ApiError) =>
-            NextResponse.json({ error: err.data }, { status: err.status }),
-    );
+    try {
+        await assertCaptchaFromRequest(req.headers, formData);
+    } catch (err) {
+        if (err instanceof ApiError) return NextResponse.json({ error: err.data }, { status: err.status });
+        return NextResponse.json({ error: "Captcha verification failed" }, { status: 400 });
+    }
 
     const metadataString = formData.get("metadata")?.toString();
     if (!metadataString)
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
                 headers: responseHeaders,
             });
         }
+        return NextResponse.json({ error: "Invalid batch metadata" }, { status: 400 });
     } catch (err) {
         return NextResponse.json(
             { error: "Invalid metadata or failed to process batch tags" },

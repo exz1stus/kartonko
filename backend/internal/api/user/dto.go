@@ -1,6 +1,7 @@
 package user
 
 import (
+	"fmt"
 	"time"
 
 	"server/internal/user"
@@ -26,6 +27,9 @@ func NewUserDataResponse(u *user.User) UserDataResponse {
 	}
 
 	res.PictureURL = u.PictureURL
+	if u.PictureURL == profilePictureURL(u.ID) {
+		res.PictureURL = fmt.Sprintf("%s?v=%d", u.PictureURL, u.UpdatedAt.UnixNano())
+	}
 
 	return res
 }

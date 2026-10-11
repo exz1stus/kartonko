@@ -44,13 +44,13 @@ BACKEND:
 - ~~Generate DTOs from swagger~~
 - ~~Generate Orval api methods from swagger~~
 - ~~new doc frontend scalar~~
-- add boards
-- rewrite api to valid crud, add update, add frontend way to manipulate
+- ~~add boards~~
+- ~~rewrite api to valid crud, add update, add frontend way to manipulate~~
 
-- revert upload to json
+- remake log
 - move to rabbit mq events
 - fast upload route
-- remake log
+- revert upload to json
 
 - From filename to hash identification, optional names
 - Api token for frontend and telegram

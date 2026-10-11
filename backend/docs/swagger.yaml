@@ -158,13 +158,29 @@ definitions:
         items:
           $ref: '#/definitions/ImageError'
         type: array
+      results:
+        items:
+          $ref: '#/definitions/ImagePostBatchResult'
+        type: array
       successes:
         items:
           $ref: '#/definitions/ImageMetadata'
         type: array
     required:
     - failures
+    - results
     - successes
+    type: object
+  ImagePostBatchResult:
+    properties:
+      client_id:
+        type: string
+      error:
+        type: string
+      image:
+        $ref: '#/definitions/ImageMetadata'
+    required:
+    - client_id
     type: object
   LoginResponse:
     properties:

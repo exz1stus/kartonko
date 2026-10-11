@@ -2314,6 +2314,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "failures",
+                "results",
                 "successes"
             ],
             "properties": {
@@ -2323,11 +2324,34 @@ const docTemplate = `{
                         "$ref": "#/definitions/ImageError"
                     }
                 },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImagePostBatchResult"
+                    }
+                },
                 "successes": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ImageMetadata"
                     }
+                }
+            }
+        },
+        "ImagePostBatchResult": {
+            "type": "object",
+            "required": [
+                "client_id"
+            ],
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "image": {
+                    "$ref": "#/definitions/ImageMetadata"
                 }
             }
         },

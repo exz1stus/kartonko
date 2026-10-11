@@ -78,8 +78,15 @@ export interface ImagePatchRequest {
   tags?: string[];
 }
 
+export interface ImagePostBatchResult {
+  client_id: string;
+  error?: string;
+  image?: ImageMetadata;
+}
+
 export interface ImagePostBatchResponse {
   failures: ImageError[];
+  results: ImagePostBatchResult[];
   successes: ImageMetadata[];
 }
 

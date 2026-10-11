@@ -1,17 +1,27 @@
 "use client";
 import { create } from "zustand";
+import { UploadAction, UploadIntent, mergeUploadActions } from "@/lib/image/uploadIntent";
 
 export interface UploadItem {
+    id: string;
     file: File;
     name: string;
     tags: string[];
     newTags: string[];
+    actions: UploadAction[];
+    completedActions: string[];
+    uploadedImageId?: number;
+    error?: string;
 }
 
 interface UploadStore {
     items: UploadItem[];
+    commonActions: UploadAction[];
+    hydrated: boolean;
+    setHydrated: (hydrated: boolean) => void;
+    setCommonActions: (actions: UploadAction[]) => void;
     hasFile: (file: File) => boolean;
-    addFiles: (files: File[]) => void;
+    addFiles: (files: File[], intent?: UploadIntent) => void;
 
     setItems: (items: UploadItem[]) => void;
     updateMetadata: (
@@ -19,6 +29,10 @@ interface UploadStore {
         updates: Partial<Omit<UploadItem, "file">>,
     ) => void;
     removeFileAt: (index: number) => void;
+    removeItem: (id: string) => void;
+    markUploaded: (id: string, imageId: number) => void;
+    markActionComplete: (id: string, actionKey: string) => void;
+    setItemError: (id: string, error?: string) => void;
     clearStore: () => void;
 }
 
@@ -30,34 +44,58 @@ export const selectGlobalNewTags = (state: {
 };
 
 export const getUploadSize = (state: { items: UploadItem[] }): number =>
-    state.items.reduce((total, item) => total + item.file.size, 0);
+    state.items.reduce((total, item) => total + (item.uploadedImageId ? 0 : item.file.size), 0);
+
+const isSameFile = (first: File, second: File) =>
+    first.name === second.name && first.size === second.size && first.lastModified === second.lastModified;
 
 const useUploadStore = create<UploadStore>((set, get) => ({
     items: [],
+    commonActions: [],
+    hydrated: false,
+    setHydrated: (hydrated) => set({ hydrated }),
+    setCommonActions: (actions) => set((state) => ({
+        commonActions: actions,
+        items: state.items.map((item) => ({ ...item, actions })),
+    })),
     hasFile: (file) => {
         return get().items.some(
             (storedItem) =>
-                storedItem.file.name === file.name &&
-                storedItem.file.size === file.size,
+                isSameFile(storedItem.file, file),
         );
     },
     setItems: (items) => set({ items }),
-    addFiles: (files) =>
+    addFiles: (files, intent = {}) =>
         set((state) => {
-            const newItems: UploadItem[] = files.map((file) => {
+            const commonActions = mergeUploadActions(state.commonActions, intent.actions ?? []);
+            const items = [...state.items];
+            files.forEach((file) => {
+                const existingIndex = items.findIndex((item) => isSameFile(item.file, file));
+                if (existingIndex >= 0) {
+                    const existing = items[existingIndex];
+                    items[existingIndex] = {
+                        ...existing,
+                        tags: existing.uploadedImageId ? existing.tags : [...new Set([...existing.tags, ...(intent.tags ?? [])])],
+                        actions: commonActions,
+                    };
+                    return;
+                }
                 const dotIndex = file.name.lastIndexOf(".");
                 const baseName =
                     dotIndex !== -1
                         ? file.name.substring(0, dotIndex)
                         : file.name;
-                return {
+                items.push({
+                    id: crypto.randomUUID(),
                     file,
                     name: baseName,
-                    tags: [],
+                    tags: [...new Set(intent.tags ?? [])],
                     newTags: [],
-                };
+                    actions: commonActions,
+                    completedActions: [],
+                });
             });
-            return { items: [...state.items, ...newItems] };
+            return { items: items.map((item) => ({ ...item, actions: commonActions })), commonActions };
         }),
     updateMetadata: (index, updates) =>
         set((state) => ({
@@ -69,6 +107,10 @@ const useUploadStore = create<UploadStore>((set, get) => ({
         set((state) => ({
             items: state.items.filter((_, i) => i !== index),
         })),
+    removeItem: (id) => set((state) => ({ items: state.items.filter((item) => item.id !== id) })),
+    markUploaded: (id, imageId) => set((state) => ({ items: state.items.map((item) => item.id === id ? { ...item, uploadedImageId: imageId, error: undefined } : item) })),
+    markActionComplete: (id, actionKey) => set((state) => ({ items: state.items.map((item) => item.id === id ? { ...item, completedActions: [...new Set([...item.completedActions, actionKey])], error: undefined } : item) })),
+    setItemError: (id, error) => set((state) => ({ items: state.items.map((item) => item.id === id ? { ...item, error } : item) })),
     clearStore: () => set({ items: [] }),
 }));
 

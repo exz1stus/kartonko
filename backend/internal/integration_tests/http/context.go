@@ -227,12 +227,12 @@ func (c *TestContext) UploadImageWithResponse(postMetadata imgapi.ImagePostReque
 func (c *TestContext) UploadImageBatch(fileDatas []TestFileData, commonTags []string, userID uint64) *httptest.ResponseRecorder {
 	c.T.Helper()
 
-	data := make([]image.UploadRequest, 0, len(fileDatas))
-	for _, img := range fileDatas {
-		data = append(data, img.image)
+	data := make([]imgapi.ImagePostRequest, 0, len(fileDatas))
+	for index, img := range fileDatas {
+		data = append(data, imgapi.ImagePostRequest{Name: img.image.Name, Tags: img.image.Tags, ClientID: fmt.Sprintf("item-%d", index)})
 	}
 
-	metadata := image.UploadBatchRequest{
+	metadata := imgapi.ImagePostBatchRequest{
 		Data:       data,
 		CommonTags: commonTags,
 	}

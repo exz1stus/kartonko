@@ -139,5 +139,13 @@ export default function useInfiniteScroll<TQuery, TItem>({
         fetchItems(queryRef.current, requestSize);
     };
 
-    return { items, loading, reachedEnd, error, retry, refresh, sentinelRef };
+    const removeItems = (predicate: (item: TItem) => boolean) => {
+        const removed = items.filter(predicate).length;
+        if (removed === 0) return 0;
+        setItems((current) => current.filter((item) => !predicate(item)));
+        if (removed > 0) cursorRef.current = Math.max(0, cursorRef.current - removed);
+        return removed;
+    };
+
+    return { items, loading, reachedEnd, error, retry, refresh, removeItems, sentinelRef };
 }

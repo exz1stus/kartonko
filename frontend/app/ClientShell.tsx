@@ -7,6 +7,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { AlertDialogProvider } from "@/contexts/AlertDialogContext";
 import SideBar from "@/components/SideBar/SideBar";
 import Footer from "@/components/Footer";
+import GalleryBoardTray from "@/components/Gallery/GalleryBoardTray";
+import UploadQueuePersistence from "@/components/UploadImage/UploadQueuePersistence";
+import SelectionMarquee from "@/components/Gallery/SelectionMarquee";
 
 const ClientShell = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -27,6 +30,9 @@ const ClientShell = ({ children }: { children: React.ReactNode }) => {
                             </ResizableGrid>
                             <Footer />
                             <Toaster />
+                            <GalleryBoardTray />
+                            <SelectionMarquee />
+                            <UploadQueuePersistence />
                         </body>
                     </AlertDialogProvider>
                 </SideBarProvider>

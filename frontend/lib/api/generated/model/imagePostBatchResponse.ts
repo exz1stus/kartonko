@@ -7,8 +7,10 @@
  */
 import type { ImageError } from './imageError';
 import type { ImageMetadata } from './imageMetadata';
+import type { ImagePostBatchResult } from './imagePostBatchResult';
 
 export interface ImagePostBatchResponse {
   failures: ImageError[];
+  results: ImagePostBatchResult[];
   successes: ImageMetadata[];
 }

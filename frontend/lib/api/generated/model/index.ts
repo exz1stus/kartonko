@@ -33,6 +33,7 @@ export * from './imageError';
 export * from './imageMetadata';
 export * from './imagePatchRequest';
 export * from './imagePostBatchResponse';
+export * from './imagePostBatchResult';
 export * from './listBoardImagesParams';
 export * from './listBoardsParams';
 export * from './loginResponse';

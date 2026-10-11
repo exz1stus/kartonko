@@ -6,6 +6,7 @@ import useUploadStore, { UploadItem } from "@/hooks/useUploadStore";
 import TagSelector from "../Tags/TagSelector";
 import Scrollbar from "../template/Scrollbar";
 import { cn } from "@/lib/utils";
+import { beginSelection, extendSelection, SelectionGesture } from "@/lib/image/rangeSelection";
 
 interface Props {
     images: UploadItem[];
@@ -31,25 +32,27 @@ const ImageCarousel = ({
     const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
         null,
     );
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStartIndex, setDragStartIndex] = useState<number | null>(null);
-    const [dragStartSelection, setDragStartSelection] = useState<number[]>([]);
-    const [dragMode, setDragMode] = useState<"select" | "deselect" | "shift">(
-        "select",
-    );
+    const [selectionGesture, setSelectionGesture] = useState<SelectionGesture<number> | null>(null);
 
     const applyCommonTags = () => {
         if (selectedIndices.length === 0) return;
+        const editableIndices = selectedIndices.filter((index) => images[index] && !images[index].uploadedImageId);
+        if (editableIndices.length === 0) {
+            toast.warning("Uploaded images cannot receive new upload tags");
+            return;
+        }
 
-        selectedIndices.forEach((index) => {
+        editableIndices.forEach((index) => {
             const currentItem = images[index];
             if (!currentItem) return;
 
-            updateMetadata(index, { tags: tags });
-            updateMetadata(index, { newTags: newTags });
+            updateMetadata(index, {
+                tags: [...new Set([...currentItem.tags, ...tags])],
+                newTags: [...new Set([...currentItem.newTags, ...newTags])],
+            });
         });
 
-        toast.success(`Applied tags to ${selectedIndices.length} images`);
+        toast.success(`Applied tags to ${editableIndices.length} images`);
         setTags([]);
         setNewTags([]);
         setSelectedIndices([]);
@@ -84,92 +87,23 @@ const ImageCarousel = ({
     const handleMouseDown = (index: number, e: React.MouseEvent) => {
         if (e.button !== 0) return; // Left click only
 
-        setIsDragging(true);
-        setDragStartIndex(index);
         onIndexChange(index);
-
-        // 1. Shift + Left Mouse Button Actions
-        if (e.shiftKey) {
-            setDragMode("shift");
-            const start = lastSelectedIndex !== null ? lastSelectedIndex : 0;
-            const min = Math.min(start, index);
-            const max = Math.max(start, index);
-            const range = Array.from(
-                { length: max - min + 1 },
-                (_, i) => min + i,
-            );
-
-            if (e.ctrlKey || e.metaKey) {
-                // Shift + Ctrl combo retains active pool anchors
-                setDragStartSelection(selectedIndices);
-                setSelectedIndices((prev) =>
-                    Array.from(new Set([...prev, ...range])),
-                );
-            } else {
-                setDragStartSelection([]);
-                setSelectedIndices(range);
-            }
-            return;
-        }
-
-        // 2. Ctrl / Cmd + Left Mouse Button Actions
-        if (e.ctrlKey || e.metaKey) {
-            setDragStartSelection(selectedIndices);
-            const isAlreadySelected = selectedIndices.includes(index);
-
-            if (isAlreadySelected) {
-                setDragMode("deselect");
-                setSelectedIndices((prev) => prev.filter((i) => i !== index));
-            } else {
-                setDragMode("select");
-                setSelectedIndices((prev) =>
-                    Array.from(new Set([...prev, index])),
-                );
-            }
-            setLastSelectedIndex(index);
-            return;
-        }
-
-        // 3. Simple Left Mouse Button Actions
-        setDragStartSelection([]);
-        setDragMode("select");
-        setSelectedIndices([index]);
-        setLastSelectedIndex(index);
+        const result = beginSelection({
+            order: images.map((_, itemIndex) => itemIndex),
+            target: index,
+            selected: selectedIndices,
+            anchor: lastSelectedIndex,
+            shift: e.shiftKey,
+            additive: e.ctrlKey || e.metaKey,
+        });
+        setSelectedIndices(result.selected);
+        setSelectionGesture(result.gesture);
+        setLastSelectedIndex(result.anchor);
     };
 
     const handleMouseEnter = (index: number) => {
-        if (!isDragging || dragStartIndex === null) return;
-
-        // Shift Drag dynamically alters range properties from the original anchor
-        if (dragMode === "shift") {
-            const start = lastSelectedIndex !== null ? lastSelectedIndex : 0;
-            const min = Math.min(start, index);
-            const max = Math.max(start, index);
-            const range = Array.from(
-                { length: max - min + 1 },
-                (_, i) => min + i,
-            );
-
-            setSelectedIndices(
-                Array.from(new Set([...dragStartSelection, ...range])),
-            );
-            return;
-        }
-
-        // Calculate boundary matrix for Ctrl/Standard sweeps
-        const min = Math.min(dragStartIndex, index);
-        const max = Math.max(dragStartIndex, index);
-        const range = Array.from({ length: max - min + 1 }, (_, i) => min + i);
-
-        if (dragMode === "select") {
-            setSelectedIndices(
-                Array.from(new Set([...dragStartSelection, ...range])),
-            );
-        } else if (dragMode === "deselect") {
-            setSelectedIndices(
-                dragStartSelection.filter((i) => !range.includes(i)),
-            );
-        }
+        if (!selectionGesture) return;
+        setSelectedIndices(extendSelection(selectionGesture, index));
     };
 
     const handleCheckboxMouseDown = (index: number, e: React.MouseEvent) => {
@@ -183,8 +117,7 @@ const ImageCarousel = ({
 
     useEffect(() => {
         const handleMouseUp = () => {
-            setIsDragging(false);
-            setDragStartIndex(null);
+            setSelectionGesture(null);
         };
         window.addEventListener("mouseup", handleMouseUp);
         return () => window.removeEventListener("mouseup", handleMouseUp);
