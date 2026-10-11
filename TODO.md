@@ -46,8 +46,9 @@ BACKEND:
 - ~~new doc frontend scalar~~
 - ~~add boards~~
 - ~~rewrite api to valid crud, add update, add frontend way to manipulate~~
-
+- Store user picture
 - remake log
+
 - move to rabbit mq events
 - fast upload route
 - revert upload to json
@@ -57,7 +58,6 @@ BACKEND:
 - Rate limiting
     - No limits for moderator users
 - Last seen webhook
-- Store user picture
 - Upload image creates tags that doesn't exist
 - ~~DB transactions, prevent upload abort errors~~
 - hashing on pHash

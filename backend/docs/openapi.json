@@ -413,57 +413,6 @@
             }
         },
         "/board/{id}": {
-            "get": {
-                "tags": [
-                    "boards"
-                ],
-                "summary": "Gets board metadata by id",
-                "operationId": "GetBoard",
-                "parameters": [
-                    {
-                        "description": "Board ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "format": "int64"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/BoardResponse"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
             "delete": {
                 "tags": [
                     "boards"
@@ -1945,6 +1894,58 @@
                 }
             }
         },
+        "/log/{id}/revert": {
+            "post": {
+                "tags": [
+                    "log"
+                ],
+                "summary": "Reverts a reversible audit entry",
+                "operationId": "RevertAuditLogEntry",
+                "parameters": [
+                    {
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EntryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/tags": {
             "get": {
                 "description": "Returns a paginated list of all tags",
@@ -2553,6 +2554,29 @@
             }
         },
         "schemas": {
+            "AuditActor": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "picture_url",
+                    "privilege",
+                    "username"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "picture_url": {
+                        "type": "string"
+                    },
+                    "privilege": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    }
+                }
+            },
             "AuthRequest": {
                 "type": "object",
                 "required": [
@@ -2659,16 +2683,22 @@
                 "type": "object",
                 "required": [
                     "action",
+                    "actor",
                     "affected_obj_id",
                     "created_at",
                     "data",
                     "id",
                     "object_type",
+                    "reverted_at",
+                    "reverted_by_id",
                     "user_id"
                 ],
                 "properties": {
                     "action": {
                         "type": "string"
+                    },
+                    "actor": {
+                        "$ref": "#/components/schemas/AuditActor"
                     },
                     "affected_obj_id": {
                         "type": "integer"
@@ -2684,6 +2714,12 @@
                     },
                     "object_type": {
                         "type": "string"
+                    },
+                    "reverted_at": {
+                        "type": "string"
+                    },
+                    "reverted_by_id": {
+                        "type": "integer"
                     },
                     "user_id": {
                         "type": "integer"

@@ -38,7 +38,6 @@ func NewApp(
 
 	runner := transaction.GormRunner{DB: db}
 
-	logService := log.NewLogService(logRepo)
 	objectService := image.NewObjectService(
 		storage,
 		imageRepo,
@@ -47,6 +46,7 @@ func NewApp(
 		objectService,
 		embClient,
 	)
+	logService := log.NewLogService(logRepo, db, objectService, embeddingsService)
 	imageService := image.NewImageService(
 		imageRepo,
 		userRepo,
@@ -56,7 +56,7 @@ func NewApp(
 		runner,
 	)
 
-	boardService := board.NewBoardService(boardRepo, userRepo)
+	boardService := board.NewBoardService(boardRepo, userRepo, logService, runner)
 
 	userService := user.NewUserService(userRepo)
 	//TODO: temporary for dev

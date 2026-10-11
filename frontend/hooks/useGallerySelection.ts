@@ -10,6 +10,7 @@ import {
 
 export interface GallerySelection {
     selectedIds: number[];
+    imageOwners: Record<number, number>;
     draggingIds: number[];
     selectionMode: boolean;
     selectionGesture: SelectionGesture<number> | null;
@@ -23,6 +24,7 @@ export interface GallerySelection {
         additive: boolean,
     ) => void;
     selectMany: (ids: number[]) => void;
+    registerImages: (images: { id: number; user_id: number }[]) => void;
     beginSelection: (
         order: number[],
         id: number,
@@ -51,6 +53,7 @@ export interface GallerySelection {
 
 const empty = () => ({
     selectedIds: [],
+    imageOwners: {} as Record<number, number>,
     draggingIds: [],
     selectionMode: false,
     selectionGesture: null,
@@ -92,6 +95,14 @@ function createSelectionStore() {
                 anchorId: ids.at(-1) ?? null,
                 selectionGesture: null,
                 selectionBounds: null,
+            }),
+        registerImages: (images) =>
+            set((state) => {
+                if (images.every((image) => state.imageOwners[image.id] === image.user_id))
+                    return state;
+                const imageOwners = { ...state.imageOwners };
+                for (const image of images) imageOwners[image.id] = image.user_id;
+                return { imageOwners };
             }),
         beginSelection: (order, id, shift, additive) =>
             set((state) => {

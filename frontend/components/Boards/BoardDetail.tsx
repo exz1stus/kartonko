@@ -25,6 +25,7 @@ import BoardImagePicker from "./BoardImagePicker";
 import { toast } from "sonner";
 import { addImagesToBoard } from "@/lib/image/addImagesToBoard";
 import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
+import { imagesDeletedEvent } from "@/lib/image/deletedImages";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -107,6 +108,29 @@ export default function BoardDetail({
         initialItems,
         initialReachedEnd: initialItems.length < 24,
     });
+    const boardItems = images.items;
+    const removeImageItems = images.removeItems;
+    useEffect(() => {
+        const onImagesDeleted = (event: Event) => {
+            const deleted = new Set((event as CustomEvent<number[]>).detail);
+            if (!deleted.size) return;
+            removeImageItems((item) => deleted.has(item.image_metadata.id));
+            const removedFromBoard = [...deleted].filter((id) =>
+                membershipIds.has(id) ||
+                boardItems.some((item) => item.image_metadata.id === id) ||
+                addedItems.some((item) => item.image_metadata.id === id),
+            ).length;
+            if (removedFromBoard)
+                setBoard((current) => ({
+                    ...current,
+                    image_count: Math.max(0, current.image_count - removedFromBoard),
+                }));
+            setAddedItems((current) => current.filter((item) => !deleted.has(item.image_metadata.id)));
+            setMembershipIds((current) => new Set([...current].filter((id) => !deleted.has(id))));
+        };
+        window.addEventListener(imagesDeletedEvent, onImagesDeleted);
+        return () => window.removeEventListener(imagesDeletedEvent, onImagesDeleted);
+    }, [addedItems, boardItems, membershipIds, removeImageItems]);
     const displayedItems = useMemo(() => {
         const seen = new Set<number>();
         const query = JSON.parse(search) as SearchQuery;
@@ -378,7 +402,7 @@ export default function BoardDetail({
                     onQueryChange={(next) => setSearch(JSON.stringify(next))}
                     className="min-w-0 flex-1"
                 />
-                <GallerySelectionControls scope={`board:${board.id}:gallery`} imageIds={displayedItems.map((item) => item.image_metadata.id)} />
+                <GallerySelectionControls scope={`board:${board.id}:gallery`} images={displayedItems.map((item) => item.image_metadata)} />
             </div>
         </>
     );

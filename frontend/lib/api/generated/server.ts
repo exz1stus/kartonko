@@ -6,6 +6,13 @@
  * OpenAPI spec version: 1.0
  */
 import { serverMutator } from '../serverMutator';
+export interface AuditActor {
+  id: number;
+  picture_url: string;
+  privilege: string;
+  username: string;
+}
+
 export interface AuthRequest {
   password: string;
   username: string;
@@ -56,11 +63,14 @@ export type EntryResponseData = { [key: string]: unknown };
 
 export interface EntryResponse {
   action: string;
+  actor: AuditActor;
   affected_obj_id: number;
   created_at: string;
   data: EntryResponseData;
   id: number;
   object_type: string;
+  reverted_at: string;
+  reverted_by_id: number;
   user_id: number;
 }
 
@@ -558,30 +568,6 @@ export const getGetBoardBySlugUrl = (slug: string,) => {
 export const getBoardBySlug = async (slug: string, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
 
   return serverMutator<BoardResponse>(getGetBoardBySlugUrl(slug),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-export const getGetBoardUrl = (id: number,) => {
-
-
-
-
-  return `/board/${id}`
-}
-
-/**
- * @summary Gets board metadata by id
- */
-export const getBoard = async (id: number, options?: Parameters<typeof serverMutator>[1]): Promise<BoardResponse> => {
-
-  return serverMutator<BoardResponse>(getGetBoardUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1268,6 +1254,30 @@ export const getAuditLogEntries = async (params?: GetAuditLogEntriesParams, opti
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getRevertAuditLogEntryUrl = (id: number,) => {
+
+
+
+
+  return `/log/${id}/revert`
+}
+
+/**
+ * @summary Reverts a reversible audit entry
+ */
+export const revertAuditLogEntry = async (id: number, options?: Parameters<typeof serverMutator>[1]): Promise<EntryResponse> => {
+
+  return serverMutator<EntryResponse>(getRevertAuditLogEntryUrl(id),
+  {
+    ...options,
+    method: 'POST'
 
 
   }

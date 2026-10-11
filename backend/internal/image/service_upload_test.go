@@ -77,7 +77,7 @@ func TestUpload_Success(t *testing.T) {
 
 	logService := logMocks.NewMockLogService(t)
 	logService.EXPECT().
-		Log((*gorm.DB)(nil), "create", "image", uint(1), mock.AnythingOfType("uint"), nil).
+		Log((*gorm.DB)(nil), "create", "image", uint(1), mock.AnythingOfType("uint"), mock.Anything).
 		Return(nil).Once()
 
 	objectsService := imageMocks.NewMockObjectService(t)

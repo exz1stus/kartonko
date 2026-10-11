@@ -5,14 +5,18 @@
  * kartonko web server
  * OpenAPI spec version: 1.0
  */
+import type { AuditActor } from './auditActor';
 import type { EntryResponseData } from './entryResponseData';
 
 export interface EntryResponse {
   action: string;
+  actor: AuditActor;
   affected_obj_id: number;
   created_at: string;
   data: EntryResponseData;
   id: number;
   object_type: string;
+  reverted_at: string;
+  reverted_by_id: number;
   user_id: number;
 }

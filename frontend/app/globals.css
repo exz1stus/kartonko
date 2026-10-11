@@ -149,7 +149,7 @@
 @utility glass {
     backdrop-filter: blur(
         12px
-    ); /* Swapped legacy @add mixin for modern standard CSS */
+    );
 }
 
 @keyframes shake {

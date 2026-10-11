@@ -3,7 +3,9 @@ package board
 import (
 	"context"
 	stderrors "errors"
+	"server/internal/api/transaction"
 	"server/internal/errors"
+	"server/internal/log"
 	userpkg "server/internal/user"
 	"strconv"
 	"strings"
@@ -31,12 +33,14 @@ type BoardService interface {
 }
 
 type boardService struct {
-	boards BoardRepository
-	users  userpkg.UserRepository
+	boards       BoardRepository
+	users        userpkg.UserRepository
+	logs         log.LogService
+	transactions transaction.Runner
 }
 
-func NewBoardService(boards BoardRepository, users userpkg.UserRepository) BoardService {
-	return &boardService{boards, users}
+func NewBoardService(boards BoardRepository, users userpkg.UserRepository, logs log.LogService, transactions transaction.Runner) BoardService {
+	return &boardService{boards: boards, users: users, logs: logs, transactions: transactions}
 }
 
 func (s *boardService) List(ctx context.Context, name string, userID uint, cursor, limit int) ([]Board, error) {
@@ -207,7 +211,22 @@ func (s *boardService) AddImage(ctx context.Context, boardID uint, imageID uint,
 		ImageID: imageID,
 	}
 
-	if err := s.boards.AddItem(ctx, boardID, item); err != nil {
+	err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		repo := s.boards.WithTx(tx)
+		if err := repo.AddItem(ctx, boardID, item); err != nil {
+			return err
+		}
+		board, err := repo.Get(ctx, boardID)
+		if err != nil {
+			return err
+		}
+		added, err := repo.GetItem(ctx, boardID, imageID)
+		if err != nil {
+			return err
+		}
+		return s.logs.Log(tx, "add_image", "board", userID, boardID, map[string]any{"board_name": board.Name, "image_id": imageID, "image_name": added.Image.Filename})
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -219,5 +238,19 @@ func (s *boardService) RemoveImage(ctx context.Context, boardID uint, imageID ui
 		return err
 	}
 
-	return s.boards.DeleteItem(ctx, boardID, imageID)
+	return s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		repo := s.boards.WithTx(tx)
+		item, err := repo.GetItem(ctx, boardID, imageID)
+		if err != nil {
+			return err
+		}
+		board, err := repo.Get(ctx, boardID)
+		if err != nil {
+			return err
+		}
+		if err := repo.DeleteItem(ctx, boardID, imageID); err != nil {
+			return err
+		}
+		return s.logs.Log(tx, "remove_image", "board", userID, boardID, map[string]any{"board_name": board.Name, "image_id": imageID, "image_name": item.Image.Filename})
+	})
 }

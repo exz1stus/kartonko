@@ -385,3 +385,8 @@ func (_c *MockLogService_Log_Call) RunAndReturn(run func(tx *gorm.DB, action str
 	_c.Call.Return(run)
 	return _c
 }
+
+func (_mock *MockLogService) Revert(entryID, actorID uint) (log.EntryResponse, error) {
+	args := _mock.Called(entryID, actorID)
+	return args.Get(0).(log.EntryResponse), args.Error(1)
+}

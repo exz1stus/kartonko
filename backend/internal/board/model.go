@@ -12,7 +12,7 @@ type Board struct {
 	gorm.Model
 
 	Name        string `json:"name" gorm:"not null"`
-	Slug        string `json:"slug" gorm:"uniqueIndex"`
+	Slug        string `json:"slug" gorm:"uniqueIndex;not null"`
 	Description string `json:"description"`
 
 	UserID uint      `json:"user_id" gorm:"not null"`

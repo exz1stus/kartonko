@@ -14,9 +14,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func Migrate(db *gorm.DB) {
-}
-
 func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 	if config == nil {
 		config = &gorm.Config{}
@@ -27,7 +24,6 @@ func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	Migrate(db)
 	err = db.AutoMigrate(
 		&image.ImageMetadata{},
 		&tag.Tag{},
@@ -39,10 +35,6 @@ func InitGorm(dialector gorm.Dialector, config *gorm.Config) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto migrate database: %w", err)
 	}
-	if err := board.EnsureSlugs(db); err != nil {
-		return nil, fmt.Errorf("failed to backfill board slugs: %w", err)
-	}
-
 	return db, nil
 }
 

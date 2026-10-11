@@ -9,6 +9,7 @@ import InfiniteImageGrid from "@/components/Gallery/InfiniteImageGrid";
 import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import Scrollbar from "@/components/template/Scrollbar";
 import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
+import { imagesDeletedEvent } from "@/lib/image/deletedImages";
 
 const emptySearch: SearchQuery = { prefix: "", tags: [] };
 
@@ -38,6 +39,17 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
         initialItems: initialImages,
         initialReachedEnd: initialImages !== undefined && initialImages.length < 30,
     });
+    const removeImageItems = results.removeItems;
+    useEffect(() => {
+        const onImagesDeleted = (event: Event) => {
+            const deleted = new Set((event as CustomEvent<number[]>).detail);
+            if (!deleted.size) return;
+            removeImageItems((image) => deleted.has(image.id));
+            setAddedIds((current) => new Set([...current].filter((id) => !deleted.has(id))));
+        };
+        window.addEventListener(imagesDeletedEvent, onImagesDeleted);
+        return () => window.removeEventListener(imagesDeletedEvent, onImagesDeleted);
+    }, [removeImageItems]);
     const visibleItems = hideAdded ? results.items.filter((image) => !addedIds.has(image.id)) : results.items;
     const selectionScope = `board:${boardId}:picker`;
     const handleImagesDropped = (imageIds: number[], sourceBoardId?: number, sourceScope?: string) => {
@@ -90,7 +102,7 @@ export default function BoardImagePicker({ boardId, boardName, initialImageIds, 
             </div>
             <div className="flex items-center">
                 <ImageSearch initialQuery={emptySearch} onQueryChange={(next) => setQuery(JSON.stringify(next))} className="min-w-0 flex-1" />
-                <GallerySelectionControls scope={selectionScope} imageIds={visibleItems.map((image) => image.id)} />
+                <GallerySelectionControls scope={selectionScope} images={visibleItems} />
             </div>
             {error && <p role="alert" className="text-red-500">{error}</p>}
             {membershipError && <p role="alert" className="text-red-500">{membershipError} <button onClick={() => void loadMembership()} className="underline">Retry</button></p>}

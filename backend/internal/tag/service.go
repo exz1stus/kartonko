@@ -76,7 +76,7 @@ func (s *tagService) Create(ctx context.Context, req *TagPostRequest, userID uin
 			return err
 		}
 
-		if err := s.logs.Log(tx, "create", "tag", userID, tag.ID, nil); err != nil {
+		if err := s.logs.Log(tx, "create", "tag", userID, tag.ID, map[string]string{"name": tag.Name}); err != nil {
 			return err
 		}
 
@@ -84,7 +84,7 @@ func (s *tagService) Create(ctx context.Context, req *TagPostRequest, userID uin
 		return nil
 	})
 
-	return createdTag, nil
+	return createdTag, err
 }
 
 func (s *tagService) Get(ctx context.Context, tagID uint) (*Tag, error) {
@@ -96,7 +96,16 @@ func (s *tagService) Delete(ctx context.Context, userID, tagID uint) error {
 		return err
 	}
 
-	return s.tags.Delete(ctx, tagID)
+	tag, err := s.tags.Get(ctx, tagID)
+	if err != nil {
+		return err
+	}
+	return s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		if err := s.tags.WithTx(tx).Delete(ctx, tagID); err != nil {
+			return err
+		}
+		return s.logs.Log(tx, "delete", "tag", userID, tagID, map[string]string{"name": tag.Name})
+	})
 }
 
 func (s *tagService) Update(ctx context.Context, userID, tagID uint, req *TagPatchRequest) (*Tag, error) {
@@ -108,6 +117,7 @@ func (s *tagService) Update(ctx context.Context, userID, tagID uint, req *TagPat
 	if err != nil {
 		return nil, err
 	}
+	previousName := board.Name
 
 	if req.Name != nil {
 		name := strings.TrimSpace(*req.Name)
@@ -126,7 +136,15 @@ func (s *tagService) Update(ctx context.Context, userID, tagID uint, req *TagPat
 		board.Name = name
 	}
 
-	if err := s.tags.Update(ctx, board); err != nil {
+	if err := s.transactions.Within(ctx, func(tx *gorm.DB) error {
+		if err := s.tags.WithTx(tx).Update(ctx, board); err != nil {
+			return err
+		}
+		if previousName != board.Name {
+			return s.logs.Log(tx, "update", "tag", userID, tagID, map[string]string{"before": previousName, "after": board.Name})
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 

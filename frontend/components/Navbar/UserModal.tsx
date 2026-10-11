@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import LogoutButton from "./LogoutButton";
 import UsernameButton from "./UsernameButton";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import Image from "next/image";
+import ProfileImage from "@/components/ProfileImage";
 import { UserDataResponse } from "@/lib/api/generated/model";
 
 interface UserModalProps {
@@ -31,12 +31,10 @@ const UserModal: React.FC<UserModalProps> = ({
         >
             <div className="flex flex-col justify-center items-center gap-2 p-2 px-8">
                 <div className="rounded-full">
-                    <Image
+                    <ProfileImage
                         src={user.picture_url}
                         className="rounded-full w-10 h-10"
-                        alt="User picture"
-                        width={256}
-                        height={256}
+                        size={40}
                     />
                 </div>
                 <UsernameButton username={user.username} />

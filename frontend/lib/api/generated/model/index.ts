@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './auditActor';
 export * from './authRequest';
 export * from './authRequestBody';
 export * from './boardItemPostRequest';

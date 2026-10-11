@@ -29,7 +29,6 @@ type BoardRepository interface {
 
 	AddItem(ctx context.Context, boardID uint, item *BoardItem) error
 	GetItem(ctx context.Context, boardID uint, imageID uint) (*BoardItem, error)
-	UpdateItem(ctx context.Context, boardID uint, item *BoardItem) error
 	DeleteItem(ctx context.Context, boardID uint, imageID uint) error
 }
 
@@ -202,21 +201,4 @@ func (r *boardRepository) BoardIDsForImage(ctx context.Context, imageID uint) ([
 		Order("board_items.board_id").
 		Pluck("board_items.board_id", &ids).Error
 	return ids, err
-}
-
-func (r *boardRepository) UpdateItem(ctx context.Context, boardID uint, item *BoardItem) error {
-	result := r.db.
-		WithContext(ctx).
-		Where("board_id = ? AND image_id = ?", boardID, item.ImageID).
-		Updates(item)
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-
-	return nil
 }

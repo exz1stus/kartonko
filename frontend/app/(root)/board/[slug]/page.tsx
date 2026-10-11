@@ -1,5 +1,4 @@
 import {
-    getBoard,
     getBoardBySlug,
     getImagesByQuery,
     listBoardImageIDs,
@@ -7,7 +6,7 @@ import {
 } from "@/lib/api/generated/server";
 import ApiError from "@/lib/api/error";
 import { getLoggedUser } from "@/lib/user/user.server";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import BoardDetail from "@/components/Boards/BoardDetail";
 
 export default async function BoardPage({
@@ -20,17 +19,8 @@ export default async function BoardPage({
     try {
         board = await getBoardBySlug(slug);
     } catch (error) {
-        if (!(error instanceof ApiError && error.status === 404)) throw error;
-        const legacyId = Number(slug);
-        if (!Number.isSafeInteger(legacyId) || legacyId <= 0) notFound();
-        try {
-            const legacyBoard = await getBoard(legacyId);
-            redirect(`/board/${encodeURIComponent(legacyBoard.slug)}`);
-        } catch (legacyError) {
-            if (legacyError instanceof ApiError && legacyError.status === 404)
-                notFound();
-            throw legacyError;
-        }
+        if (error instanceof ApiError && error.status === 404) notFound();
+        throw error;
     }
 
     const user = await getLoggedUser();

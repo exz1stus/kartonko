@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { ListChecks } from "lucide-react";
 import { setActiveGalleryScope, useActiveGalleryScope, useGallerySelection } from "@/hooks/useGallerySelection";
 
-export default function GallerySelectionControls({ scope, imageIds }: { scope: string; imageIds: number[] }) {
+export default function GallerySelectionControls({ scope, images }: { scope: string; images: { id: number; user_id: number }[] }) {
+    const imageIds = images.map((image) => image.id);
     const selectionMode = useGallerySelection(scope, (state) => state.selectionMode);
     const selectedCount = useGallerySelection(scope, (state) => state.selectedIds.length);
     const setSelectionMode = useGallerySelection(scope, (state) => state.setSelectionMode);
@@ -12,6 +13,9 @@ export default function GallerySelectionControls({ scope, imageIds }: { scope: s
     const selectMany = useGallerySelection(scope, (state) => state.selectMany);
     const activeScope = useActiveGalleryScope((state) => state.scope);
     const resetSelection = useGallerySelection(scope, (state) => state.reset);
+    const registerImages = useGallerySelection(scope, (state) => state.registerImages);
+
+    useEffect(() => registerImages(images), [images, registerImages]);
 
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {

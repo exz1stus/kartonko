@@ -1,20 +1,17 @@
 import { UserDataResponse } from "@/lib/api/generated/model";
+import ProfileImage from "@/components/ProfileImage";
 
 interface Props {
-    user: UserDataResponse;
+    user: Pick<UserDataResponse, "picture_url">;
 }
 
 const UserPicture = ({ user }: Props) => {
-    const url: string =
-        user?.picture_url ||
-        "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-
     return (
         <div className="rounded-full w-10 h-10 cursor-pointer">
-            <img
-                src={url}
-                className="rounded-full w-full h-full"
-                alt="User picture"
+            <ProfileImage
+                src={user.picture_url}
+                size={40}
+                className="rounded-full w-full h-full object-cover"
             />
         </div>
     );

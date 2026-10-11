@@ -378,46 +378,6 @@ const docTemplate = `{
             }
         },
         "/board/{id}": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "boards"
-                ],
-                "summary": "Gets board metadata by id",
-                "operationId": "GetBoard",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "Board ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/BoardResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            },
             "delete": {
                 "produces": [
                     "application/json"
@@ -1611,6 +1571,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/log/{id}/revert": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "log"
+                ],
+                "summary": "Reverts a reversible audit entry",
+                "operationId": "RevertAuditLogEntry",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/EntryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/tags": {
             "get": {
                 "description": "Returns a paginated list of all tags",
@@ -2087,6 +2088,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "AuditActor": {
+            "type": "object",
+            "required": [
+                "id",
+                "picture_url",
+                "privilege",
+                "username"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "picture_url": {
+                    "type": "string"
+                },
+                "privilege": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "AuthRequest": {
             "type": "object",
             "required": [
@@ -2193,16 +2217,22 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "action",
+                "actor",
                 "affected_obj_id",
                 "created_at",
                 "data",
                 "id",
                 "object_type",
+                "reverted_at",
+                "reverted_by_id",
                 "user_id"
             ],
             "properties": {
                 "action": {
                     "type": "string"
+                },
+                "actor": {
+                    "$ref": "#/definitions/AuditActor"
                 },
                 "affected_obj_id": {
                     "type": "integer"
@@ -2218,6 +2248,12 @@ const docTemplate = `{
                 },
                 "object_type": {
                     "type": "string"
+                },
+                "reverted_at": {
+                    "type": "string"
+                },
+                "reverted_by_id": {
+                    "type": "integer"
                 },
                 "user_id": {
                     "type": "integer"

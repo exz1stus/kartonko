@@ -19,6 +19,7 @@ var (
 	ErrDuplicateName     = errors.New("name already exists")
 	ErrDuplicateHash     = errors.New("hash already exists")
 	ErrAlreadyExists     = errors.New("image is already on this board")
+	ErrConflict          = errors.New("change can no longer be reverted")
 )
 
 type ErrorResponse struct {
@@ -49,7 +50,7 @@ func RespondError(c *gin.Context, err error) {
 	case errors.Is(err, ErrUnauthorized):
 		status = http.StatusUnauthorized
 
-	case errors.Is(err, ErrAlreadyExists):
+	case errors.Is(err, ErrAlreadyExists), errors.Is(err, ErrConflict):
 		status = http.StatusConflict
 	}
 

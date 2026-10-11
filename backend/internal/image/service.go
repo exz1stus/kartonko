@@ -271,7 +271,7 @@ func (s *imageService) Delete(ctx context.Context, userID, id uint) error {
 		if err := imagesRepoTx.Delete(ctx, id); err != nil {
 			return err
 		}
-		if err := s.logs.Log(tx, "delete", "image", userID, img.ID, nil); err != nil {
+		if err := s.logs.Log(tx, "delete", "image", userID, img.ID, map[string]string{"name": img.Filename}); err != nil {
 			return err
 		}
 
@@ -337,8 +337,8 @@ func (s *imageService) DeleteByQuery(ctx context.Context, userID uint, query *Qu
 			return fmt.Errorf("failed deleting images by query %w", err)
 		}
 
-		for _, id := range ids {
-			if err := s.logs.Log(tx, "delete", "image", userID, id, nil); err != nil {
+		for _, img := range imgs {
+			if err := s.logs.Log(tx, "delete", "image", userID, img.ID, map[string]string{"name": img.Filename}); err != nil {
 				return err
 			}
 		}
@@ -429,7 +429,7 @@ func (s *imageService) Upload(ctx context.Context, userID uint, req UploadReques
 		}
 		img.Tags = tagsToAttach
 
-		if err := s.logs.Log(tx, "create", "image", userID, img.ID, nil); err != nil {
+		if err := s.logs.Log(tx, "create", "image", userID, img.ID, map[string]string{"name": img.Filename}); err != nil {
 			return err
 		}
 

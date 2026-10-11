@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { SearchQuery, ImageSearch } from "./ImageSearch";
 import { useDebounce } from "use-debounce";
 import Scrollbar from "@/components/template/Scrollbar";
@@ -9,6 +9,7 @@ import useInfiniteScroll from "@/hooks/useInfiniteScroll";
 import { ImageIcon } from "lucide-react";
 import { getImagesByQuery } from "@/lib/api/generated/client";
 import GallerySelectionControls from "@/components/Gallery/GallerySelectionControls";
+import { imagesDeletedEvent } from "@/lib/image/deletedImages";
 
 interface Props {
     initialImages: ImageMetadata[];
@@ -40,7 +41,7 @@ const Gallery: React.FC<Props> = ({
         [],
     );
 
-    const { items, loading, reachedEnd, error, retry, sentinelRef } = useInfiniteScroll<
+    const { items, loading, reachedEnd, error, retry, removeItems, sentinelRef } = useInfiniteScroll<
         SearchQuery,
         ImageMetadata
     >({
@@ -49,6 +50,15 @@ const Gallery: React.FC<Props> = ({
         initialItems: initialImages,
         initialReachedEnd: initReachedEnd,
     });
+
+    useEffect(() => {
+        const onImagesDeleted = (event: Event) => {
+            const deleted = new Set((event as CustomEvent<number[]>).detail);
+            if (deleted.size) removeItems((image) => deleted.has(image.id));
+        };
+        window.addEventListener(imagesDeletedEvent, onImagesDeleted);
+        return () => window.removeEventListener(imagesDeletedEvent, onImagesDeleted);
+    }, [removeItems]);
 
     const footer = (
         <div className="flex gap-3 px-5">
@@ -65,7 +75,7 @@ const Gallery: React.FC<Props> = ({
                     onQueryChange={(query: SearchQuery) => setSearchQuery(query)}
                     className="min-w-0 flex-1 p-4"
                 />
-                <GallerySelectionControls scope="home" imageIds={items.map((image) => image.id)} />
+                <GallerySelectionControls scope="home" images={items} />
             </div>
             <div className="min-h-0 flex-1 overflow-hidden">
                     <div className="flex flex-col h-full">

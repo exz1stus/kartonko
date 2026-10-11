@@ -31,10 +31,11 @@ func (r *logRepository) Create(entry *AuditEntry) error {
 func (r *logRepository) GetEntries(cursor int, limit int) ([]AuditEntry, error) {
 	var responses []AuditEntry
 	if err := r.db.Model(&AuditEntry{}).
+		Preload("User", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
 		Order("audit_entries.id DESC").
 		Limit(limit).
 		Offset(cursor).
-		Scan(&responses).Error; err != nil {
+		Find(&responses).Error; err != nil {
 		return nil, fmt.Errorf("failed to retrieve entries: %w", err)
 	}
 	return responses, nil

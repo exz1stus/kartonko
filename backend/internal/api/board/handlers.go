@@ -30,7 +30,6 @@ func (h *Handler) RegisterRoutes(public *gin.RouterGroup, protected *gin.RouterG
 	public.GET("/slug/:slug", h.GetBoardBySlug)
 
 	protected.POST("", h.PostBoard)
-	public.GET("/:id", h.GetBoard)
 	protected.PATCH("/:id", h.PatchBoard)
 	protected.DELETE("/:id", h.DeleteBoard)
 	public.GET("/:id/image", h.ListBoardImages)
@@ -144,32 +143,6 @@ func (h *Handler) ListBoards(c *gin.Context) {
 	}
 
 	helpers.RespondJSON(c, http.StatusOK, responses)
-}
-
-// GetBoard godoc
-// @Summary Gets board metadata by id
-// @Tags boards
-// @Produce json
-// @Param id path uint64 true "Board ID"
-// @Success 200 {object} BoardResponse
-// @Failure 400 {object} errors.ErrorResponse
-// @Failure 404 {object} errors.ErrorResponse
-// @Router /board/{id} [get]
-// @ID GetBoard
-func (h *Handler) GetBoard(c *gin.Context) {
-	id, err := helpers.ParseID(c)
-	if err != nil {
-		errors.RespondError(c, errors.WrapBadRequest(err))
-		return
-	}
-
-	board, err := h.boardService.Get(c, id)
-	if err != nil {
-		errors.RespondError(c, err)
-		return
-	}
-
-	helpers.RespondJSON(c, http.StatusOK, NewBoardResponse(board))
 }
 
 // PostBoard godoc

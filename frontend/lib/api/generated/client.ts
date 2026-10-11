@@ -300,30 +300,6 @@ export const getBoardBySlug = async (slug: string, options?: Parameters<typeof c
 
 
 
-export const getGetBoardUrl = (id: number,) => {
-
-
-
-
-  return `/board/${id}`
-}
-
-/**
- * @summary Gets board metadata by id
- */
-export const getBoard = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<BoardResponse> => {
-
-  return clientMutator<BoardResponse>(getGetBoardUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
 export const getDeleteBoardUrl = (id: number,) => {
 
 
@@ -1000,6 +976,30 @@ export const getAuditLogEntries = async (params?: GetAuditLogEntriesParams, opti
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export const getRevertAuditLogEntryUrl = (id: number,) => {
+
+
+
+
+  return `/log/${id}/revert`
+}
+
+/**
+ * @summary Reverts a reversible audit entry
+ */
+export const revertAuditLogEntry = async (id: number, options?: Parameters<typeof clientMutator>[1]): Promise<EntryResponse> => {
+
+  return clientMutator<EntryResponse>(getRevertAuditLogEntryUrl(id),
+  {
+    ...options,
+    method: 'POST'
 
 
   }

@@ -1,4 +1,20 @@
 definitions:
+  AuditActor:
+    properties:
+      id:
+        type: integer
+      picture_url:
+        type: string
+      privilege:
+        type: string
+      username:
+        type: string
+    required:
+    - id
+    - picture_url
+    - privilege
+    - username
+    type: object
   AuthRequest:
     properties:
       password:
@@ -72,6 +88,8 @@ definitions:
     properties:
       action:
         type: string
+      actor:
+        $ref: '#/definitions/AuditActor'
       affected_obj_id:
         type: integer
       created_at:
@@ -82,15 +100,22 @@ definitions:
         type: integer
       object_type:
         type: string
+      reverted_at:
+        type: string
+      reverted_by_id:
+        type: integer
       user_id:
         type: integer
     required:
     - action
+    - actor
     - affected_obj_id
     - created_at
     - data
     - id
     - object_type
+    - reverted_at
+    - reverted_by_id
     - user_id
     type: object
   ErrorResponse:
@@ -529,33 +554,6 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Delete board by id
-      tags:
-      - boards
-    get:
-      operationId: GetBoard
-      parameters:
-      - description: Board ID
-        format: int64
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/BoardResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      summary: Gets board metadata by id
       tags:
       - boards
     patch:
@@ -1372,6 +1370,33 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Gets audit log entries
+      tags:
+      - log
+  /log/{id}/revert:
+    post:
+      operationId: RevertAuditLogEntry
+      parameters:
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/EntryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Reverts a reversible audit entry
       tags:
       - log
   /tags:
